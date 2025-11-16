@@ -67,6 +67,24 @@ service firebase.storage {
       allow delete: if isValidUser();
     }
 
+    // Chat images (messages between users)
+    match /chat_images/{matchId}/{fileName} {
+      allow read: if isAuthenticated(); // Any authenticated user can read
+      allow write: if isAuthenticated() &&
+                      isValidImage() &&
+                      fileName.matches('.*\\.(jpg|jpeg|png|gif)$');
+      allow delete: if isAuthenticated();
+    }
+
+    // Voice messages
+    match /voice_messages/{matchId}/{fileName} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() &&
+                      request.resource.contentType.matches('audio/.*') &&
+                      request.resource.size < 5 * 1024 * 1024; // 5MB max
+      allow delete: if isAuthenticated();
+    }
+
     // Temporary files (for processing)
     match /temp/{userId}/{fileName} {
       allow read, write, delete: if isOwner(userId);

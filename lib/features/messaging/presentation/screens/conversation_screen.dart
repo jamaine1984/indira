@@ -658,7 +658,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   Future<void> _sendGiftMessage(GiftModel gift) async {
     final currentUser = AuthService().currentUser;
-    if (currentUser == null) return;
+    if (currentUser == null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('User not authenticated')),
+        );
+      }
+      return;
+    }
 
     try {
       // Save to messages collection
@@ -677,18 +684,22 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         'read': false,
       });
 
-      // Save to user_gifts collection for inventory
-      await FirebaseFirestore.instance
-          .collection('user_gifts')
-          .add({
-        'senderId': currentUser.uid,
-        'receiverId': widget.otherUserId,
-        'giftId': gift.id,
-        'giftName': gift.name,
-        'giftEmoji': gift.emoji,
-        'timestamp': FieldValue.serverTimestamp(),
-        'read': false,
-      });
+      // Save to user_gifts collection for inventory (don't fail if this errors)
+      try {
+        await FirebaseFirestore.instance
+            .collection('user_gifts')
+            .add({
+          'senderId': currentUser.uid,
+          'receiverId': widget.otherUserId,
+          'giftId': gift.id,
+          'giftName': gift.name,
+          'giftEmoji': gift.emoji,
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+      } catch (e) {
+        print('Warning: Could not save to user_gifts: $e');
+      }
 
       // Update last message in match doc
       await FirebaseFirestore.instance
@@ -699,15 +710,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         'lastMessageTime': FieldValue.serverTimestamp(),
       });
 
-      setState(() {
-        _showGiftPicker = false;
-      });
-
       if (mounted) {
+        setState(() {
+          _showGiftPicker = false;
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${gift.emoji} ${gift.name} sent!'),
+            content: Text('${gift.emoji} ${gift.name} sent successfully!'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 2),
           ),
         );
       }
@@ -721,9 +733,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         );
       }
     } catch (e) {
+      print('Error sending gift: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send gift: $e')),
+          SnackBar(
+            content: Text('Failed to send gift: $e'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
         );
       }
     }
