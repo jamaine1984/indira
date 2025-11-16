@@ -85,32 +85,52 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         ...currentUserDoc.data() as Map<String, dynamic>,
       };
 
-      // Get blocked users
-      final blockedUserIds = await _databaseService.getAllBlockedUserIds();
+      // Get blocked users (but don't fail if this errors)
+      Set<String> blockedUserIds = {};
+      try {
+        blockedUserIds = await _databaseService.getAllBlockedUserIds();
+      } catch (e) {
+        print('Warning: Could not get blocked users: $e');
+      }
 
       // Get potential matches from Firestore
       final matchesQuery = await _databaseService.getPotentialMatches(user.uid).first;
 
-      // Filter out current user and blocked users
+      // Filter out ONLY current user and blocked users (show all other users)
       var filteredMatches = matchesQuery.docs
-          .where((doc) => doc.id != user.uid && !blockedUserIds.contains(doc.id))
+          .where((doc) {
+            final docId = doc.id;
+            final isCurrentUser = docId == user.uid;
+            final isBlocked = blockedUserIds.contains(docId);
+
+            // Only filter out current user and blocked users
+            return !isCurrentUser && !isBlocked;
+          })
           .map((doc) => {
                 'uid': doc.id,
                 ...doc.data() as Map<String, dynamic>,
               })
           .toList();
 
-      // Apply smart matching algorithm
-      filteredMatches = await _matchingService.getSmartRecommendations(
-        currentUser: currentUserData,
-        allPotentialMatches: filteredMatches,
-      );
+      // Try smart matching, but don't fail if it errors
+      try {
+        filteredMatches = await _matchingService.getSmartRecommendations(
+          currentUser: currentUserData,
+          allPotentialMatches: filteredMatches,
+        );
+      } catch (e) {
+        print('Warning: Smart matching failed, using basic list: $e');
+        // Keep filteredMatches as is
+      }
+
+      print('Loaded ${filteredMatches.length} potential matches');
 
       state = state.copyWith(
         potentialMatches: filteredMatches,
         isLoading: false,
       );
     } catch (e) {
+      print('Error loading potential matches: $e');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
