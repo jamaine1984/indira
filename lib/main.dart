@@ -12,22 +12,34 @@ import 'package:indira_love/core/services/push_notification_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Load environment variables
-  await dotenv.load(fileName: '.env');
+  try {
+    // Load environment variables (optional, don't block if missing)
+    try {
+      await dotenv.load(fileName: '.env');
+    } catch (e) {
+      print('Warning: .env file not found, continuing without it');
+    }
 
-  // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+    // Initialize Firebase
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
 
-  // Initialize Google Mobile Ads SDK
-  await MobileAds.instance.initialize();
+    // Initialize Google Mobile Ads SDK
+    MobileAds.instance.initialize();
 
-  // Initialize notification service
-  await NotificationService().initialize();
+    // Initialize notification service (non-blocking)
+    NotificationService().initialize().catchError((e) {
+      print('Notification service initialization failed: $e');
+    });
 
-  // Initialize push notifications
-  await PushNotificationService().initialize();
+    // Initialize push notifications (non-blocking)
+    PushNotificationService().initialize().catchError((e) {
+      print('Push notification initialization failed: $e');
+    });
+  } catch (e) {
+    print('Initialization error: $e');
+  }
 
   runApp(const ProviderScope(child: IndiraLoveApp()));
 }

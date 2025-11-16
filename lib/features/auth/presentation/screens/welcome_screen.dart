@@ -12,19 +12,7 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  @override
-  void initState() {
-    super.initState();
-    _checkAuthState();
-  }
-
-  Future<void> _checkAuthState() async {
-    await Future.delayed(const Duration(seconds: 2));
-
-    if (mounted && AuthService().currentUser != null) {
-      context.go('/discover');
-    }
-  }
+  // No auto-login - removed to prevent app from getting stuck
 
   @override
   Widget build(BuildContext context) {
