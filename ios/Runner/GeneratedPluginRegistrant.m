@@ -6,6 +6,12 @@
 
 #import "GeneratedPluginRegistrant.h"
 
+#if __has_include(<audioplayers_darwin/AudioplayersDarwinPlugin.h>)
+#import <audioplayers_darwin/AudioplayersDarwinPlugin.h>
+#else
+@import audioplayers_darwin;
+#endif
+
 #if __has_include(<camera_avfoundation/CameraPlugin.h>)
 #import <camera_avfoundation/CameraPlugin.h>
 #else
@@ -60,6 +66,18 @@
 @import geolocator_apple;
 #endif
 
+#if __has_include(<google_mlkit_commons/GoogleMlKitCommonsPlugin.h>)
+#import <google_mlkit_commons/GoogleMlKitCommonsPlugin.h>
+#else
+@import google_mlkit_commons;
+#endif
+
+#if __has_include(<google_mlkit_face_detection/GoogleMlKitFaceDetectionPlugin.h>)
+#import <google_mlkit_face_detection/GoogleMlKitFaceDetectionPlugin.h>
+#else
+@import google_mlkit_face_detection;
+#endif
+
 #if __has_include(<google_mobile_ads/FLTGoogleMobileAdsPlugin.h>)
 #import <google_mobile_ads/FLTGoogleMobileAdsPlugin.h>
 #else
@@ -78,6 +96,12 @@
 @import image_picker_ios;
 #endif
 
+#if __has_include(<in_app_purchase_storekit/InAppPurchasePlugin.h>)
+#import <in_app_purchase_storekit/InAppPurchasePlugin.h>
+#else
+@import in_app_purchase_storekit;
+#endif
+
 #if __has_include(<path_provider_foundation/PathProviderPlugin.h>)
 #import <path_provider_foundation/PathProviderPlugin.h>
 #else
@@ -88,6 +112,12 @@
 #import <permission_handler_apple/PermissionHandlerPlugin.h>
 #else
 @import permission_handler_apple;
+#endif
+
+#if __has_include(<record_ios/RecordIosPlugin.h>)
+#import <record_ios/RecordIosPlugin.h>
+#else
+@import record_ios;
 #endif
 
 #if __has_include(<shared_preferences_foundation/SharedPreferencesPlugin.h>)
@@ -129,6 +159,7 @@
 @implementation GeneratedPluginRegistrant
 
 + (void)registerWithRegistry:(NSObject<FlutterPluginRegistry>*)registry {
+  [AudioplayersDarwinPlugin registerWithRegistrar:[registry registrarForPlugin:@"AudioplayersDarwinPlugin"]];
   [CameraPlugin registerWithRegistrar:[registry registrarForPlugin:@"CameraPlugin"]];
   [FLTFirebaseFirestorePlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseFirestorePlugin"]];
   [FLTFirebaseAnalyticsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseAnalyticsPlugin"]];
@@ -138,11 +169,15 @@
   [FLTFirebaseStoragePlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTFirebaseStoragePlugin"]];
   [FlutterLocalNotificationsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FlutterLocalNotificationsPlugin"]];
   [GeolocatorPlugin registerWithRegistrar:[registry registrarForPlugin:@"GeolocatorPlugin"]];
+  [GoogleMlKitCommonsPlugin registerWithRegistrar:[registry registrarForPlugin:@"GoogleMlKitCommonsPlugin"]];
+  [GoogleMlKitFaceDetectionPlugin registerWithRegistrar:[registry registrarForPlugin:@"GoogleMlKitFaceDetectionPlugin"]];
   [FLTGoogleMobileAdsPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTGoogleMobileAdsPlugin"]];
   [FLTGoogleSignInPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTGoogleSignInPlugin"]];
   [FLTImagePickerPlugin registerWithRegistrar:[registry registrarForPlugin:@"FLTImagePickerPlugin"]];
+  [InAppPurchasePlugin registerWithRegistrar:[registry registrarForPlugin:@"InAppPurchasePlugin"]];
   [PathProviderPlugin registerWithRegistrar:[registry registrarForPlugin:@"PathProviderPlugin"]];
   [PermissionHandlerPlugin registerWithRegistrar:[registry registrarForPlugin:@"PermissionHandlerPlugin"]];
+  [RecordIosPlugin registerWithRegistrar:[registry registrarForPlugin:@"RecordIosPlugin"]];
   [SharedPreferencesPlugin registerWithRegistrar:[registry registrarForPlugin:@"SharedPreferencesPlugin"]];
   [SignInWithApplePlugin registerWithRegistrar:[registry registrarForPlugin:@"SignInWithApplePlugin"]];
   [SqflitePlugin registerWithRegistrar:[registry registrarForPlugin:@"SqflitePlugin"]];

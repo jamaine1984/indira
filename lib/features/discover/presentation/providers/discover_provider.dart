@@ -3,6 +3,7 @@ import 'package:indira_love/core/services/database_service.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/services/usage_service.dart';
 import 'package:indira_love/core/services/matches_service.dart';
+import 'package:indira_love/core/services/matching_algorithm_service.dart';
 import 'package:indira_love/features/discover/presentation/widgets/swipe_card.dart';
 
 final discoverProvider = StateNotifierProvider<DiscoverNotifier, DiscoverState>((ref) {
@@ -51,6 +52,7 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
   final AuthService _authService;
   final UsageService _usageService;
   final MatchesService _matchesService;
+  final MatchingAlgorithmService _matchingService = MatchingAlgorithmService();
 
   DiscoverNotifier(
     this._databaseService,
@@ -76,17 +78,33 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       final user = _authService.currentUser;
       if (user == null) return;
 
+      // Get current user's full profile
+      final currentUserDoc = await _databaseService.getUserProfileOnce(user.uid);
+      final currentUserData = {
+        'uid': user.uid,
+        ...currentUserDoc.data() as Map<String, dynamic>,
+      };
+
+      // Get blocked users
+      final blockedUserIds = await _databaseService.getAllBlockedUserIds();
+
       // Get potential matches from Firestore
       final matchesQuery = await _databaseService.getPotentialMatches(user.uid).first;
 
-      // Filter out only current user (allow seeing profiles multiple times)
-      final filteredMatches = matchesQuery.docs
-          .where((doc) => doc.id != user.uid) // Skip only current user
+      // Filter out current user and blocked users
+      var filteredMatches = matchesQuery.docs
+          .where((doc) => doc.id != user.uid && !blockedUserIds.contains(doc.id))
           .map((doc) => {
                 'uid': doc.id,
                 ...doc.data() as Map<String, dynamic>,
               })
           .toList();
+
+      // Apply smart matching algorithm
+      filteredMatches = await _matchingService.getSmartRecommendations(
+        currentUser: currentUserData,
+        allPotentialMatches: filteredMatches,
+      );
 
       state = state.copyWith(
         potentialMatches: filteredMatches,

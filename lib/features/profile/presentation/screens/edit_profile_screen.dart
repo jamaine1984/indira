@@ -26,6 +26,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   bool _isLoading = true;
   bool _isSaving = false;
   String _selectedGender = 'Male';
+  double _height = 170; // Height in cm
+  String _selectedEducation = 'Bachelor\'s';
+  String _selectedReligion = 'Prefer not to say';
 
   @override
   void initState() {
@@ -56,6 +59,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _ageController.text = (data['age'] ?? '').toString();
           _bioController.text = data['bio'] ?? '';
           _selectedGender = data['gender'] ?? 'Male';
+          _height = (data['height'] as num?)?.toDouble() ?? 170.0;
+          _selectedEducation = data['education'] ?? 'Bachelor\'s';
+          _selectedReligion = data['religion'] ?? 'Prefer not to say';
           _photos = (data['photos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
           _isLoading = false;
         });
@@ -129,6 +135,9 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'age': age,
         'gender': _selectedGender,
         'bio': _bioController.text.trim(),
+        'height': _height,
+        'education': _selectedEducation,
+        'religion': _selectedReligion,
         'photos': allPhotos,
         'profileComplete': true,
       });
@@ -386,6 +395,159 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                               if (newValue != null) {
                                 setState(() {
                                   _selectedGender = newValue;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Height Slider
+                      const Text(
+                        'Height',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          children: [
+                            Text(
+                              '${_height.toInt()} cm',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            Slider(
+                              value: _height,
+                              min: 140,
+                              max: 220,
+                              divisions: 80,
+                              activeColor: Colors.white,
+                              inactiveColor: Colors.white.withOpacity(0.3),
+                              onChanged: (value) {
+                                setState(() {
+                                  _height = value;
+                                });
+                              },
+                            ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: const [
+                                Text('140 cm', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                                Text('220 cm', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Education Dropdown
+                      const Text(
+                        'Education',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedEducation,
+                            isExpanded: true,
+                            dropdownColor: AppTheme.secondaryPlum,
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                            items: [
+                              'None',
+                              'High School',
+                              'Associate\'s',
+                              'Bachelor\'s',
+                              'Master\'s',
+                              'PhD',
+                              'Professional',
+                            ].map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedEducation = newValue;
+                                });
+                              }
+                            },
+                          ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Religion Dropdown
+                      const Text(
+                        'Religion',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            value: _selectedReligion,
+                            isExpanded: true,
+                            dropdownColor: AppTheme.secondaryPlum,
+                            style: const TextStyle(color: Colors.white, fontSize: 16),
+                            items: [
+                              'Prefer not to say',
+                              'Christianity',
+                              'Islam',
+                              'Hinduism',
+                              'Buddhism',
+                              'Judaism',
+                              'Atheist',
+                              'Agnostic',
+                              'Spiritual',
+                              'Other',
+                            ].map((String value) {
+                              return DropdownMenuItem<String>(
+                                value: value,
+                                child: Text(value),
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              if (newValue != null) {
+                                setState(() {
+                                  _selectedReligion = newValue;
                                 });
                               }
                             },

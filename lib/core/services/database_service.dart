@@ -304,4 +304,108 @@ class DatabaseService {
       'timestamp': FieldValue.serverTimestamp(),
     });
   }
+
+  // Blocking
+  Future<void> blockUser(String blockedUserId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User must be logged in to block');
+    }
+
+    // Add to blocked_users collection
+    await _firestore.collection('blocked_users').doc('${currentUser.uid}_$blockedUserId').set({
+      'blockerId': currentUser.uid,
+      'blockedUserId': blockedUserId,
+      'timestamp': FieldValue.serverTimestamp(),
+    });
+  }
+
+  Future<void> unblockUser(String blockedUserId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User must be logged in to unblock');
+    }
+
+    // Remove from blocked_users collection
+    await _firestore.collection('blocked_users').doc('${currentUser.uid}_$blockedUserId').delete();
+  }
+
+  Future<bool> isUserBlocked(String userId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return false;
+
+    // Check if current user blocked this user
+    final doc = await _firestore
+        .collection('blocked_users')
+        .doc('${currentUser.uid}_$userId')
+        .get();
+
+    return doc.exists;
+  }
+
+  Future<bool> hasUserBlockedMe(String userId) async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return false;
+
+    // Check if this user blocked current user
+    final doc = await _firestore
+        .collection('blocked_users')
+        .doc('${userId}_${currentUser.uid}')
+        .get();
+
+    return doc.exists;
+  }
+
+  Stream<QuerySnapshot> getBlockedUsers() {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) {
+      throw Exception('User must be logged in');
+    }
+
+    return _firestore
+        .collection('blocked_users')
+        .where('blockerId', isEqualTo: currentUser.uid)
+        .orderBy('timestamp', descending: true)
+        .snapshots();
+  }
+
+  Future<Set<String>> getAllBlockedUserIds() async {
+    final currentUser = _auth.currentUser;
+    if (currentUser == null) return {};
+
+    try {
+      final Set<String> blockedIds = {};
+
+      // Get users I blocked
+      final blockedQuery = await _firestore
+          .collection('blocked_users')
+          .where('blockerId', isEqualTo: currentUser.uid)
+          .get();
+
+      for (var doc in blockedQuery.docs) {
+        final data = doc.data();
+        if (data['blockedUserId'] != null) {
+          blockedIds.add(data['blockedUserId']);
+        }
+      }
+
+      // Get users who blocked me
+      final blockedByQuery = await _firestore
+          .collection('blocked_users')
+          .where('blockedUserId', isEqualTo: currentUser.uid)
+          .get();
+
+      for (var doc in blockedByQuery.docs) {
+        final data = doc.data();
+        if (data['blockerId'] != null) {
+          blockedIds.add(data['blockerId']);
+        }
+      }
+
+      return blockedIds;
+    } catch (e) {
+      print('Error getting blocked user IDs: $e');
+      return {};
+    }
+  }
 }

@@ -7,6 +7,7 @@ import 'package:indira_love/firebase_options.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/routes/app_router.dart';
 import 'package:indira_love/core/services/notification_service.dart';
+import 'package:indira_love/core/services/push_notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,6 +25,9 @@ void main() async {
 
   // Initialize notification service
   await NotificationService().initialize();
+
+  // Initialize push notifications
+  await PushNotificationService().initialize();
 
   runApp(const ProviderScope(child: IndiraLoveApp()));
 }

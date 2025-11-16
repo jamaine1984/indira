@@ -5,6 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
+import 'package:indira_love/features/profile/presentation/widgets/report_dialog.dart';
+import 'package:indira_love/core/services/database_service.dart';
 
 class UserProfileDetailScreen extends ConsumerWidget {
   final String userId;
@@ -283,6 +285,95 @@ class UserProfileDetailScreen extends ConsumerWidget {
                         // Action Buttons
                         Row(
                           children: [
+                            // Report Button
+                            OutlinedButton(
+                              onPressed: () async {
+                                await showReportDialog(
+                                  context,
+                                  userId: userId,
+                                  userName: displayName,
+                                );
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.all(16),
+                                side: const BorderSide(color: Colors.red),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.report,
+                                color: Colors.red,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
+                            // Block Button
+                            OutlinedButton(
+                              onPressed: () async {
+                                final currentUser = FirebaseAuth.instance.currentUser;
+                                if (currentUser == null) return;
+
+                                // Show confirmation dialog
+                                final confirm = await showDialog<bool>(
+                                  context: context,
+                                  builder: (context) => AlertDialog(
+                                    title: const Text('Block User'),
+                                    content: Text('Are you sure you want to block $displayName? You will not see each other anymore.'),
+                                    actions: [
+                                      TextButton(
+                                        onPressed: () => Navigator.of(context).pop(false),
+                                        child: const Text('Cancel'),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () => Navigator.of(context).pop(true),
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        child: const Text('Block'),
+                                      ),
+                                    ],
+                                  ),
+                                );
+
+                                if (confirm == true && context.mounted) {
+                                  try {
+                                    await DatabaseService().blockUser(userId);
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('$displayName has been blocked'),
+                                          backgroundColor: Colors.green,
+                                        ),
+                                      );
+                                      context.pop();
+                                    }
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text('Failed to block user: $e'),
+                                          backgroundColor: Colors.red,
+                                        ),
+                                      );
+                                    }
+                                  }
+                                }
+                              },
+                              style: OutlinedButton.styleFrom(
+                                padding: const EdgeInsets.all(16),
+                                side: const BorderSide(color: Colors.red),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.block,
+                                color: Colors.red,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+
                             Expanded(
                               child: ElevatedButton.icon(
                                 onPressed: () async {

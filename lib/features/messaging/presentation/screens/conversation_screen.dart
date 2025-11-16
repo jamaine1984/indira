@@ -6,6 +6,10 @@ import 'package:indira_love/core/models/gift_model.dart';
 import 'package:indira_love/core/models/subscription_tier.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
+import 'package:cached_network_image/cached_network_image.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -28,13 +32,16 @@ class ConversationScreen extends ConsumerStatefulWidget {
 class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ImagePicker _imagePicker = ImagePicker();
   SubscriptionTier _userTier = SubscriptionTier.free;
   bool _showGiftPicker = false;
+  bool _isUploading = false;
 
   @override
   void initState() {
     super.initState();
     _loadUserTier();
+    _markMessagesAsRead();
   }
 
   Future<void> _loadUserTier() async {
@@ -54,6 +61,94 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   ? SubscriptionTier.gold
                   : SubscriptionTier.free;
         });
+      }
+    }
+  }
+
+  Future<void> _markMessagesAsRead() async {
+    final currentUser = AuthService().currentUser;
+    if (currentUser == null) return;
+
+    try {
+      // Mark all unread messages from the other user as read
+      final messages = await FirebaseFirestore.instance
+          .collection('matches')
+          .doc(widget.matchId)
+          .collection('messages')
+          .where('senderId', isEqualTo: widget.otherUserId)
+          .where('read', isEqualTo: false)
+          .get();
+
+      final batch = FirebaseFirestore.instance.batch();
+      for (var doc in messages.docs) {
+        batch.update(doc.reference, {
+          'read': true,
+          'readAt': FieldValue.serverTimestamp(),
+        });
+      }
+      await batch.commit();
+    } catch (e) {
+      print('Error marking messages as read: $e');
+    }
+  }
+
+  Future<void> _pickAndSendImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1920,
+        maxHeight: 1920,
+        imageQuality: 85,
+      );
+
+      if (image == null) return;
+
+      setState(() => _isUploading = true);
+
+      // Upload image to Firebase Storage
+      final currentUser = AuthService().currentUser;
+      if (currentUser == null) return;
+
+      final storageRef = FirebaseStorage.instance
+          .ref()
+          .child('chat_images')
+          .child(widget.matchId)
+          .child('${DateTime.now().millisecondsSinceEpoch}.jpg');
+
+      final uploadTask = storageRef.putFile(File(image.path));
+      final snapshot = await uploadTask;
+      final downloadUrl = await snapshot.ref.getDownloadURL();
+
+      // Send image message
+      await FirebaseFirestore.instance
+          .collection('matches')
+          .doc(widget.matchId)
+          .collection('messages')
+          .add({
+        'senderId': currentUser.uid,
+        'receiverId': widget.otherUserId,
+        'type': 'image',
+        'imageUrl': downloadUrl,
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+      });
+
+      // Update last message
+      await FirebaseFirestore.instance
+          .collection('matches')
+          .doc(widget.matchId)
+          .update({
+        'lastMessage': '📷 Photo',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+      });
+
+      setState(() => _isUploading = false);
+    } catch (e) {
+      setState(() => _isUploading = false);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send image: $e')),
+        );
       }
     }
   }
@@ -180,47 +275,138 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final currentUser = AuthService().currentUser;
     final isMe = message['senderId'] == currentUser?.uid;
     final messageType = message['type'] ?? 'text';
+    final isRead = message['read'] ?? false;
+
+    Widget messageContent;
+
+    if (messageType == 'image') {
+      messageContent = ClipRRectGestureDetector(
+        borderRadius: BorderRadius.circular(12),
+        onTap: () {
+          // Show full screen image
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (context) => Scaffold(
+                backgroundColor: Colors.black,
+                appBar: AppBar(
+                  backgroundColor: Colors.transparent,
+                  elevation: 0,
+                ),
+                body: Center(
+                  child: InteractiveViewer(
+                    child: CachedNetworkImage(
+                      imageUrl: message['imageUrl'] ?? '',
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        },
+        child: Container(
+          constraints: const BoxConstraints(
+            maxWidth: 250,
+            maxHeight: 300,
+          ),
+          child: CachedNetworkImage(
+            imageUrl: message['imageUrl'] ?? '',
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              height: 200,
+              color: Colors.grey[300],
+              child: const Center(
+                child: CircularProgressIndicator(),
+              ),
+            ),
+            errorWidget: (context, url, error) => Container(
+              height: 200,
+              color: Colors.grey[300],
+              child: const Icon(Icons.error),
+            ),
+          ),
+        ),
+      );
+    } else if (messageType == 'gift') {
+      messageContent = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            message['giftEmoji'] ?? '🎁',
+            style: const TextStyle(fontSize: 32),
+          ),
+          const SizedBox(width: 8),
+          Text(
+            message['giftName'] ?? 'Gift',
+            style: TextStyle(
+              color: isMe ? Colors.white : AppTheme.textCharcoal,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      );
+    } else {
+      messageContent = Text(
+        message['text'] ?? '',
+        style: TextStyle(
+          color: isMe ? Colors.white : AppTheme.textCharcoal,
+          fontSize: 16,
+        ),
+      );
+    }
 
     return Align(
       alignment: isMe ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-        decoration: BoxDecoration(
-          color: isMe ? AppTheme.primaryRose : Colors.grey[200],
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(20),
-            topRight: const Radius.circular(20),
-            bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
-            bottomRight: isMe ? Radius.zero : const Radius.circular(20),
-          ),
-        ),
-        child: messageType == 'gift'
-            ? Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    message['giftEmoji'] ?? '🎁',
-                    style: const TextStyle(fontSize: 32),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    message['giftName'] ?? 'Gift',
-                    style: TextStyle(
-                      color: isMe ? Colors.white : AppTheme.textCharcoal,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              )
-            : Text(
-                message['text'] ?? '',
-                style: TextStyle(
-                  color: isMe ? Colors.white : AppTheme.textCharcoal,
-                  fontSize: 16,
-                ),
+      child: Column(
+        crossAxisAlignment: isMe ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+        children: [
+          Container(
+            margin: const EdgeInsets.only(bottom: 4),
+            padding: messageType == 'image'
+                ? EdgeInsets.zero
+                : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: messageType == 'image'
+                  ? Colors.transparent
+                  : (isMe ? AppTheme.primaryRose : Colors.grey[200]),
+              borderRadius: BorderRadius.only(
+                topLeft: const Radius.circular(20),
+                topRight: const Radius.circular(20),
+                bottomLeft: isMe ? const Radius.circular(20) : Radius.zero,
+                bottomRight: isMe ? Radius.zero : const Radius.circular(20),
               ),
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(messageType == 'image' ? 12 : 0),
+              child: messageContent,
+            ),
+          ),
+          // Read receipt for sent messages
+          if (isMe)
+            Padding(
+              padding: const EdgeInsets.only(right: 8, bottom: 8),
+              child: Icon(
+                isRead ? Icons.done_all : Icons.done,
+                size: 16,
+                color: isRead ? Colors.blue : Colors.grey,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget ClipRRectGestureDetector({
+    required BorderRadius borderRadius,
+    required VoidCallback onTap,
+    required Widget child,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: child,
       ),
     );
   }
@@ -333,6 +519,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       ),
       child: Row(
         children: [
+          // Image Button
+          IconButton(
+            icon: const Icon(Icons.image, color: AppTheme.primaryRose),
+            onPressed: _isUploading ? null : _pickAndSendImage,
+          ),
           // Gift Button
           IconButton(
             icon: const Icon(Icons.card_giftcard, color: AppTheme.primaryRose),
@@ -362,22 +553,34 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          // Send Button
-          GestureDetector(
-            onTap: _sendTextMessage,
-            child: Container(
-              padding: const EdgeInsets.all(12),
-              decoration: const BoxDecoration(
-                color: AppTheme.primaryRose,
-                shape: BoxShape.circle,
-              ),
-              child: const Icon(
-                Icons.send,
-                color: Colors.white,
-                size: 20,
-              ),
-            ),
-          ),
+          // Send Button or Loading
+          _isUploading
+              ? const Padding(
+                  padding: EdgeInsets.all(12),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppTheme.primaryRose,
+                    ),
+                  ),
+                )
+              : GestureDetector(
+                  onTap: _sendTextMessage,
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: const BoxDecoration(
+                      color: AppTheme.primaryRose,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.send,
+                      color: Colors.white,
+                      size: 20,
+                    ),
+                  ),
+                ),
         ],
       ),
     );
