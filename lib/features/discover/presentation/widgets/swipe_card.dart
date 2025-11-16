@@ -280,7 +280,8 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     final displayName = widget.user['displayName'] ?? 'Unknown';
     final age = widget.user['age'] ?? 0;
     final bio = widget.user['bio'] ?? '';
-    final location = widget.user['location'] ?? '';
+    // Location is GeoPoint from Firestore, get city/country string if available
+    final locationString = widget.user['city'] as String? ?? widget.user['country'] as String? ?? '';
     final interests = widget.user['interests'] as List<dynamic>? ?? [];
 
     return Positioned(
@@ -326,8 +327,8 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
             const SizedBox(height: 4),
 
-            // Location
-            if (location.isNotEmpty)
+            // Location (only show if we have a string location)
+            if (locationString.isNotEmpty)
               Row(
                 children: [
                   const Icon(
@@ -337,7 +338,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                   ),
                   const SizedBox(width: 4),
                   Text(
-                    location,
+                    locationString,
                     style: const TextStyle(
                       color: Colors.white70,
                       fontSize: 16,
