@@ -1,0 +1,473 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+import 'package:go_router/go_router.dart';
+import 'package:indira_love/core/theme/app_theme.dart';
+
+class UserProfileDetailScreen extends ConsumerWidget {
+  final String userId;
+
+  const UserProfileDetailScreen({super.key, required this.userId});
+
+  void _showPhotoViewer(BuildContext context, List<dynamic> photos, int initialIndex) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PhotoViewerScreen(
+          photos: photos,
+          initialIndex: initialIndex,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildClickablePhoto(BuildContext context, String photoUrl, List<dynamic> allPhotos, int index) {
+    return GestureDetector(
+      onTap: () => _showPhotoViewer(context, allPhotos, index),
+      child: CachedNetworkImage(
+        imageUrl: photoUrl,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Container(
+          color: Colors.grey[300],
+          child: const Center(
+            child: CircularProgressIndicator(),
+          ),
+        ),
+        errorWidget: (context, url, error) => Container(
+          color: Colors.grey[300],
+          child: const Icon(Icons.error),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Scaffold(
+      body: StreamBuilder<DocumentSnapshot>(
+        stream: FirebaseFirestore.instance.collection('users').doc(userId).snapshots(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Container(
+              decoration: const BoxDecoration(gradient: AppTheme.romanticGradient),
+              child: const Center(
+                child: CircularProgressIndicator(color: Colors.white),
+              ),
+            );
+          }
+
+          if (snapshot.hasError || !snapshot.hasData || !snapshot.data!.exists) {
+            return Container(
+              decoration: const BoxDecoration(gradient: AppTheme.romanticGradient),
+              child: Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(Icons.error_outline, size: 64, color: Colors.white),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'User not found',
+                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    ),
+                    const SizedBox(height: 24),
+                    ElevatedButton(
+                      onPressed: () => context.pop(),
+                      child: const Text('Go Back'),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final userData = snapshot.data!.data() as Map<String, dynamic>;
+          final photos = userData['photos'] as List<dynamic>? ?? [];
+          final displayName = userData['displayName'] ?? 'Unknown';
+          final age = userData['age'] ?? 0;
+          final bio = userData['bio'] ?? '';
+          final location = userData['location'] ?? '';
+          final interests = userData['interests'] as List<dynamic>? ?? [];
+
+          return CustomScrollView(
+            slivers: [
+              // App Bar with back button
+              SliverAppBar(
+                expandedHeight: 400,
+                pinned: true,
+                flexibleSpace: FlexibleSpaceBar(
+                  background: photos.isNotEmpty
+                      ? GestureDetector(
+                          onTap: () => _showPhotoViewer(context, photos, 0),
+                          child: CachedNetworkImage(
+                            imageUrl: photos[0].toString(),
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(
+                              color: AppTheme.secondaryPlum.withOpacity(0.3),
+                              child: const Center(
+                                child: CircularProgressIndicator(color: Colors.white),
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: AppTheme.secondaryPlum.withOpacity(0.3),
+                              child: const Center(
+                                child: Icon(Icons.person, size: 100, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        )
+                      : Container(
+                          color: AppTheme.secondaryPlum.withOpacity(0.3),
+                          child: const Center(
+                            child: Icon(Icons.person, size: 100, color: Colors.white),
+                          ),
+                        ),
+                ),
+              ),
+
+              // Profile Info
+              SliverToBoxAdapter(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(30),
+                      topRight: Radius.circular(30),
+                    ),
+                  ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Name and Age
+                        Row(
+                          children: [
+                            Text(
+                              '$displayName, $age',
+                              style: const TextStyle(
+                                fontSize: 32,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            if (userData['isVerified'] == true)
+                              const Icon(
+                                Icons.verified,
+                                color: AppTheme.primaryRose,
+                                size: 28,
+                              ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        // Location
+                        if (location.isNotEmpty)
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.location_on,
+                                color: Colors.grey,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                location,
+                                style: const TextStyle(
+                                  color: Colors.grey,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                        const SizedBox(height: 24),
+
+                        // Bio Section
+                        if (bio.isNotEmpty) ...[
+                          const Text(
+                            'About',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            bio,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              height: 1.5,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Interests Section
+                        if (interests.isNotEmpty) ...[
+                          const Text(
+                            'Interests',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          Wrap(
+                            spacing: 8,
+                            runSpacing: 8,
+                            children: interests.map((interest) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.primaryRose.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: AppTheme.primaryRose.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Text(
+                                  interest.toString(),
+                                  style: const TextStyle(
+                                    color: AppTheme.primaryRose,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Photos Grid
+                        if (photos.length > 1) ...[
+                          const Text(
+                            'Photos',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              crossAxisSpacing: 8,
+                              mainAxisSpacing: 8,
+                            ),
+                            itemCount: photos.length,
+                            itemBuilder: (context, index) {
+                              return ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: _buildClickablePhoto(
+                                  context,
+                                  photos[index].toString(),
+                                  photos,
+                                  index,
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+
+                        const SizedBox(height: 40),
+
+                        // Action Buttons
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  final currentUser = FirebaseAuth.instance.currentUser;
+                                  if (currentUser == null) return;
+
+                                  // Create or get existing match
+                                  final matchQuery = await FirebaseFirestore.instance
+                                      .collection('matches')
+                                      .where('users', arrayContains: currentUser.uid)
+                                      .get();
+
+                                  String? matchId;
+                                  for (var doc in matchQuery.docs) {
+                                    final users = List<String>.from(doc['users']);
+                                    if (users.contains(userId)) {
+                                      matchId = doc.id;
+                                      break;
+                                    }
+                                  }
+
+                                  // If no match exists, create one
+                                  if (matchId == null) {
+                                    final newMatch = await FirebaseFirestore.instance
+                                        .collection('matches')
+                                        .add({
+                                      'users': [currentUser.uid, userId],
+                                      'timestamp': FieldValue.serverTimestamp(),
+                                      'isActive': true,
+                                    });
+                                    matchId = newMatch.id;
+                                  }
+
+                                  // Navigate to conversation
+                                  if (context.mounted) {
+                                    final userName = displayName.replaceAll(' ', '_');
+                                    final photoParam = photos.isNotEmpty ? '?photo=${Uri.encodeComponent(photos[0].toString())}' : '';
+                                    context.push('/conversation/$matchId/$userId/$userName$photoParam');
+                                  }
+                                },
+                                icon: const Icon(Icons.message),
+                                label: const Text('Message'),
+                                style: ElevatedButton.styleFrom(
+                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  backgroundColor: AppTheme.primaryRose,
+                                  foregroundColor: Colors.white,
+                                  textStyle: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 40),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+}
+
+class PhotoViewerScreen extends StatefulWidget {
+  final List<dynamic> photos;
+  final int initialIndex;
+
+  const PhotoViewerScreen({
+    super.key,
+    required this.photos,
+    required this.initialIndex,
+  });
+
+  @override
+  State<PhotoViewerScreen> createState() => _PhotoViewerScreenState();
+}
+
+class _PhotoViewerScreenState extends State<PhotoViewerScreen> {
+  late PageController _pageController;
+  late int _currentIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    _currentIndex = widget.initialIndex;
+    _pageController = PageController(initialPage: widget.initialIndex);
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Stack(
+        children: [
+          // Photo viewer with zoom and swipe
+          PageView.builder(
+            controller: _pageController,
+            onPageChanged: (index) {
+              setState(() => _currentIndex = index);
+            },
+            itemCount: widget.photos.length,
+            itemBuilder: (context, index) {
+              return InteractiveViewer(
+                minScale: 0.5,
+                maxScale: 4.0,
+                child: Center(
+                  child: CachedNetworkImage(
+                    imageUrl: widget.photos[index].toString(),
+                    fit: BoxFit.contain,
+                    placeholder: (context, url) => const Center(
+                      child: CircularProgressIndicator(color: Colors.white),
+                    ),
+                    errorWidget: (context, url, error) => const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.error_outline, size: 64, color: Colors.white),
+                          SizedBox(height: 16),
+                          Text(
+                            'Failed to load image',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+          ),
+
+          // Top bar with close button and photo counter
+          SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  // Close button
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      shape: BoxShape.circle,
+                    ),
+                    child: IconButton(
+                      icon: const Icon(Icons.close, color: Colors.white, size: 28),
+                      onPressed: () => Navigator.pop(context),
+                    ),
+                  ),
+
+                  // Photo counter
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(
+                      '${_currentIndex + 1} of ${widget.photos.length}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
