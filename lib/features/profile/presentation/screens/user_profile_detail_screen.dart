@@ -88,7 +88,8 @@ class UserProfileDetailScreen extends ConsumerWidget {
           final displayName = userData['displayName'] ?? 'Unknown';
           final age = userData['age'] ?? 0;
           final bio = userData['bio'] ?? '';
-          final location = userData['location'] ?? '';
+          // Location is GeoPoint from Firestore, get city/country string if available
+          final location = userData['city'] as String? ?? userData['country'] as String? ?? '';
           final interests = userData['interests'] as List<dynamic>? ?? [];
 
           return CustomScrollView(
