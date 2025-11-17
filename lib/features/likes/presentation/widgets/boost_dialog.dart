@@ -259,19 +259,25 @@ class BoostDialog extends ConsumerWidget {
     int adsRequired,
     bool isGold,
   ) {
+    print('DEBUG BOOST: _activateBoost called - duration: $duration, adsRequired: $adsRequired, isGold: $isGold');
     Navigator.pop(context); // Close dialog
 
     if (isGold) {
       // Gold users activate boost immediately
+      print('DEBUG BOOST: Gold user, creating boost immediately');
       _createBoost(context, ref, duration, 0);
     } else {
       // Free/Silver users watch ads first
+      print('DEBUG BOOST: Free/Silver user, showing ad dialog');
       showWatchAdsDialog(
         context,
         type: 'boost',
         adsRequired: adsRequired,
         onComplete: () async {
+          print('DEBUG BOOST: Ads completed callback triggered!');
+          print('DEBUG BOOST: Creating boost after watching $adsRequired ads for $duration minutes');
           await _createBoost(context, ref, duration, adsRequired);
+          print('DEBUG BOOST: Boost creation completed');
         },
       );
     }
@@ -283,28 +289,45 @@ class BoostDialog extends ConsumerWidget {
     int duration,
     int adsWatched,
   ) async {
+    print('DEBUG BOOST: _createBoost called - duration: $duration, adsWatched: $adsWatched');
     final user = AuthService().currentUser;
-    if (user == null) return;
+    if (user == null) {
+      print('ERROR BOOST: No current user!');
+      return;
+    }
+
+    print('DEBUG BOOST: User ID: ${user.uid}');
 
     try {
-      await ref.read(boostServiceProvider).createBoost(
+      print('DEBUG BOOST: Calling BoostService.createBoost...');
+      final boostId = await ref.read(boostServiceProvider).createBoost(
             userId: user.uid,
             durationMinutes: duration,
             adsWatched: adsWatched,
           );
+      print('DEBUG BOOST: Boost created with ID: $boostId');
 
       if (context.mounted) {
+        print('DEBUG BOOST: Showing success snackbar');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Profile boosted for ${duration} minutes!'),
+            content: Text('🚀 Profile boosted for $duration minutes!'),
             backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
           ),
         );
       }
 
-      // Refresh active boost
+      // Refresh active boost - this should trigger the timer to appear
+      print('DEBUG BOOST: Invalidating activeBoostProvider to refresh timer');
       ref.invalidate(activeBoostProvider);
+
+      // Force a rebuild of the widget
+      await Future.delayed(const Duration(milliseconds: 100));
+      print('DEBUG BOOST: Boost activation complete!');
     } catch (e) {
+      print('ERROR BOOST: Failed to create boost: $e');
+      print('ERROR BOOST: Stack trace: ${StackTrace.current}');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

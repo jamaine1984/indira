@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/features/admin/services/admin_service.dart';
 import 'package:indira_love/features/admin/presentation/screens/admin_users_screen.dart';
-import 'package:indira_love/features/admin/presentation/screens/admin_reports_screen.dart';
 import 'package:indira_love/features/admin/presentation/screens/admin_analytics_screen.dart';
 
 class AdminDashboardScreen extends ConsumerStatefulWidget {
@@ -25,7 +24,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _checkAdminAccess();
   }
 
@@ -104,8 +103,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
           indicatorColor: AppTheme.primaryRose,
           tabs: const [
             Tab(icon: Icon(Icons.people), text: 'Users'),
-            Tab(icon: Icon(Icons.bar_chart), text: 'Analytics'),
-            Tab(icon: Icon(Icons.report), text: 'Reports'),
+            Tab(icon: Icon(Icons.analytics), text: 'Ad Analytics'),
           ],
         ),
       ),
@@ -114,7 +112,6 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
         children: const [
           AdminUsersScreen(),
           AdminAnalyticsScreen(),
-          AdminReportsScreen(),
         ],
       ),
     );
