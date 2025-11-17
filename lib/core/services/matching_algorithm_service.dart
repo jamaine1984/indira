@@ -27,24 +27,29 @@ class MatchingAlgorithmService {
     }
 
     // 2. Distance proximity (25 points max)
-    final myLocation = currentUser['location'] as GeoPoint?;
-    final theirLocation = potentialMatch['location'] as GeoPoint?;
-    if (myLocation != null && theirLocation != null) {
-      final distance = _locationService.calculateDistance(myLocation, theirLocation);
-      double distanceScore = 0;
-      if (distance < 5) {
-        distanceScore = 25; // Very close
-      } else if (distance < 25) {
-        distanceScore = 20; // Close
-      } else if (distance < 50) {
-        distanceScore = 15; // Moderate
-      } else if (distance < 100) {
-        distanceScore = 10; // Far
-      } else {
-        distanceScore = 5; // Very far
+    try {
+      final myLocation = currentUser['location'] is GeoPoint ? currentUser['location'] as GeoPoint : null;
+      final theirLocation = potentialMatch['location'] is GeoPoint ? potentialMatch['location'] as GeoPoint : null;
+      if (myLocation != null && theirLocation != null) {
+        final distance = _locationService.calculateDistance(myLocation, theirLocation);
+        double distanceScore = 0;
+        if (distance < 5) {
+          distanceScore = 25; // Very close
+        } else if (distance < 25) {
+          distanceScore = 20; // Close
+        } else if (distance < 50) {
+          distanceScore = 15; // Moderate
+        } else if (distance < 100) {
+          distanceScore = 10; // Far
+        } else {
+          distanceScore = 5; // Very far
+        }
+        totalScore += distanceScore;
+        factors++;
       }
-      totalScore += distanceScore;
-      factors++;
+    } catch (e) {
+      // Skip distance scoring if location data is invalid
+      print('Warning: Could not calculate distance score: $e');
     }
 
     // 3. Age compatibility (15 points max)
@@ -159,7 +164,7 @@ class MatchingAlgorithmService {
     final educationPreference = preferences['educationPreference'] as List<dynamic>?;
     final religionPreference = preferences['religionPreference'] as List<dynamic>?;
 
-    final currentUserLocation = currentUser['location'] as GeoPoint?;
+    final currentUserLocation = currentUser['location'] is GeoPoint ? currentUser['location'] as GeoPoint : null;
 
     return potentialMatches.where((match) {
       // Age filter
@@ -168,13 +173,18 @@ class MatchingAlgorithmService {
 
       // Distance filter
       if (currentUserLocation != null) {
-        final matchLocation = match['location'] as GeoPoint?;
-        if (matchLocation != null) {
-          final distance = _locationService.calculateDistance(
-            currentUserLocation,
-            matchLocation,
-          );
-          if (distance > maxDistance) return false;
+        try {
+          final matchLocation = match['location'] is GeoPoint ? match['location'] as GeoPoint : null;
+          if (matchLocation != null) {
+            final distance = _locationService.calculateDistance(
+              currentUserLocation,
+              matchLocation,
+            );
+            if (distance > maxDistance) return false;
+          }
+        } catch (e) {
+          // Skip distance filter if location data is invalid
+          print('Warning: Could not filter by distance: $e');
         }
       }
 
@@ -241,11 +251,16 @@ class MatchingAlgorithmService {
     Map<String, dynamic> user1,
     Map<String, dynamic> user2,
   ) {
-    final location1 = user1['location'] as GeoPoint?;
-    final location2 = user2['location'] as GeoPoint?;
+    try {
+      final location1 = user1['location'] is GeoPoint ? user1['location'] as GeoPoint : null;
+      final location2 = user2['location'] is GeoPoint ? user2['location'] as GeoPoint : null;
 
-    if (location1 == null || location2 == null) return null;
+      if (location1 == null || location2 == null) return null;
 
-    return _locationService.calculateDistance(location1, location2);
+      return _locationService.calculateDistance(location1, location2);
+    } catch (e) {
+      print('Warning: Could not calculate distance between users: $e');
+      return null;
+    }
   }
 }

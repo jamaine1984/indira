@@ -78,28 +78,70 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     final dragDistance = _dragCurrentX - _dragStartX;
     const swipeThreshold = 150.0; // Increased from 100 to make swipe harder
 
-    setState(() {
-      _isDragging = false;
-    });
+    print('DEBUG: Pan ended, drag distance: $dragDistance, threshold: $swipeThreshold');
 
     if (dragDistance.abs() > swipeThreshold) {
       final direction = dragDistance > 0 ? SwipeDirection.right : SwipeDirection.left;
-      widget.onSwipe(direction);
+      print('DEBUG: Swipe detected! Direction: $direction');
+
+      // Animate card off screen
+      _animateCardOffScreen(direction).then((_) {
+        print('DEBUG: Animation complete, calling onSwipe callback');
+        widget.onSwipe(direction);
+      });
     } else {
       // Return to center
+      print('DEBUG: Swipe too short, returning to center');
       setState(() {
+        _isDragging = false;
         _dragCurrentX = _dragStartX;
       });
     }
   }
 
+  Future<void> _animateCardOffScreen(SwipeDirection direction) async {
+    print('DEBUG: Starting off-screen animation for direction: $direction');
+    final screenWidth = MediaQuery.of(context).size.width;
+    final endX = direction == SwipeDirection.right ? screenWidth * 2 : -screenWidth * 2;
+
+    setState(() {
+      _isDragging = false;
+    });
+
+    _rotationAnimation = Tween<double>(
+      begin: _rotation,
+      end: direction == SwipeDirection.right ? 0.3 : -0.3,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _positionAnimation = Tween<Offset>(
+      begin: _position,
+      end: Offset(endX, 0),
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+
+    _animationController.reset();
+    await _animationController.forward();
+    print('DEBUG: Off-screen animation completed');
+  }
+
   double get _rotation {
+    if (_animationController.isAnimating) {
+      return _rotationAnimation.value;
+    }
     if (!_isDragging || !widget.isActive) return 0;
     final dragDistance = _dragCurrentX - _dragStartX;
     return dragDistance * 0.0005; // Reduced from 0.001 for slower rotation
   }
 
   Offset get _position {
+    if (_animationController.isAnimating) {
+      return _positionAnimation.value;
+    }
     if (!_isDragging || !widget.isActive) return Offset.zero;
     final dragDistance = _dragCurrentX - _dragStartX;
     return Offset(dragDistance * 0.3, 0); // Reduced from 0.5 for slower movement
@@ -109,16 +151,19 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   Widget build(BuildContext context) {
     final screenSize = MediaQuery.of(context).size;
 
-    return GestureDetector(
-      onTap: widget.isActive && widget.onTap != null ? widget.onTap : null,
-      onPanStart: _onPanStart,
-      onPanUpdate: _onPanUpdate,
-      onPanEnd: _onPanEnd,
-      child: Transform.translate(
-        offset: _position,
-        child: Transform.rotate(
-          angle: _rotation,
-          child: Container(
+    return AnimatedBuilder(
+      animation: _animationController,
+      builder: (context, child) {
+        return GestureDetector(
+          onTap: widget.isActive && widget.onTap != null ? widget.onTap : null,
+          onPanStart: _onPanStart,
+          onPanUpdate: _onPanUpdate,
+          onPanEnd: _onPanEnd,
+          child: Transform.translate(
+            offset: _position,
+            child: Transform.rotate(
+              angle: _rotation,
+              child: Container(
             width: screenSize.width,
             height: screenSize.height,
             decoration: BoxDecoration(
@@ -162,9 +207,11 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                 ],
               ),
             ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

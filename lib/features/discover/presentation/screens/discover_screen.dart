@@ -8,6 +8,7 @@ import 'package:indira_love/core/services/location_service.dart';
 import 'package:indira_love/features/discover/presentation/widgets/swipe_card.dart';
 import 'package:indira_love/features/discover/presentation/providers/discover_provider.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
+import 'package:indira_love/features/likes/presentation/widgets/boost_timer_widget.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -105,6 +106,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             ),
           ),
 
+          // Boost timer widget
+          const BoostTimerWidget(),
+
           // Swipe cards area - 90% of remaining screen
           Expanded(
             child: discoverState.isLoading
@@ -120,9 +124,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ? _buildEmptyState()
                     : discoverState.potentialMatches.isNotEmpty
                         ? SwipeCard(
+                            key: ValueKey(discoverState.potentialMatches.first['uid']),
                             user: discoverState.potentialMatches.first,
                             isActive: true,
                             onSwipe: (direction) {
+                              print('DEBUG: onSwipe callback triggered for user: ${discoverState.potentialMatches.first['uid']}');
                               ref.read(discoverProvider.notifier).handleSwipe(
                                     direction,
                                     discoverState.potentialMatches.first['uid'],
@@ -182,6 +188,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       title: 'Discover',
                       onTap: () {
                         Navigator.pop(context);
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.thumb_up,
+                      title: 'Likes',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/likes');
                       },
                     ),
                     _buildMenuItem(

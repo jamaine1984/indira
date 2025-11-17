@@ -264,6 +264,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         },
                       ),
 
+                      _buildProfileOption(
+                        context,
+                        'Developer Settings',
+                        Icons.developer_mode,
+                        () {
+                          _showDeveloperSettings(context);
+                        },
+                      ),
+
                       const SizedBox(height: 32),
 
                       // Sign Out Button
@@ -363,6 +372,52 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showDeveloperSettings(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.developer_mode, color: AppTheme.primaryRose),
+            SizedBox(width: 8),
+            Text('Developer Settings'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Development Tools',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ListTile(
+              leading: const Icon(Icons.admin_panel_settings, color: AppTheme.primaryRose),
+              title: const Text('Admin Panel'),
+              subtitle: const Text('Access admin dashboard'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/admin');
+              },
+            ),
+            const Divider(),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

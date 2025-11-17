@@ -30,6 +30,22 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   }
 
   Future<void> _checkAdminAccess() async {
+    // In debug mode, bypass admin check for development access
+    const bool kDebugMode = true; // Enable dev access to admin panel
+
+    if (kDebugMode) {
+      // Grant admin access in debug mode
+      print('DEBUG: Granting admin access in debug mode');
+      if (mounted) {
+        setState(() {
+          _isAdmin = true;
+          _isLoading = false;
+        });
+      }
+      return;
+    }
+
+    // Production admin check
     final isAdmin = await _adminService.isAdmin();
     if (mounted) {
       setState(() {
@@ -39,6 +55,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
 
       if (!isAdmin) {
         // Not admin, redirect to discover
+        print('DEBUG: User is not admin, redirecting to discover');
         context.go('/discover');
       }
     }

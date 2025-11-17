@@ -110,12 +110,14 @@ class DatabaseService {
   Future<void> likeUser(String likerId, String likedId) async {
     final batch = _firestore.batch();
 
-    // Add like
+    // Add like with correct field names for likes page
     final likeRef = _firestore.collection('likes').doc('${likerId}_$likedId');
     batch.set(likeRef, {
       'likerId': likerId,
-      'likedId': likedId,
+      'likedUserId': likedId, // Changed from 'likedId' to match likes service
       'timestamp': FieldValue.serverTimestamp(),
+      'isRevealed': false, // For blur feature
+      'isMutualMatch': false, // Will be updated if match occurs
     });
 
     // Check for mutual like (match)
@@ -124,11 +126,16 @@ class DatabaseService {
     final mutualLikeDoc = await mutualLikeRef.get();
 
     if (mutualLikeDoc.exists) {
+      // Update both likes to mark as mutual match
+      batch.update(likeRef, {'isMutualMatch': true});
+      batch.update(mutualLikeRef, {'isMutualMatch': true});
+
       // Create match
       final matchRef = _firestore.collection('matches').doc();
       batch.set(matchRef, {
         'users': [likerId, likedId],
         'timestamp': FieldValue.serverTimestamp(),
+        'lastMessageTime': FieldValue.serverTimestamp(),
         'isActive': true,
       });
 

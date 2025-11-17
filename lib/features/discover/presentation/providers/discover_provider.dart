@@ -75,8 +75,18 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
     state = state.copyWith(isLoading: true, error: null);
 
     try {
+      print('════════════════════════════════════════════════════════');
+      print('DEBUG: Starting loadPotentialMatches()');
+      print('════════════════════════════════════════════════════════');
+
       final user = _authService.currentUser;
-      if (user == null) return;
+      if (user == null) {
+        print('ERROR: No authenticated user found!');
+        return;
+      }
+
+      print('DEBUG: Current user ID: ${user.uid}');
+      print('DEBUG: Current user email: ${user.email}');
 
       // Get current user's full profile
       final currentUserDoc = await _databaseService.getUserProfileOnce(user.uid);
@@ -84,17 +94,32 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         'uid': user.uid,
         ...currentUserDoc.data() as Map<String, dynamic>,
       };
+      print('DEBUG: Current user profile loaded');
+      print('DEBUG: User has location: ${currentUserData['location'] != null}');
+      print('DEBUG: User interests: ${currentUserData['interests']?.length ?? 0}');
 
       // Get blocked users (but don't fail if this errors)
       Set<String> blockedUserIds = {};
       try {
         blockedUserIds = await _databaseService.getAllBlockedUserIds();
+        print('DEBUG: Blocked users count: ${blockedUserIds.length}');
+        if (blockedUserIds.isNotEmpty) {
+          print('DEBUG: Blocked user IDs: $blockedUserIds');
+        }
       } catch (e) {
         print('Warning: Could not get blocked users: $e');
       }
 
       // Get potential matches from Firestore
+      print('DEBUG: Fetching potential matches from Firestore...');
       final matchesQuery = await _databaseService.getPotentialMatches(user.uid).first;
+      print('DEBUG: Total documents from Firestore: ${matchesQuery.docs.length}');
+
+      // Log all user IDs from Firestore
+      print('DEBUG: All user IDs in Firestore:');
+      for (var doc in matchesQuery.docs) {
+        print('  - ${doc.id} (${(doc.data() as Map<String, dynamic>)['displayName'] ?? 'No name'})');
+      }
 
       // Filter out ONLY current user and blocked users (show all other users)
       var filteredMatches = matchesQuery.docs
@@ -102,6 +127,13 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
             final docId = doc.id;
             final isCurrentUser = docId == user.uid;
             final isBlocked = blockedUserIds.contains(docId);
+
+            if (isCurrentUser) {
+              print('DEBUG: Filtering out current user: $docId');
+            }
+            if (isBlocked) {
+              print('DEBUG: Filtering out blocked user: $docId');
+            }
 
             // Only filter out current user and blocked users
             return !isCurrentUser && !isBlocked;
@@ -112,18 +144,52 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
               })
           .toList();
 
+      print('DEBUG: After basic filtering: ${filteredMatches.length} users');
+      print('DEBUG: Filtered user IDs:');
+      for (var match in filteredMatches) {
+        print('  - ${match['uid']} (${match['displayName'] ?? 'No name'})');
+      }
+
+      // Get all users current user has already interacted with (swiped or liked)
+      print('DEBUG: Fetching interaction history...');
+      final interactedUserIds = await _databaseService.getAllInteractedUserIds(user.uid);
+      print('DEBUG: Already interacted with ${interactedUserIds.length} users');
+      if (interactedUserIds.isNotEmpty && interactedUserIds.length <= 10) {
+        print('DEBUG: Interacted user IDs: $interactedUserIds');
+      }
+
+      // Filter out already-interacted users
+      filteredMatches = filteredMatches.where((match) {
+        final hasInteracted = interactedUserIds.contains(match['uid']);
+        if (hasInteracted) {
+          print('DEBUG: Filtering out already-interacted user: ${match['uid']} (${match['displayName'] ?? 'No name'})');
+        }
+        return !hasInteracted;
+      }).toList();
+
+      print('DEBUG: After interaction filtering: ${filteredMatches.length} users');
+
+      // RANDOMIZE THE ORDER - Critical to prevent always showing same users in same order
+      print('DEBUG: Randomizing user order...');
+      filteredMatches.shuffle();
+
       // Try smart matching, but don't fail if it errors
+      final beforeSmartMatching = filteredMatches.length;
       try {
+        print('DEBUG: Running smart matching algorithm...');
         filteredMatches = await _matchingService.getSmartRecommendations(
           currentUser: currentUserData,
           allPotentialMatches: filteredMatches,
         );
+        print('DEBUG: Smart matching complete: ${filteredMatches.length} users (was $beforeSmartMatching)');
       } catch (e) {
         print('Warning: Smart matching failed, using basic list: $e');
+        print('Warning: Stack trace: ${StackTrace.current}');
         // Keep filteredMatches as is
       }
 
       // Calculate and add compatibility score to each match if not already present
+      print('DEBUG: Calculating compatibility scores...');
       for (var match in filteredMatches) {
         if (match['compatibilityScore'] == null) {
           final score = _matchingService.calculateCompatibilityScore(
@@ -131,17 +197,21 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
             potentialMatch: match,
           );
           match['compatibilityScore'] = score;
+          print('DEBUG: ${match['displayName'] ?? match['uid']}: ${score}% match');
         }
       }
 
-      print('Loaded ${filteredMatches.length} potential matches');
+      print('════════════════════════════════════════════════════════');
+      print('DEBUG: FINAL RESULT: ${filteredMatches.length} potential matches loaded');
+      print('════════════════════════════════════════════════════════');
 
       state = state.copyWith(
         potentialMatches: filteredMatches,
         isLoading: false,
       );
     } catch (e) {
-      print('Error loading potential matches: $e');
+      print('ERROR: loadPotentialMatches failed: $e');
+      print('ERROR: Stack trace: ${StackTrace.current}');
       state = state.copyWith(
         isLoading: false,
         error: e.toString(),
@@ -159,8 +229,25 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
     print('DEBUG: handleSwipe called - direction: $direction, targetUserId: $targetUserId');
 
     try {
+      // CRITICAL: Remove user from list FIRST before any async operations
+      // This ensures UI updates immediately
+      print('DEBUG: Current matches before removal: ${state.potentialMatches.length}');
+      print('DEBUG: Removing user: $targetUserId');
+      final updatedMatches = List<Map<String, dynamic>>.from(state.potentialMatches);
+      updatedMatches.removeWhere((match) => match['uid'] == targetUserId);
+      print('DEBUG: Removed user from list. Remaining: ${updatedMatches.length}');
+
+      if (updatedMatches.isNotEmpty) {
+        print('DEBUG: Next user will be: ${updatedMatches.first['uid']} (${updatedMatches.first['displayName']})');
+      }
+
+      // Update state IMMEDIATELY - this will force UI to show next user
+      state = state.copyWith(potentialMatches: updatedMatches);
+      print('DEBUG: State updated with ${state.potentialMatches.length} matches');
+
+      // Now handle the like/pass logic asynchronously in background
       if (direction == SwipeDirection.right) {
-        print('DEBUG: Processing right swipe (like)');
+        print('DEBUG: Processing right swipe (like) in background');
 
         // Check if user can send a like
         final canLike = await _usageService.canSendLike(user.uid);
@@ -207,17 +294,17 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         direction == SwipeDirection.right ? 'right' : 'left',
       );
 
-      // Remove the swiped user from the list
-      final updatedMatches = List<Map<String, dynamic>>.from(state.potentialMatches);
-      updatedMatches.removeWhere((match) => match['uid'] == targetUserId);
-      print('DEBUG: Removed user from list. Remaining: ${updatedMatches.length}');
+      // If we have less than 3 matches, load more (or reload if empty)
+      if (updatedMatches.length < 3) {
+        print('DEBUG: Low on matches (${updatedMatches.length} remaining), reloading...');
+        await loadPotentialMatches();
 
-      state = state.copyWith(potentialMatches: updatedMatches);
-
-      // If we have less than 5 matches, load more
-      if (updatedMatches.length < 5) {
-        print('DEBUG: Loading more matches (less than 5 remaining)');
-        loadPotentialMatches();
+        // If still no matches after loading, it means all users have been swiped
+        // In this case, reload ALL users again in a different order
+        if (state.potentialMatches.isEmpty) {
+          print('DEBUG: All users swiped! Reloading all users in new order...');
+          await _reloadAllUsers();
+        }
       }
 
       // Log the action
@@ -262,5 +349,92 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
 
   void clearError() {
     state = state.copyWith(error: null);
+  }
+
+  /// Reload all users without filtering by swipe history (for when all users have been swiped)
+  Future<void> _reloadAllUsers() async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final user = _authService.currentUser;
+      if (user == null) return;
+
+      print('════════════════════════════════════════════════════════');
+      print('DEBUG: RELOADING ALL USERS (ignoring swipe history)');
+      print('════════════════════════════════════════════════════════');
+
+      // Get current user's full profile
+      final currentUserDoc = await _databaseService.getUserProfileOnce(user.uid);
+      final currentUserData = {
+        'uid': user.uid,
+        ...currentUserDoc.data() as Map<String, dynamic>,
+      };
+
+      // Get blocked users (still respect blocks)
+      Set<String> blockedUserIds = {};
+      try {
+        blockedUserIds = await _databaseService.getAllBlockedUserIds();
+        print('DEBUG: Blocked users count: ${blockedUserIds.length}');
+      } catch (e) {
+        print('Warning: Could not get blocked users: $e');
+      }
+
+      // Get potential matches from Firestore
+      print('DEBUG: Fetching all users from Firestore...');
+      final matchesQuery = await _databaseService.getPotentialMatches(user.uid).first;
+      print('DEBUG: Total documents from Firestore: ${matchesQuery.docs.length}');
+
+      // Filter out ONLY current user and blocked users (IGNORE swipe history)
+      var filteredMatches = matchesQuery.docs
+          .where((doc) {
+            final docId = doc.id;
+            final isCurrentUser = docId == user.uid;
+            final isBlocked = blockedUserIds.contains(docId);
+            return !isCurrentUser && !isBlocked;
+          })
+          .map((doc) => {
+                'uid': doc.id,
+                ...doc.data() as Map<String, dynamic>,
+              })
+          .toList();
+
+      print('DEBUG: After basic filtering: ${filteredMatches.length} users');
+
+      // RANDOMIZE THE ORDER - Show users in completely different order
+      print('DEBUG: Randomizing user order...');
+      filteredMatches.shuffle();
+
+      // Calculate compatibility scores
+      print('DEBUG: Calculating compatibility scores...');
+      for (var match in filteredMatches) {
+        try {
+          final score = _matchingService.calculateCompatibilityScore(
+            currentUser: currentUserData,
+            potentialMatch: match,
+          );
+          match['compatibilityScore'] = score;
+          print('DEBUG: ${match['displayName'] ?? match['uid']}: ${score}% match');
+        } catch (e) {
+          print('Warning: Could not calculate score for ${match['uid']}: $e');
+          match['compatibilityScore'] = 50; // Default score
+        }
+      }
+
+      print('════════════════════════════════════════════════════════');
+      print('DEBUG: RELOAD COMPLETE: ${filteredMatches.length} users loaded');
+      print('════════════════════════════════════════════════════════');
+
+      state = state.copyWith(
+        potentialMatches: filteredMatches,
+        isLoading: false,
+      );
+    } catch (e) {
+      print('ERROR: _reloadAllUsers failed: $e');
+      print('ERROR: Stack trace: ${StackTrace.current}');
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
+    }
   }
 }
