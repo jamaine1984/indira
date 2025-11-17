@@ -198,12 +198,8 @@ class MatchesScreen extends ConsumerWidget {
 
         return GestureDetector(
           onTap: () {
-            context.push('/conversation/$matchId', extra: {
-              'matchId': matchId,
-              'otherUserId': otherUserId,
-              'otherUserName': displayName,
-              'otherUserPhoto': photoUrl,
-            });
+            // Navigate to user profile instead of conversation
+            context.push('/user-profile/$otherUserId');
           },
           child: Container(
             decoration: BoxDecoration(

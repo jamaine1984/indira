@@ -73,8 +73,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Text(
                       'Profile',
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
@@ -82,12 +89,13 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const Spacer(),
                     IconButton(
                       onPressed: () {
-                        // Navigate to settings
+                        context.push('/edit-profile');
                       },
                       icon: const Icon(
-                        Icons.settings,
+                        Icons.edit,
                         color: Colors.white,
                       ),
                     ),

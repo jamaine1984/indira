@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'dart:io';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 
@@ -14,11 +17,54 @@ class SocialScreen extends ConsumerStatefulWidget {
 
 class _SocialScreenState extends ConsumerState<SocialScreen> {
   final TextEditingController _postController = TextEditingController();
+  final ImagePicker _imagePicker = ImagePicker();
+  String? _selectedImagePath;
 
   @override
   void dispose() {
     _postController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    try {
+      final XFile? image = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 85,
+      );
+
+      if (image != null) {
+        setState(() {
+          _selectedImagePath = image.path;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to pick image: $e')),
+        );
+      }
+    }
+  }
+
+  Future<String?> _uploadImage(String imagePath) async {
+    try {
+      final currentUser = AuthService().currentUser;
+      if (currentUser == null) return null;
+
+      final fileName = '${currentUser.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final storageRef = FirebaseStorage.instance.ref().child('social_posts/$fileName');
+
+      final uploadTask = await storageRef.putFile(File(imagePath));
+      final downloadUrl = await uploadTask.ref.getDownloadURL();
+
+      return downloadUrl;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
   }
 
   @override
@@ -67,6 +113,9 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                   child: StreamBuilder<QuerySnapshot>(
                     stream: FirebaseFirestore.instance
                         .collection('social_posts')
+                        .where('timestamp', isGreaterThan: Timestamp.fromDate(
+                          DateTime.now().subtract(const Duration(days: 30)),
+                        ))
                         .orderBy('timestamp', descending: true)
                         .limit(50)
                         .snapshots(),
@@ -135,30 +184,88 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   void _showCreatePostDialog(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Create Post'),
-        content: TextField(
-          controller: _postController,
-          decoration: const InputDecoration(
-            hintText: 'Share your thoughts...',
-            border: OutlineInputBorder(),
-          ),
-          maxLines: 5,
-          maxLength: 500,
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => _createPost(context),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppTheme.primaryRose,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          title: const Text('Create Post'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: _postController,
+                  decoration: const InputDecoration(
+                    hintText: 'Share your thoughts...',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 5,
+                  maxLength: 500,
+                ),
+                const SizedBox(height: 16),
+                // Image preview
+                if (_selectedImagePath != null)
+                  Stack(
+                    children: [
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(8),
+                        child: Image.file(
+                          File(_selectedImagePath!),
+                          height: 200,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      Positioned(
+                        top: 8,
+                        right: 8,
+                        child: IconButton(
+                          onPressed: () {
+                            setDialogState(() {
+                              _selectedImagePath = null;
+                            });
+                            setState(() {
+                              _selectedImagePath = null;
+                            });
+                          },
+                          icon: const Icon(Icons.close),
+                          style: IconButton.styleFrom(
+                            backgroundColor: Colors.white,
+                            foregroundColor: Colors.black,
+                          ),
+                        ),
+                      ),
+                    ],
+                  )
+                else
+                  OutlinedButton.icon(
+                    onPressed: () async {
+                      await _pickImage();
+                      setDialogState(() {});
+                    },
+                    icon: const Icon(Icons.image),
+                    label: const Text('Add Image'),
+                  ),
+              ],
             ),
-            child: const Text('Post'),
           ),
-        ],
+          actions: [
+            TextButton(
+              onPressed: () {
+                setState(() {
+                  _selectedImagePath = null;
+                });
+                Navigator.pop(context);
+              },
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () => _createPost(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppTheme.primaryRose,
+              ),
+              child: const Text('Post'),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -168,19 +275,46 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     if (currentUser == null) return;
 
     final content = _postController.text.trim();
-    if (content.isEmpty) return;
+    if (content.isEmpty && _selectedImagePath == null) return;
+
+    // Show loading indicator
+    if (context.mounted) {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
     try {
+      String? imageUrl;
+
+      // Upload image if selected
+      if (_selectedImagePath != null) {
+        imageUrl = await _uploadImage(_selectedImagePath!);
+      }
+
+      // Create post with or without image
       await FirebaseFirestore.instance.collection('social_posts').add({
         'userId': currentUser.uid,
         'content': content,
+        'imageUrl': imageUrl,
         'timestamp': FieldValue.serverTimestamp(),
         'likes': [],
         'comments': [],
       });
 
       _postController.clear();
+      setState(() {
+        _selectedImagePath = null;
+      });
+
       if (context.mounted) {
+        // Close loading dialog
+        Navigator.pop(context);
+        // Close create post dialog
         Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -191,6 +325,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
       }
     } catch (e) {
       if (context.mounted) {
+        // Close loading dialog
+        Navigator.pop(context);
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Failed to create post: $e')),
         );
@@ -202,6 +338,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     final postData = postDoc.data() as Map<String, dynamic>;
     final userId = postData['userId'] as String? ?? '';
     final content = postData['content'] as String? ?? '';
+    final imageUrl = postData['imageUrl'] as String?;
     final timestamp = (postData['timestamp'] as Timestamp?)?.toDate();
     final likes = List<String>.from(postData['likes'] ?? []);
     final currentUser = AuthService().currentUser;
@@ -280,13 +417,39 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
               const SizedBox(height: 12),
 
               // Post Content
-              Text(
-                content,
-                style: const TextStyle(
-                  fontSize: 14,
-                  height: 1.4,
+              if (content.isNotEmpty)
+                Text(
+                  content,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.4,
+                  ),
                 ),
-              ),
+
+              // Post Image
+              if (imageUrl != null) ...[
+                if (content.isNotEmpty) const SizedBox(height: 12),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: CachedNetworkImage(
+                    imageUrl: imageUrl,
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    placeholder: (context, url) => Container(
+                      height: 200,
+                      color: Colors.grey[300],
+                      child: const Center(
+                        child: CircularProgressIndicator(),
+                      ),
+                    ),
+                    errorWidget: (context, url, error) => Container(
+                      height: 200,
+                      color: Colors.grey[300],
+                      child: const Icon(Icons.error),
+                    ),
+                  ),
+                ),
+              ],
 
               const SizedBox(height: 12),
 

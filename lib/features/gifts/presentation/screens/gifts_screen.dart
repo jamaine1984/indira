@@ -269,10 +269,10 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
 
   void _sendGift(BuildContext context, GiftModel gift) {
     if (_userTier == SubscriptionTier.gold) {
-      // Gold tier - send gift directly
+      // Gold tier - save gift to inventory directly
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${gift.emoji} ${gift.name} sent!'),
+          content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -285,7 +285,7 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
         onComplete: () {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${gift.emoji} ${gift.name} sent!'),
+              content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
               backgroundColor: Colors.green,
             ),
           );

@@ -123,6 +123,17 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         // Keep filteredMatches as is
       }
 
+      // Calculate and add compatibility score to each match if not already present
+      for (var match in filteredMatches) {
+        if (match['compatibilityScore'] == null) {
+          final score = _matchingService.calculateCompatibilityScore(
+            currentUser: currentUserData,
+            potentialMatch: match,
+          );
+          match['compatibilityScore'] = score;
+        }
+      }
+
       print('Loaded ${filteredMatches.length} potential matches');
 
       state = state.copyWith(
@@ -140,38 +151,56 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
 
   Future<void> handleSwipe(SwipeDirection direction, String targetUserId) async {
     final user = _authService.currentUser;
-    if (user == null) return;
+    if (user == null) {
+      print('ERROR: No authenticated user found for swipe');
+      return;
+    }
+
+    print('DEBUG: handleSwipe called - direction: $direction, targetUserId: $targetUserId');
 
     try {
       if (direction == SwipeDirection.right) {
+        print('DEBUG: Processing right swipe (like)');
+
         // Check if user can send a like
         final canLike = await _usageService.canSendLike(user.uid);
+        print('DEBUG: Can send like: $canLike');
 
         if (!canLike) {
+          print('DEBUG: Like limit reached, showing dialog');
           state = state.copyWith(showLimitDialog: true);
           return;
         }
 
         // User liked - increment usage
+        print('DEBUG: Incrementing like count');
         await _usageService.incrementLikeCount(user.uid);
 
         // Create like in database (allow multiple likes to same person)
+        print('DEBUG: Creating like in database');
         await _databaseService.likeUser(user.uid, targetUserId);
 
         // Check if it's a mutual match
+        print('DEBUG: Checking for mutual match');
         final isMatch = await _matchesService.checkAndCreateMatch(user.uid, targetUserId);
+        print('DEBUG: Is match: $isMatch');
 
         if (isMatch) {
           // Show match notification
+          print('DEBUG: Mutual match found!');
           state = state.copyWith(error: '🎉 It\'s a Match!');
         }
 
         // Update remaining likes
         final remaining = await _usageService.getRemainingLikes(user.uid);
+        print('DEBUG: Remaining likes: $remaining');
         state = state.copyWith(remainingLikes: remaining);
+      } else {
+        print('DEBUG: Processing left swipe (pass)');
       }
 
       // Record the swipe for analytics (both left and right)
+      print('DEBUG: Recording swipe in database');
       await _databaseService.recordSwipe(
         user.uid,
         targetUserId,
@@ -181,11 +210,13 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       // Remove the swiped user from the list
       final updatedMatches = List<Map<String, dynamic>>.from(state.potentialMatches);
       updatedMatches.removeWhere((match) => match['uid'] == targetUserId);
+      print('DEBUG: Removed user from list. Remaining: ${updatedMatches.length}');
 
       state = state.copyWith(potentialMatches: updatedMatches);
 
       // If we have less than 5 matches, load more
       if (updatedMatches.length < 5) {
+        print('DEBUG: Loading more matches (less than 5 remaining)');
         loadPotentialMatches();
       }
 
@@ -198,7 +229,11 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
           'targetUserId': targetUserId,
         },
       );
+
+      print('DEBUG: Swipe handling completed successfully');
     } catch (e) {
+      print('ERROR: Swipe handling failed: $e');
+      print('ERROR Stack trace: ${StackTrace.current}');
       state = state.copyWith(error: e.toString());
     }
   }

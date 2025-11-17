@@ -159,9 +159,6 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
                   // Profile Info
                   _buildProfileInfo(),
-
-                  // Action Buttons Overlay (only for active card)
-                  if (widget.isActive) _buildActionOverlay(),
                 ],
               ),
             ),
@@ -283,6 +280,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     // Location is GeoPoint from Firestore, get city/country string if available
     final locationString = widget.user['city'] as String? ?? widget.user['country'] as String? ?? '';
     final interests = widget.user['interests'] as List<dynamic>? ?? [];
+    final compatibilityScore = widget.user['compatibilityScore'] as double?;
 
     return Positioned(
       bottom: 0,
@@ -304,6 +302,49 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Match percentage badge (if available)
+            if (compatibilityScore != null)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 12),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppTheme.primaryRose,
+                        AppTheme.secondaryPlum,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(20),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppTheme.primaryRose.withOpacity(0.5),
+                        blurRadius: 8,
+                        spreadRadius: 2,
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(
+                        Icons.favorite,
+                        color: Colors.white,
+                        size: 16,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${compatibilityScore.round()}% Match',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             // Name and Age
             Row(
               children: [
@@ -388,24 +429,6 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
                 }).toList(),
               ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActionOverlay() {
-    return Positioned(
-      top: 16,
-      right: 16,
-      child: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.5),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.more_vert,
-          color: Colors.white,
         ),
       ),
     );

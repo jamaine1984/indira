@@ -254,7 +254,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       title: 'Settings',
                       onTap: () {
                         Navigator.pop(context);
-                        // TODO: Navigate to settings
+                        context.push('/profile');
                       },
                     ),
                     _buildMenuItem(
