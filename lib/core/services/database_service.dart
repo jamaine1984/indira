@@ -109,10 +109,12 @@ class DatabaseService {
 
   // Likes and Matches
   Future<void> likeUser(String likerId, String likedId) async {
+    print('DEBUG LIKE: Creating like from $likerId to $likedId');
     final batch = _firestore.batch();
 
     // Add like with correct field names for likes page
     final likeRef = _firestore.collection('likes').doc('${likerId}_$likedId');
+    print('DEBUG LIKE: Setting like document with ID: ${likerId}_$likedId');
     batch.set(likeRef, {
       'likerId': likerId,
       'likedUserId': likedId, // Changed from 'likedId' to match likes service
@@ -120,6 +122,7 @@ class DatabaseService {
       'isRevealed': false, // For blur feature
       'isMutualMatch': false, // Will be updated if match occurs
     });
+    print('DEBUG LIKE: Like document prepared with fields: likerId=$likerId, likedUserId=$likedId');
 
     // Check for mutual like (match)
     final mutualLikeRef =
@@ -145,6 +148,7 @@ class DatabaseService {
     }
 
     await batch.commit();
+    print('DEBUG LIKE: Batch committed successfully! Like should now be in Firestore');
   }
 
   Future<void> _sendMatchNotification(String userId, String matchedUserId) async {

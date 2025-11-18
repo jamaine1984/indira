@@ -6,14 +6,22 @@ class LikesService {
 
   /// Get all likes sent by current user
   Stream<List<LikeModel>> getLikesSent(String userId) {
+    print('DEBUG LIKES SERVICE: Getting likes sent by user: $userId');
     return _firestore
         .collection('likes')
         .where('likerId', isEqualTo: userId)
         .orderBy('timestamp', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => LikeModel.fromFirestore(doc))
-            .toList());
+        .map((snapshot) {
+          print('DEBUG LIKES SERVICE: Found ${snapshot.docs.length} likes sent by user $userId');
+          for (var doc in snapshot.docs) {
+            final data = doc.data();
+            print('DEBUG LIKES SERVICE: Like doc ${doc.id}: likerId=${data['likerId']}, likedUserId=${data['likedUserId']}');
+          }
+          return snapshot.docs
+              .map((doc) => LikeModel.fromFirestore(doc))
+              .toList();
+        });
   }
 
   /// Get all likes received by current user (who liked you)
