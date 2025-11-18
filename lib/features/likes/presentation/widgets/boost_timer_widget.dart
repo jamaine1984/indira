@@ -52,22 +52,25 @@ class _BoostTimerWidgetState extends ConsumerState<BoostTimerWidget> {
   Widget _buildActivateBoostButton() {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: ElevatedButton.icon(
-        onPressed: () => showBoostDialog(context, ref),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.white,
-          foregroundColor: AppTheme.primaryRose,
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(30),
+      child: Center(
+        child: ElevatedButton.icon(
+          onPressed: () => showBoostDialog(context, ref),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: AppTheme.primaryRose,
+            foregroundColor: Colors.white,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(30),
+            ),
+            elevation: 4,
           ),
-        ),
-        icon: const Icon(Icons.rocket_launch, size: 20),
-        label: const Text(
-          'Boost Profile',
-          style: TextStyle(
-            fontSize: 14,
-            fontWeight: FontWeight.bold,
+          icon: const Icon(Icons.rocket_launch, size: 24),
+          label: const Text(
+            'Boost Your Profile',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ),
@@ -79,27 +82,28 @@ class _BoostTimerWidgetState extends ConsumerState<BoostTimerWidget> {
     final seconds = remaining.inSeconds % 60;
     final timeString = '${minutes}m ${seconds}s';
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppTheme.primaryRose,
-            AppTheme.secondaryPlum,
+    return Center(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              AppTheme.primaryRose,
+              AppTheme.secondaryPlum,
+            ],
+          ),
+          borderRadius: BorderRadius.circular(30),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.primaryRose.withOpacity(0.5),
+              blurRadius: 8,
+              spreadRadius: 2,
+            ),
           ],
         ),
-        borderRadius: BorderRadius.circular(30),
-        boxShadow: [
-          BoxShadow(
-            color: AppTheme.primaryRose.withOpacity(0.5),
-            blurRadius: 8,
-            spreadRadius: 2,
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
             Icons.rocket_launch,
@@ -142,6 +146,7 @@ class _BoostTimerWidgetState extends ConsumerState<BoostTimerWidget> {
             ),
           ),
         ],
+      ),
       ),
     );
   }

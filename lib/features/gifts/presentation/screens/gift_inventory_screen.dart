@@ -33,8 +33,8 @@ class GiftInventoryScreen extends ConsumerWidget {
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('user_gifts')
-            .where('receiverId', isEqualTo: currentUser.uid)
-            .orderBy('timestamp', descending: true)
+            .where('userId', isEqualTo: currentUser.uid)
+            .orderBy('obtainedAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -87,19 +87,16 @@ class GiftInventoryScreen extends ConsumerWidget {
               final giftId = gift['giftId'] as String? ?? '';
               final giftName = gift['giftName'] as String? ?? 'Gift';
               final giftEmoji = gift['giftEmoji'] as String? ?? '🎁';
-              final senderId = gift['senderId'] as String? ?? '';
-              final timestamp = (gift['timestamp'] as Timestamp?)?.toDate();
+              final obtainedVia = gift['obtainedVia'] as String? ?? 'unknown';
+              final obtainedAt = (gift['obtainedAt'] as Timestamp?)?.toDate();
 
-              return FutureBuilder<DocumentSnapshot>(
-                future: FirebaseFirestore.instance
-                    .collection('users')
-                    .doc(senderId)
-                    .get(),
-                builder: (context, userSnapshot) {
-                  String senderName = 'Someone';
-                  if (userSnapshot.hasData && userSnapshot.data != null) {
-                    final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
-                    senderName = userData?['displayName'] as String? ?? 'Someone';
+              return Builder(
+                builder: (context) {
+                  String obtainedFrom = 'Obtained';
+                  if (obtainedVia == 'ad_reward') {
+                    obtainedFrom = 'Earned by watching ad';
+                  } else if (obtainedVia == 'gold_subscription') {
+                    obtainedFrom = 'Gold subscription benefit';
                   }
 
                   return Card(
@@ -136,16 +133,16 @@ class GiftInventoryScreen extends ConsumerWidget {
                         children: [
                           const SizedBox(height: 4),
                           Text(
-                            'From: $senderName',
+                            obtainedFrom,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[700],
                             ),
                           ),
-                          if (timestamp != null) ...[
+                          if (obtainedAt != null) ...[
                             const SizedBox(height: 2),
                             Text(
-                              _formatTimestamp(timestamp),
+                              _formatTimestamp(obtainedAt),
                               style: TextStyle(
                                 fontSize: 12,
                                 color: Colors.grey[500],
