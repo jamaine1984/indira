@@ -229,6 +229,15 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
     print('DEBUG: handleSwipe called - direction: $direction, targetUserId: $targetUserId');
 
     try {
+      // PRELOAD CHECK: If we have 3 or fewer matches, preload more BEFORE removing
+      // This prevents showing "no more matches" screen during processing
+      print('DEBUG: Current matches count: ${state.potentialMatches.length}');
+      if (state.potentialMatches.length <= 3) {
+        print('DEBUG: Low on matches (${state.potentialMatches.length}), preloading more users...');
+        await loadPotentialMatches();
+        print('DEBUG: Preload complete. Now have ${state.potentialMatches.length} matches');
+      }
+
       // CRITICAL: Remove user from list FIRST before any async operations
       // This ensures UI updates immediately
       print('DEBUG: Current matches before removal: ${state.potentialMatches.length}');
@@ -293,19 +302,6 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         targetUserId,
         direction == SwipeDirection.right ? 'right' : 'left',
       );
-
-      // If we have less than 3 matches, load more (or reload if empty)
-      if (updatedMatches.length < 3) {
-        print('DEBUG: Low on matches (${updatedMatches.length} remaining), reloading...');
-        await loadPotentialMatches();
-
-        // If still no matches after loading, it means all users have been swiped
-        // In this case, reload ALL users again in a different order
-        if (state.potentialMatches.isEmpty) {
-          print('DEBUG: All users swiped! Reloading all users in new order...');
-          await _reloadAllUsers();
-        }
-      }
 
       // Log the action
       await _databaseService.logUserAction(
