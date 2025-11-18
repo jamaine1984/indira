@@ -46,8 +46,9 @@ class DatabaseService {
 
       for (var doc in likesQuery.docs) {
         final data = doc.data();
-        if (data['likedId'] != null) {
-          interactedIds.add(data['likedId']);
+        // FIXED: Changed from 'likedId' to 'likedUserId' to match new field name
+        if (data['likedUserId'] != null) {
+          interactedIds.add(data['likedUserId']);
         }
       }
 

@@ -150,24 +150,10 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         print('  - ${match['uid']} (${match['displayName'] ?? 'No name'})');
       }
 
-      // Get all users current user has already interacted with (swiped or liked)
-      print('DEBUG: Fetching interaction history...');
-      final interactedUserIds = await _databaseService.getAllInteractedUserIds(user.uid);
-      print('DEBUG: Already interacted with ${interactedUserIds.length} users');
-      if (interactedUserIds.isNotEmpty && interactedUserIds.length <= 10) {
-        print('DEBUG: Interacted user IDs: $interactedUserIds');
-      }
-
-      // Filter out already-interacted users
-      filteredMatches = filteredMatches.where((match) {
-        final hasInteracted = interactedUserIds.contains(match['uid']);
-        if (hasInteracted) {
-          print('DEBUG: Filtering out already-interacted user: ${match['uid']} (${match['displayName'] ?? 'No name'})');
-        }
-        return !hasInteracted;
-      }).toList();
-
-      print('DEBUG: After interaction filtering: ${filteredMatches.length} users');
+      // REMOVED interaction filtering - We want to show ALL users and recycle when done
+      // This allows users to see everyone multiple times if they swipe through everyone
+      print('DEBUG: Skipping interaction filtering - showing all ${filteredMatches.length} users');
+      print('DEBUG: Cards will recycle when all users have been swiped');
 
       // RANDOMIZE THE ORDER - Critical to prevent always showing same users in same order
       print('DEBUG: Randomizing user order...');
@@ -229,13 +215,19 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
     print('DEBUG: handleSwipe called - direction: $direction, targetUserId: $targetUserId');
 
     try {
-      // PRELOAD CHECK: If we have 3 or fewer matches, preload more BEFORE removing
-      // This prevents showing "no more matches" screen during processing
+      // CHECK: If we're on the last user, reload all users for continuous swiping
       print('DEBUG: Current matches count: ${state.potentialMatches.length}');
-      if (state.potentialMatches.length <= 3) {
-        print('DEBUG: Low on matches (${state.potentialMatches.length}), preloading more users...');
+      if (state.potentialMatches.length <= 1) {
+        print('DEBUG: On last user! Reloading all users for continuous swiping...');
         await loadPotentialMatches();
-        print('DEBUG: Preload complete. Now have ${state.potentialMatches.length} matches');
+
+        // After reload, make sure we don't remove the current user from the new batch
+        // This ensures seamless transition
+        final reloadedMatches = List<Map<String, dynamic>>.from(state.potentialMatches);
+        if (reloadedMatches.any((match) => match['uid'] == targetUserId)) {
+          print('DEBUG: Current user found in reloaded batch, will be removed');
+        }
+        print('DEBUG: Reload complete. Now have ${state.potentialMatches.length} matches');
       }
 
       // CRITICAL: Remove user from list FIRST before any async operations
