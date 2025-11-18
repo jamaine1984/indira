@@ -17,7 +17,9 @@ import 'package:indira_love/features/profile/presentation/screens/privacy_screen
 import 'package:indira_love/features/subscription/presentation/screens/subscription_screen.dart';
 import 'package:indira_love/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:indira_love/features/verification/presentation/screens/selfie_verification_screen.dart';
+import 'package:indira_love/features/verification/presentation/screens/id_verification_screen.dart';
 import 'package:indira_love/features/likes/presentation/screens/likes_screen.dart';
+import 'package:indira_love/features/profile/presentation/screens/developer_settings_screen.dart';
 
 class AppRouter {
   static final GoRouter router = GoRouter(
@@ -119,6 +121,16 @@ class AppRouter {
       GoRoute(
         path: '/verification',
         builder: (context, state) => const SelfieVerificationScreen(),
+      ),
+      GoRoute(
+        path: '/id-verification',
+        builder: (context, state) => const IdVerificationScreen(),
+      ),
+
+      // Developer Settings
+      GoRoute(
+        path: '/developer-settings',
+        builder: (context, state) => const DeveloperSettingsScreen(),
       ),
     ],
   );

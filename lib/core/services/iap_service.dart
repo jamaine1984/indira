@@ -5,6 +5,7 @@ import 'package:in_app_purchase_android/in_app_purchase_android.dart';
 import 'package:in_app_purchase_storekit/in_app_purchase_storekit.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'logger_service.dart';
 
 class IAPService {
   static final IAPService _instance = IAPService._internal();
@@ -41,7 +42,7 @@ class IAPService {
     _isAvailable = await _iap.isAvailable();
 
     if (!_isAvailable) {
-      print('In-app purchases not available');
+      logger.warning('In-app purchases not available');
       return;
     }
 

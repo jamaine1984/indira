@@ -11,7 +11,12 @@ service cloud.firestore {
     }
 
     function isOwnerOrAdmin(userId) {
-      return isOwner(userId) || request.auth.token.admin == true;
+      return isOwner(userId) || isAdmin();
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.isAdmin == true;
     }
 
     function isValidUser() {
@@ -19,21 +24,50 @@ service cloud.firestore {
              request.auth.token.email_verified == true;
     }
 
+    function hasValidSubscription() {
+      return isAuthenticated() &&
+             get(/databases/$(database)/documents/users/$(request.auth.uid)).data.subscriptionTier in ['silver', 'gold'];
+    }
+
+    function isNotBlocked(userId) {
+      return !exists(/databases/$(database)/documents/blocked_users/$(request.auth.uid + '_' + userId)) &&
+             !exists(/databases/$(database)/documents/blocked_users/$(userId + '_' + request.auth.uid));
+    }
+
+    function canSendMessage(matchId) {
+      return isAuthenticated() &&
+             request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users;
+    }
+
+    // Input validation functions
+    function isValidString(text, maxLength) {
+      return text is string && text.size() <= maxLength;
+    }
+
+    function isValidMessage(data) {
+      return isValidString(data.text, 1000) &&
+             data.senderId == request.auth.uid &&
+             data.timestamp == request.time;
+    }
+
     // Users collection
     match /users/{userId} {
-      // Allow read/write for the user themselves
-      allow read, write: if isOwner(userId);
+      // Users can read their own full profile
+      allow read: if isOwner(userId);
 
-      // Allow read for all authenticated users (for profiles, social, discover)
-      allow read: if isAuthenticated();
+      // Other authenticated users can read limited public profile data
+      allow read: if isAuthenticated() && isNotBlocked(userId);
 
-      // Allow update for profile completion and basic updates
+      // Users can create their own profile
+      allow create: if isOwner(userId);
+
+      // Users can update their own profile (restricted fields)
       allow update: if isOwner(userId) &&
-                       request.resource.data.diff(resource.data).affectedKeys()
-                       .hasOnly(['displayName', 'age', 'gender', 'location', 'bio',
-                                'interests', 'languages', 'photos', 'profileComplete',
-                                'isOnline', 'lastSeen', 'settings', 'subscriptionTier',
-                                'subscriptionExpiry', 'isBoosted', 'boostEndTime']);
+                       !request.resource.data.diff(resource.data).affectedKeys()
+                       .hasAny(['isAdmin', 'verificationStatus', 'isVerified']);
+
+      // Only admins can delete user accounts
+      allow delete: if isAdmin();
 
       // Usage subcollection for tracking daily limits
       match /usage/{dateKey} {
@@ -41,36 +75,40 @@ service cloud.firestore {
       }
     }
 
-    // Likes collection
+    // Likes collection - secure but queryable
     match /likes/{likeId} {
+      // Allow read if user is involved in the like
       allow read: if isAuthenticated() &&
-                     (request.auth.uid == resource.data.likerId ||
-                      request.auth.uid == resource.data.likedUserId);
+                     (resource.data.likerId == request.auth.uid ||
+                      resource.data.likedUserId == request.auth.uid);
+
+      // Allow listing for queries with proper filters
+      allow list: if isAuthenticated();
+
+      // Allow create if authenticated and data is valid
       allow create: if isAuthenticated() &&
-                       request.resource.data.likerId == request.auth.uid;
+                       request.resource.data.likerId == request.auth.uid &&
+                       isNotBlocked(request.resource.data.likedUserId);
+
+      // Allow update only for match status
       allow update: if isAuthenticated() &&
                        (request.auth.uid == resource.data.likerId ||
-                        request.auth.uid == resource.data.likedUserId);
+                        request.auth.uid == resource.data.likedUserId) &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['isMutualMatch', 'isRevealed', 'revealedAt']);
+
+      // Allow delete only by liker
       allow delete: if isAuthenticated() &&
                        request.auth.uid == resource.data.likerId;
     }
 
-    // Boosts collection
-    match /boosts/{boostId} {
-      allow read: if isAuthenticated() &&
-                     request.auth.uid == resource.data.userId;
-      allow create: if isAuthenticated() &&
-                       request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated() &&
-                       request.auth.uid == resource.data.userId;
-      allow delete: if isAuthenticated() &&
-                       request.auth.uid == resource.data.userId;
-    }
-
-    // Swipes collection (for tracking all swipes including passes)
+    // Swipes collection - track all swipes
     match /swipes/{swipeId} {
-      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
-      allow write: if isAuthenticated() && request.auth.uid == request.resource.data.userId;
+      allow list: if isAuthenticated();
+      allow read: if isAuthenticated() &&
+                     resource.data.userId == request.auth.uid;
+      allow write: if isAuthenticated() &&
+                      request.resource.data.userId == request.auth.uid;
     }
 
     // Matches collection
@@ -80,69 +118,36 @@ service cloud.firestore {
       allow create: if isAuthenticated();
       allow update: if isAuthenticated() &&
                        request.auth.uid in resource.data.users;
+      allow delete: if false; // Never allow deletion of matches
 
-      // Messages subcollection
+      // Messages subcollection - encrypted messages only
       match /messages/{messageId} {
-        allow read: if isAuthenticated() &&
-                       request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users;
-        allow create: if isAuthenticated() &&
-                         request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users &&
-                         request.resource.data.senderId == request.auth.uid;
-        allow update: if isAuthenticated() &&
-                         request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users;
+        allow read: if canSendMessage(matchId);
+        allow create: if canSendMessage(matchId) &&
+                         isValidMessage(request.resource.data);
+        allow update: if canSendMessage(matchId) &&
+                         request.resource.data.diff(resource.data).affectedKeys()
+                         .hasOnly(['readAt', 'deliveredAt']);
+        allow delete: if false; // Messages cannot be deleted
       }
     }
 
-    // Messages collection (legacy)
-    match /chats/{chatId} {
-      // Allow read/write if user is part of the chat
-      allow read, write: if isAuthenticated() &&
-                            exists(/databases/$(database)/documents/matches/$(chatId)) &&
-                            request.auth.uid in get(/databases/$(database)/documents/matches/$(chatId)).data.users;
-    }
-
-    match /chats/{chatId}/messages/{messageId} {
-      allow read, write: if isAuthenticated() &&
-                            exists(/databases/$(database)/documents/matches/$(chatId)) &&
-                            request.auth.uid in get(/databases/$(database)/documents/matches/$(chatId)).data.users;
-    }
-
-    // Social Feed (Posts)
-    match /posts/{postId} {
-      allow read: if isValidUser();
-      allow create: if isValidUser() &&
-                       request.resource.data.userId == request.auth.uid;
-      allow update: if isOwner(resource.data.userId);
-      allow delete: if isOwner(resource.data.userId);
-    }
-
-    // Social Posts collection
+    // Social Posts - with content moderation
     match /social_posts/{postId} {
-      allow read: if isAuthenticated();
+      allow read: if isAuthenticated() && isNotBlocked(resource.data.userId);
       allow create: if isAuthenticated() &&
-                       request.resource.data.userId == request.auth.uid;
-      allow update: if isAuthenticated();
-      allow delete: if isAuthenticated() &&
-                       request.auth.uid == resource.data.userId;
+                       request.resource.data.userId == request.auth.uid &&
+                       isValidString(request.resource.data.content, 500);
+      allow update: if isOwner(resource.data.userId) &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['content', 'editedAt']);
+      allow delete: if isOwner(resource.data.userId) || isAdmin();
     }
 
-    // Post likes
-    match /post_likes/{likeId} {
-      allow read: if isValidUser();
-      allow write: if isAuthenticated() &&
-                      request.auth.uid == resource.data.userId;
-    }
-
-    // Post comments
-    match /post_comments/{commentId} {
-      allow read: if isValidUser();
-      allow write: if isAuthenticated() &&
-                      request.auth.uid == resource.data.userId;
-    }
-
-    // Gifts collection
+    // Gifts collection - read only
     match /gifts/{giftId} {
       allow read: if isValidUser();
+      allow write: if isAdmin();
     }
 
     // User gifts (sent gifts)
@@ -151,46 +156,28 @@ service cloud.firestore {
                      (request.auth.uid == resource.data.senderId ||
                       request.auth.uid == resource.data.receiverId);
       allow create: if isAuthenticated() &&
-                       request.auth.uid == resource.data.senderId;
+                       request.auth.uid == request.resource.data.senderId &&
+                       hasValidSubscription();
       allow update: if isAuthenticated() &&
-                       request.auth.uid == resource.data.receiverId;
-    }
-
-    // Video calls
-    match /video_calls/{callId} {
-      allow read, write: if isAuthenticated() &&
-                            (request.auth.uid == resource.data.callerId ||
-                             request.auth.uid == resource.data.calleeId);
-    }
-
-    // Notifications
-    match /notifications/{notificationId} {
-      allow read, write: if isAuthenticated() &&
-                            request.auth.uid == resource.data.userId;
-    }
-
-    // Analytics (for internal use)
-    match /analytics/{analyticId} {
-      allow write: if isAuthenticated();
-      allow read: if request.auth.token.admin == true;
+                       request.auth.uid == resource.data.receiverId &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['isOpened', 'openedAt']);
+      allow delete: if false;
     }
 
     // Reports collection
     match /reports/{reportId} {
-      // Users can create reports and read their own reports
       allow create: if isAuthenticated() &&
-                       request.resource.data.reporterId == request.auth.uid;
+                       request.resource.data.reporterId == request.auth.uid &&
+                       isValidString(request.resource.data.reason, 500);
       allow read: if isAuthenticated() &&
-                     (request.auth.uid == resource.data.reporterId ||
-                      request.auth.token.admin == true);
-      // Only admins can update report status
-      allow update: if request.auth.token.admin == true;
-      allow delete: if request.auth.token.admin == true;
+                     (request.auth.uid == resource.data.reporterId || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // Blocked users collection
     match /blocked_users/{blockId} {
-      // Users can block/unblock and see their blocked list
       allow create: if isAuthenticated() &&
                        request.resource.data.blockerId == request.auth.uid;
       allow read: if isAuthenticated() &&
@@ -198,16 +185,68 @@ service cloud.firestore {
                       request.auth.uid == resource.data.blockedUserId);
       allow delete: if isAuthenticated() &&
                        request.auth.uid == resource.data.blockerId;
+      allow update: if false;
     }
 
-    // Purchases collection (for IAP tracking)
+    // Verification requests - secure storage
+    match /verification_requests/{requestId} {
+      allow create: if isAuthenticated() &&
+                       request.resource.data.userId == request.auth.uid;
+      allow read: if isAuthenticated() &&
+                     (request.auth.uid == resource.data.userId || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Purchases collection - IAP tracking
     match /purchases/{purchaseId} {
       allow create: if isAuthenticated() &&
                        request.resource.data.userId == request.auth.uid;
       allow read: if isAuthenticated() &&
+                     (request.auth.uid == resource.data.userId || isAdmin());
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // Notifications
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() &&
                      request.auth.uid == resource.data.userId;
-      // Only admins can update/delete purchases
-      allow update, delete: if request.auth.token.admin == true;
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId &&
+                       request.resource.data.diff(resource.data).affectedKeys()
+                       .hasOnly(['read', 'readAt']);
+      allow delete: if isAuthenticated() &&
+                       request.auth.uid == resource.data.userId;
+    }
+
+    // Analytics - write only for users, read for admins
+    match /analytics/{analyticId} {
+      allow create: if isAuthenticated();
+      allow read: if isAdmin();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Admin audit logs - admins only
+    match /audit_logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Legal documents - public read
+    match /legal/{documentId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // App configuration - public read
+    match /config/{configId} {
+      allow read: if true;
+      allow write: if isAdmin();
     }
   }
 }

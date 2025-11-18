@@ -177,4 +177,71 @@ class VerificationService {
           (doc) => doc.data()?['verificationStatus'] as String? ?? 'none',
         );
   }
+
+  // Submit full verification with ID documents
+  Future<bool> submitFullVerification({
+    required File selfie,
+    required File idFront,
+    File? idBack,
+    required String verificationType,
+  }) async {
+    try {
+      final user = _auth.currentUser;
+      if (user == null) return false;
+
+      // Upload all documents
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+
+      // Upload selfie
+      final selfieRef = _storage.ref().child(
+        'verification/${user.uid}/selfie_$timestamp.jpg',
+      );
+      await selfieRef.putFile(selfie);
+      final selfieUrl = await selfieRef.getDownloadURL();
+
+      // Upload ID front
+      final idFrontRef = _storage.ref().child(
+        'verification/${user.uid}/id_front_$timestamp.jpg',
+      );
+      await idFrontRef.putFile(idFront);
+      final idFrontUrl = await idFrontRef.getDownloadURL();
+
+      // Upload ID back if provided
+      String? idBackUrl;
+      if (idBack != null) {
+        final idBackRef = _storage.ref().child(
+          'verification/${user.uid}/id_back_$timestamp.jpg',
+        );
+        await idBackRef.putFile(idBack);
+        idBackUrl = await idBackRef.getDownloadURL();
+      }
+
+      // Create verification request
+      await _firestore.collection('verification_requests').add({
+        'userId': user.uid,
+        'verificationType': verificationType,
+        'selfieUrl': selfieUrl,
+        'idFrontUrl': idFrontUrl,
+        'idBackUrl': idBackUrl,
+        'status': 'pending',
+        'submittedAt': FieldValue.serverTimestamp(),
+        'metadata': {
+          'deviceInfo': 'Flutter App',
+          'appVersion': '1.0.0',
+        },
+      });
+
+      // Update user document
+      await _firestore.collection('users').doc(user.uid).update({
+        'verificationStatus': 'pending',
+        'verificationSubmittedAt': FieldValue.serverTimestamp(),
+        'verificationType': verificationType,
+      });
+
+      return true;
+    } catch (e) {
+      print('Error submitting full verification: $e');
+      return false;
+    }
+  }
 }

@@ -267,28 +267,75 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
     }
   }
 
-  void _sendGift(BuildContext context, GiftModel gift) {
+  Future<void> _sendGift(BuildContext context, GiftModel gift) async {
+    final user = AuthService().currentUser;
+    if (user == null) return;
+
     if (_userTier == SubscriptionTier.gold) {
       // Gold tier - save gift to inventory directly
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-    } else {
-      // Free or Silver tier - watch ad first
-      showWatchAdsDialog(
-        context,
-        type: 'gift',
-        adsRequired: 1,
-        onComplete: () {
+      try {
+        await FirebaseFirestore.instance.collection('user_gifts').add({
+          'userId': user.uid,
+          'giftId': gift.id,
+          'giftName': gift.name,
+          'giftEmoji': gift.emoji,
+          'obtainedAt': FieldValue.serverTimestamp(),
+          'obtainedVia': 'gold_subscription',
+        });
+
+        if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
               backgroundColor: Colors.green,
             ),
           );
+        }
+      } catch (e) {
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to save gift: $e'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      }
+    } else {
+      // Free or Silver tier - watch ad first
+      showWatchAdsDialog(
+        context,
+        type: 'gift',
+        adsRequired: 1,
+        onComplete: () async {
+          try {
+            await FirebaseFirestore.instance.collection('user_gifts').add({
+              'userId': user.uid,
+              'giftId': gift.id,
+              'giftName': gift.name,
+              'giftEmoji': gift.emoji,
+              'obtainedAt': FieldValue.serverTimestamp(),
+              'obtainedVia': 'ad_reward',
+            });
+
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } catch (e) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Failed to save gift: $e'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            }
+          }
         },
       );
     }

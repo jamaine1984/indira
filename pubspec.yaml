@@ -18,6 +18,7 @@ dependencies:
   firebase_storage: ^11.6.10
   firebase_messaging: ^14.7.10
   firebase_analytics: ^10.8.10
+  firebase_crashlytics: ^3.4.9
 
   # Video Calling - Commented out temporarily to build APK
   # zego_uikit_prebuilt_call: 4.14.3
@@ -70,6 +71,13 @@ dependencies:
   # Audio recording for voice messages
   record: ^6.0.0
   audioplayers: ^6.0.0
+
+  # Security & Encryption
+  encrypt: ^5.0.3
+  crypto: ^3.0.3
+
+  # HTTP Client
+  http: ^1.1.0
 
   # Development
   flutter_dotenv: ^5.1.0

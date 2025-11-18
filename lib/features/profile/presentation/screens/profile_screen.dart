@@ -269,7 +269,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         'Developer Settings',
                         Icons.developer_mode,
                         () {
-                          _showDeveloperSettings(context);
+                          context.push('/developer-settings');
                         },
                       ),
 
