@@ -3,6 +3,10 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 
+// Import optimization modules
+const matchingOptimized = require('./matchingOptimized');
+const notificationBatching = require('./notificationBatching');
+
 // Cloud Firestore triggers
 exports.onLikeCreated = functions.firestore
   .document('likes/{likeId}')
@@ -236,3 +240,17 @@ exports.sendGift = functions.https.onCall(async (data, context) => {
 
   return { success: true, giftId: giftRef.id };
 });
+
+// ========== SCALABILITY OPTIMIZATION EXPORTS ==========
+
+// Server-side matching optimization functions
+exports.calculateMatchScore = matchingOptimized.calculateMatchScore;
+exports.batchCalculateMatches = matchingOptimized.batchCalculateMatches;
+exports.dailyMatchScoreUpdate = matchingOptimized.dailyMatchScoreUpdate;
+exports.cleanupExpiredScores = matchingOptimized.cleanupExpiredScores;
+
+// Notification batching functions
+exports.queueNotification = notificationBatching.queueNotification;
+exports.processBatchedNotifications = notificationBatching.processBatchedNotifications;
+exports.cleanupProcessedNotifications = notificationBatching.cleanupProcessedNotifications;
+exports.sendImmediateNotification = notificationBatching.sendImmediateNotification;
