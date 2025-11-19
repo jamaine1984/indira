@@ -47,6 +47,7 @@ app.*.map.json
 .env
 .env.local
 .env.*.local
+.env.production
 
 # Firebase
 google-services.json
@@ -54,6 +55,13 @@ GoogleService-Info.plist
 service-account-key.json
 firebase-debug.log
 firebaserc
+
+# Android Signing Keys (CRITICAL - NEVER COMMIT THESE!)
+*.jks
+*.keystore
+key.properties
+android/key.properties
+android/app/key.properties
 
 # Node modules (for Firebase functions)
 node_modules/
