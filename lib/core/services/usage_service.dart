@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:indira_love/core/models/subscription_tier.dart';
 
 class UsageService {
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   // Check if user can send a message

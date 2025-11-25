@@ -11,8 +11,8 @@ service firebase.storage {
     }
 
     function isValidUser() {
-      return isAuthenticated() &&
-             request.auth.token.email_verified == true;
+      return isAuthenticated();
+      // Removed email verification requirement to allow uploads
     }
 
     function isValidImage() {

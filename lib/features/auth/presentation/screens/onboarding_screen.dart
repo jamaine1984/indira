@@ -22,9 +22,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   final _ageController = TextEditingController();
   final _bioController = TextEditingController();
-  final _locationController = TextEditingController();
+  String _selectedCountry = '';
   String _gender = '';
+  String _lookingFor = ''; // Gender preference for matching
   final List<String> _interests = [];
+
+  // Popular countries list
+  final List<String> _countries = [
+    'United States', 'Canada', 'United Kingdom', 'Australia', 'Germany',
+    'France', 'Spain', 'Italy', 'Netherlands', 'Belgium', 'Switzerland',
+    'Austria', 'Sweden', 'Norway', 'Denmark', 'Finland', 'Ireland',
+    'Poland', 'Czech Republic', 'Portugal', 'Greece', 'Japan', 'South Korea',
+    'Singapore', 'New Zealand', 'Brazil', 'Mexico', 'Argentina', 'Chile',
+    'India', 'Philippines', 'Thailand', 'Vietnam', 'Indonesia', 'Malaysia',
+    'United Arab Emirates', 'Saudi Arabia', 'Israel', 'Turkey', 'Russia',
+    'Ukraine', 'Romania', 'Hungary', 'Croatia', 'South Africa', 'Nigeria',
+    'Kenya', 'Egypt', 'Morocco', 'Colombia', 'Peru', 'Venezuela'
+  ];
 
   // Image uploads
   File? _mainImage;
@@ -43,7 +57,6 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     _pageController.dispose();
     _ageController.dispose();
     _bioController.dispose();
-    _locationController.dispose();
     super.dispose();
   }
 
@@ -150,9 +163,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       );
       return false;
     }
-    if (_locationController.text.isEmpty) {
+    if (_lookingFor.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your location')),
+        const SnackBar(content: Text('Please select who you are looking for')),
+      );
+      return false;
+    }
+    if (_selectedCountry.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select your country')),
       );
       return false;
     }
@@ -202,7 +221,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       await ref.read(authProvider.notifier).updateUserProfile({
         'age': age,
         'gender': _gender,
-        'location': _locationController.text,
+        'lookingFor': _lookingFor, // Gender preference for matching
+        'location': _selectedCountry,
         'bio': _bioController.text,
         'interests': _interests,
         'photos': photoUrls,
@@ -396,15 +416,37 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
           const SizedBox(height: 24),
 
-          // Location
-          TextFormField(
-            controller: _locationController,
+          // Looking For (Gender Preference)
+          const Text(
+            'Looking For',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              _buildLookingForButton('Male'),
+              const SizedBox(width: 12),
+              _buildLookingForButton('Female'),
+              const SizedBox(width: 12),
+              _buildLookingForButton('Everyone'),
+            ],
+          ),
+
+          const SizedBox(height: 24),
+
+          // Location - Country Dropdown
+          const Text(
+            'Country',
+            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            value: _selectedCountry.isEmpty ? null : _selectedCountry,
+            isExpanded: true,
             style: const TextStyle(color: AppTheme.textCharcoal, fontWeight: FontWeight.w600, fontSize: 16),
             decoration: InputDecoration(
-              labelText: 'Location (City, Country)',
               filled: true,
               fillColor: Colors.white.withOpacity(0.95),
-              labelStyle: TextStyle(color: AppTheme.secondaryPlum.withOpacity(0.8)),
               prefixIcon: const Icon(Icons.location_on, color: AppTheme.secondaryPlum),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
@@ -415,6 +457,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 borderSide: const BorderSide(color: AppTheme.primaryRose, width: 2),
               ),
             ),
+            hint: Text(
+              'Select your country',
+              style: TextStyle(color: AppTheme.textCharcoal.withOpacity(0.5)),
+            ),
+            items: _countries.map((country) {
+              return DropdownMenuItem<String>(
+                value: country,
+                child: Text(country),
+              );
+            }).toList(),
+            onChanged: (value) {
+              setState(() {
+                _selectedCountry = value ?? '';
+              });
+            },
           ),
         ],
       ),
@@ -439,6 +496,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         ),
         child: Text(
           gender,
+          style: TextStyle(
+            color: Colors.white,
+            fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+            fontSize: 16,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLookingForButton(String preference) {
+    final isSelected = _lookingFor == preference;
+    return Expanded(
+      child: OutlinedButton(
+        onPressed: () => setState(() => _lookingFor = preference),
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(
+            color: isSelected ? Colors.white : Colors.white70,
+            width: isSelected ? 3 : 2,
+          ),
+          backgroundColor: isSelected ? Colors.white.withOpacity(0.3) : Colors.white.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 16),
+        ),
+        child: Text(
+          preference,
           style: TextStyle(
             color: Colors.white,
             fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
@@ -604,15 +689,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 label: Text(
                   interest,
                   style: TextStyle(
-                    color: isSelected ? AppTheme.secondaryPlum : Colors.white,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                    // Make unselected text much darker for visibility
+                    color: isSelected ? AppTheme.secondaryPlum : const Color(0xFF2D2D2D),
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
                   ),
                 ),
                 selected: isSelected,
                 selectedColor: Colors.white,
-                backgroundColor: Colors.white.withOpacity(0.2),
+                backgroundColor: Colors.white.withOpacity(0.9),
                 checkmarkColor: AppTheme.secondaryPlum,
-                side: BorderSide(color: Colors.white, width: isSelected ? 2 : 1),
+                side: BorderSide(color: isSelected ? AppTheme.primaryRose : Colors.white70, width: isSelected ? 2 : 1),
                 onSelected: (selected) {
                   setState(() {
                     if (selected && _interests.length < 5) {
@@ -703,7 +789,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
               children: [
                 _buildReviewItem('Age', _ageController.text),
                 _buildReviewItem('Gender', _gender),
-                _buildReviewItem('Location', _locationController.text),
+                _buildReviewItem('Looking For', _lookingFor),
+                _buildReviewItem('Country', _selectedCountry),
                 _buildReviewItem('Interests', _interests.join(', ')),
                 _buildReviewItem('Bio', _bioController.text),
                 _buildReviewItem('Photos', '${_mainImage != null ? 1 : 0} main + ${_additionalImages.length} additional'),

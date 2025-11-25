@@ -16,6 +16,7 @@ class EncryptionService {
   late encrypt.Encrypter _encrypter;
   bool _initialized = false;
 
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Initialize encryption service

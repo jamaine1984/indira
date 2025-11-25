@@ -14,19 +14,19 @@ class DefaultFirebaseOptions {
   }
 
   static const FirebaseOptions android = FirebaseOptions(
-    apiKey: 'AIzaSyBzpr1foxR0Y9tA-0hk3aoP9XLFshcpYl0',
-    appId: '1:410817495771:android:12345678901234567890',
-    messagingSenderId: '410817495771',
-    projectId: 'global-speed-dating',
-    storageBucket: 'global-speed-dating.firebasestorage.app',
+    apiKey: 'AIzaSyAjdxfMYBvxlKNy54llLcNaxAKG4r9rfDo',
+    appId: '1:918363978732:android:f3f8e534811dec74869ec9',
+    messagingSenderId: '918363978732',
+    projectId: 'indira-love',
+    storageBucket: 'indira-love.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyBzpr1foxR0Y9tA-0hk3aoP9XLFshcpYl0',
-    appId: '1:410817495771:ios:12345678901234567890',
-    messagingSenderId: '410817495771',
-    projectId: 'global-speed-dating',
-    storageBucket: 'global-speed-dating.firebasestorage.app',
-    iosBundleId: 'com.global.speed.dating',
+    apiKey: 'AIzaSyAjdxfMYBvxlKNy54llLcNaxAKG4r9rfDo',
+    appId: '1:918363978732:ios:f3f8e534811dec74869ec9',
+    messagingSenderId: '918363978732',
+    projectId: 'indira-love',
+    storageBucket: 'indira-love.firebasestorage.app',
+    iosBundleId: 'com.indiralove.dating',
   );
 }

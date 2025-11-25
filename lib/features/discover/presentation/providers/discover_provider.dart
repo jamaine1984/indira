@@ -82,6 +82,7 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       final user = _authService.currentUser;
       if (user == null) {
         print('ERROR: No authenticated user found!');
+        state = state.copyWith(isLoading: false, error: 'Not authenticated');
         return;
       }
 
@@ -90,6 +91,12 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
 
       // Get current user's full profile
       final currentUserDoc = await _databaseService.getUserProfileOnce(user.uid);
+      if (!currentUserDoc.exists) {
+        print('ERROR: Current user profile does not exist!');
+        state = state.copyWith(isLoading: false, error: 'Profile not found');
+        return;
+      }
+
       final currentUserData = {
         'uid': user.uid,
         ...currentUserDoc.data() as Map<String, dynamic>,
@@ -114,6 +121,17 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       print('DEBUG: Fetching potential matches from Firestore...');
       final matchesQuery = await _databaseService.getPotentialMatches(user.uid).first;
       print('DEBUG: Total documents from Firestore: ${matchesQuery.docs.length}');
+
+      if (matchesQuery.docs.isEmpty) {
+        print('WARNING: No users found in Firestore! This should not happen.');
+        print('WARNING: Make sure there are users in the users collection');
+        state = state.copyWith(
+          isLoading: false,
+          potentialMatches: [],
+          error: 'No users available. Please try again later.',
+        );
+        return;
+      }
 
       // Log all user IDs from Firestore
       print('DEBUG: All user IDs in Firestore:');
@@ -145,6 +163,17 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
           .toList();
 
       print('DEBUG: After basic filtering: ${filteredMatches.length} users');
+
+      if (filteredMatches.isEmpty) {
+        print('WARNING: All users were filtered out! Only current user or all users blocked?');
+        state = state.copyWith(
+          isLoading: false,
+          potentialMatches: [],
+          error: 'No users available to show',
+        );
+        return;
+      }
+
       print('DEBUG: Filtered user IDs:');
       for (var match in filteredMatches) {
         print('  - ${match['uid']} (${match['displayName'] ?? 'No name'})');
@@ -159,15 +188,28 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       print('DEBUG: Randomizing user order...');
       filteredMatches.shuffle();
 
-      // Try smart matching, but don't fail if it errors
+      // DISABLED smart matching to show ALL users regardless of preferences
       final beforeSmartMatching = filteredMatches.length;
       try {
-        print('DEBUG: Running smart matching algorithm...');
-        filteredMatches = await _matchingService.getSmartRecommendations(
-          currentUser: currentUserData,
-          allPotentialMatches: filteredMatches,
-        );
-        print('DEBUG: Smart matching complete: ${filteredMatches.length} users (was $beforeSmartMatching)');
+        print('DEBUG: SKIPPING smart matching to show all users...');
+        // filteredMatches = await _matchingService.getSmartRecommendations(
+        //   currentUser: currentUserData,
+        //   allPotentialMatches: filteredMatches,
+        // );
+        print('DEBUG: Showing all ${filteredMatches.length} users (smart matching disabled)');
+
+        // If smart matching returned empty list, use the original shuffled list
+        if (filteredMatches.isEmpty && beforeSmartMatching > 0) {
+          print('WARNING: Smart matching returned empty list, reverting to shuffled list');
+          filteredMatches = matchesQuery.docs
+              .where((doc) => doc.id != user.uid && !blockedUserIds.contains(doc.id))
+              .map((doc) => {
+                    'uid': doc.id,
+                    ...doc.data() as Map<String, dynamic>,
+                  })
+              .toList();
+          filteredMatches.shuffle();
+        }
       } catch (e) {
         print('Warning: Smart matching failed, using basic list: $e');
         print('Warning: Stack trace: ${StackTrace.current}');
@@ -177,13 +219,18 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       // Calculate and add compatibility score to each match if not already present
       print('DEBUG: Calculating compatibility scores...');
       for (var match in filteredMatches) {
-        if (match['compatibilityScore'] == null) {
-          final score = _matchingService.calculateCompatibilityScore(
-            currentUser: currentUserData,
-            potentialMatch: match,
-          );
-          match['compatibilityScore'] = score;
-          print('DEBUG: ${match['displayName'] ?? match['uid']}: ${score}% match');
+        try {
+          if (match['compatibilityScore'] == null) {
+            final score = _matchingService.calculateCompatibilityScore(
+              currentUser: currentUserData,
+              potentialMatch: match,
+            );
+            match['compatibilityScore'] = score;
+            print('DEBUG: ${match['displayName'] ?? match['uid']}: ${score}% match');
+          }
+        } catch (e) {
+          print('Warning: Could not calculate score for ${match['uid']}: $e');
+          match['compatibilityScore'] = 75; // Default score
         }
       }
 
@@ -194,13 +241,14 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       state = state.copyWith(
         potentialMatches: filteredMatches,
         isLoading: false,
+        error: null,
       );
     } catch (e) {
       print('ERROR: loadPotentialMatches failed: $e');
       print('ERROR: Stack trace: ${StackTrace.current}');
       state = state.copyWith(
         isLoading: false,
-        error: e.toString(),
+        error: 'Failed to load users. Please try again.',
       );
     }
   }

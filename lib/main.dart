@@ -8,6 +8,11 @@ import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/routes/app_router.dart';
 import 'package:indira_love/core/services/notification_service.dart';
 import 'package:indira_love/core/services/push_notification_service.dart';
+import 'package:indira_love/core/services/logger_service.dart';
+import 'package:indira_love/core/services/analytics_service.dart';
+import 'package:indira_love/core/services/performance_monitoring_service.dart';
+import 'package:indira_love/core/services/remote_config_service.dart';
+import 'package:indira_love/core/services/app_check_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,17 +30,26 @@ void main() async {
       options: DefaultFirebaseOptions.currentPlatform,
     );
 
+    // Initialize Firebase App Check (must be before other Firebase services)
+    await appCheck.initialize();
+
+    // Initialize Firebase services
+    await logger.initialize();
+    await analytics.initialize();
+    await performanceMonitoring.initialize();
+    await remoteConfig.initialize();
+
     // Initialize Google Mobile Ads SDK
     MobileAds.instance.initialize();
 
     // Initialize notification service (non-blocking)
     NotificationService().initialize().catchError((e) {
-      print('Notification service initialization failed: $e');
+      logger.error('Notification service initialization failed', error: e);
     });
 
     // Initialize push notifications (non-blocking)
     PushNotificationService().initialize().catchError((e) {
-      print('Push notification initialization failed: $e');
+      logger.error('Push notification initialization failed', error: e);
     });
   } catch (e) {
     print('Initialization error: $e');

@@ -9,6 +9,7 @@ class AnalyticsService {
   AnalyticsService._internal();
 
   late FirebaseAnalytics _analytics;
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   bool _initialized = false;
 

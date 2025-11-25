@@ -13,6 +13,7 @@ class IAPService {
   IAPService._internal();
 
   final InAppPurchase _iap = InAppPurchase.instance;
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 

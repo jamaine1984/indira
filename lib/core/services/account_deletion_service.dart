@@ -10,6 +10,7 @@ class AccountDeletionService {
   factory AccountDeletionService() => _instance;
   AccountDeletionService._internal();
 
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;

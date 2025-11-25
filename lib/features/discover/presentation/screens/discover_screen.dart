@@ -29,7 +29,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(discoverProvider.notifier).loadPotentialMatches();
+      final state = ref.read(discoverProvider);
+      if (state.potentialMatches.isEmpty && !state.isLoading) {
+        print('DEBUG DISCOVER: No users loaded on init, loading now...');
+        ref.read(discoverProvider.notifier).loadPotentialMatches();
+      }
     });
   }
 
@@ -312,52 +316,92 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Widget _buildEmptyState() {
+    final discoverState = ref.watch(discoverProvider);
+    final hasError = discoverState.error != null && discoverState.error!.isNotEmpty;
+
     return Container(
       decoration: const BoxDecoration(
         gradient: AppTheme.romanticGradient,
       ),
       child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.people_outline,
-              size: 100,
-              color: Colors.white.withOpacity(0.5),
-            ),
-            const SizedBox(height: 32),
-            Text(
-              'No More Matches',
-              style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                hasError ? Icons.error_outline : Icons.refresh,
+                size: 100,
+                color: Colors.white.withOpacity(0.5),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                hasError ? 'Oops!' : 'Loading Users...',
+                style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  discoverState.error ?? 'Finding potential matches for you',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.8),
+                    fontSize: 16,
                   ),
-            ),
-            const SizedBox(height: 16),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 48),
-              child: Text(
-                'Check back later for new potential matches or adjust your filters!',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 16,
+                  textAlign: TextAlign.center,
                 ),
-                textAlign: TextAlign.center,
               ),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton.icon(
-              onPressed: () {
-                ref.read(discoverProvider.notifier).loadPotentialMatches();
-              },
-              icon: const Icon(Icons.refresh),
-              label: const Text('Refresh'),
-              style: ElevatedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
-                textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+              if (hasError) ...[
+                const SizedBox(height: 24),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Troubleshooting:',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        '• Check your internet connection\n'
+                        '• Make sure there are users in the database\n'
+                        '• Try logging out and back in\n'
+                        '• Contact support if issue persists',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.9),
+                          fontSize: 13,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 40),
+              ElevatedButton.icon(
+                onPressed: () {
+                  ref.read(discoverProvider.notifier).loadPotentialMatches();
+                },
+                icon: const Icon(Icons.refresh),
+                label: const Text('Try Again'),
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 16),
+                  textStyle: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

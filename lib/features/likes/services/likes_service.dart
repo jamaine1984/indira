@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:indira_love/features/likes/models/like_model.dart';
 
 class LikesService {
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Get all likes sent by current user

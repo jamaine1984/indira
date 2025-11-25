@@ -13,6 +13,7 @@ class DataExportService {
   factory DataExportService() => _instance;
   DataExportService._internal();
 
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseStorage _storage = FirebaseStorage.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;

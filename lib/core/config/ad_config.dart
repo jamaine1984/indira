@@ -2,20 +2,20 @@ import 'dart:io';
 
 class AdConfig {
   // Production AdMob App IDs
-  static const String androidAppId = 'ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX'; // Replace with your Android App ID
-  static const String iosAppId = 'ca-app-pub-XXXXXXXXXXXXXXXX~XXXXXXXXXX'; // Replace with your iOS App ID
+  static const String androidAppId = 'ca-app-pub-7587025688858323~6036042883'; // Production Android App ID
+  static const String iosAppId = 'ca-app-pub-7587025688858323~6036042883'; // iOS App ID (create separate iOS ads later)
 
   // Production Ad Unit IDs - Android
-  static const String androidBannerAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  static const String androidInterstitialAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  static const String androidRewardedAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  static const String androidNativeAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+  static const String androidBannerAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
+  static const String androidInterstitialAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
+  static const String androidRewardedAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
+  static const String androidNativeAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
 
-  // Production Ad Unit IDs - iOS
-  static const String iosBannerAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  static const String iosInterstitialAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  static const String iosRewardedAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
-  static const String iosNativeAdUnitId = 'ca-app-pub-XXXXXXXXXXXXXXXX/XXXXXXXXXX';
+  // Production Ad Unit IDs - iOS (using same as Android for now - create separate iOS ads later)
+  static const String iosBannerAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
+  static const String iosInterstitialAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
+  static const String iosRewardedAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
+  static const String iosNativeAdUnitId = 'ca-app-pub-7587025688858323/9118884689';
 
   // Get platform-specific ad unit IDs
   static String get bannerAdUnitId {

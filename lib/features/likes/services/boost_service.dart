@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:indira_love/features/likes/models/boost_model.dart';
 
 class BoostService {
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// Get boost ad requirements based on duration

@@ -6,6 +6,7 @@ class DatabaseService {
   factory DatabaseService() => _instance;
   DatabaseService._internal();
 
+  // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
@@ -24,12 +25,13 @@ class DatabaseService {
 
   // Discover - Get potential matches
   Stream<QuerySnapshot> getPotentialMatches(String currentUserId,
-      {int limit = 20}) {
-    // Get all users except current user
-    // We'll filter client-side to exclude already liked/passed users
+      {int limit = 1000}) {
+    // Get ALL users (no limit) - we'll filter client-side
+    // This ensures users always see everyone available
+    print('DEBUG DATABASE: Fetching users from Firestore (limit: $limit)');
     return _firestore
         .collection('users')
-        .limit(limit * 3) // Get more to filter later
+        .limit(limit) // Get up to 1000 users
         .snapshots();
   }
 

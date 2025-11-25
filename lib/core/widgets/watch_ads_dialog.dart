@@ -24,14 +24,10 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
   bool _isWatchingAd = false;
   RewardedAd? _rewardedAd;
 
-  // Get ad unit ID from env or use test ID for development
+  // Production ad unit ID for rewarded ads
   static String get _adUnitId {
-    final prodAdUnitId = dotenv.env['ADMOB_REWARDED_AD_UNIT_ID'];
-    if (prodAdUnitId != null && prodAdUnitId.isNotEmpty) {
-      return prodAdUnitId;
-    }
-    // Test ad unit ID for development
-    return 'ca-app-pub-3940256099942544/5224354917';
+    // Real production AdMob Rewarded Ad Unit ID
+    return 'ca-app-pub-7587025688858323/9118884689';
   }
 
   @override
