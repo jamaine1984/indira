@@ -381,31 +381,51 @@ class UserProfileDetailScreen extends ConsumerWidget {
                                   final currentUser = FirebaseAuth.instance.currentUser;
                                   if (currentUser == null) return;
 
-                                  // Create or get existing match
-                                  final matchQuery = await FirebaseFirestore.instance
-                                      .collection('matches')
-                                      .where('users', arrayContains: currentUser.uid)
-                                      .get();
-
                                   String? matchId;
-                                  for (var doc in matchQuery.docs) {
-                                    final users = List<String>.from(doc['users']);
-                                    if (users.contains(userId)) {
-                                      matchId = doc.id;
-                                      break;
+                                  try {
+                                    // Create or get existing match
+                                    final matchQuery = await FirebaseFirestore.instance
+                                        .collection('matches')
+                                        .where('users', arrayContains: currentUser.uid)
+                                        .get();
+
+                                    for (var doc in matchQuery.docs) {
+                                      final users = List<String>.from(doc['users']);
+                                      if (users.contains(userId)) {
+                                        matchId = doc.id;
+                                        break;
+                                      }
                                     }
+                                  } catch (e) {
+                                    print('Error querying matches: $e');
+                                    // Continue to create new match if query fails
                                   }
 
                                   // If no match exists, create one
                                   if (matchId == null) {
-                                    final newMatch = await FirebaseFirestore.instance
-                                        .collection('matches')
-                                        .add({
-                                      'users': [currentUser.uid, userId],
-                                      'timestamp': FieldValue.serverTimestamp(),
-                                      'isActive': true,
-                                    });
-                                    matchId = newMatch.id;
+                                    try {
+                                      final newMatch = await FirebaseFirestore.instance
+                                          .collection('matches')
+                                          .add({
+                                        'users': [currentUser.uid, userId],
+                                        'timestamp': FieldValue.serverTimestamp(),
+                                        'isActive': true,
+                                        'lastMessage': '',
+                                        'lastMessageTime': FieldValue.serverTimestamp(),
+                                        'createdAt': FieldValue.serverTimestamp(),
+                                      });
+                                      matchId = newMatch.id;
+                                    } catch (e) {
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Failed to start conversation: $e'),
+                                            backgroundColor: Colors.red,
+                                          ),
+                                        );
+                                      }
+                                      return;
+                                    }
                                   }
 
                                   // Navigate to conversation
