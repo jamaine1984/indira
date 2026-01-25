@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:google_sign_in/google_sign_in.dart';
+// Temporarily disabled due to AppCheckCore dependency conflict
+// import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
@@ -10,7 +11,8 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   // Connect to the nam5 database instance where all users are stored
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  // Temporarily disabled due to AppCheckCore dependency conflict
+  // final GoogleSignIn _googleSignIn = GoogleSignIn();
 
   Stream<User?> get authStateChanges => _auth.authStateChanges();
 
@@ -50,32 +52,34 @@ class AuthService {
     }
   }
 
-  Future<UserCredential?> signInWithGoogle() async {
-    try {
-      final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
-      if (googleUser == null) return null;
-
-      final GoogleSignInAuthentication googleAuth =
-          await googleUser.authentication;
-
-      final credential = GoogleAuthProvider.credential(
-        accessToken: googleAuth.accessToken,
-        idToken: googleAuth.idToken,
-      );
-
-      final result = await _auth.signInWithCredential(credential);
-
-      // Create user profile in Firestore if it doesn't exist
-      await _createUserProfile(result.user!);
-
-      return result;
-    } catch (e) {
-      throw _handleAuthError(e);
-    }
-  }
+  // Temporarily disabled due to AppCheckCore dependency conflict
+  // Future<UserCredential?> signInWithGoogle() async {
+  //   try {
+  //     final GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+  //     if (googleUser == null) return null;
+  //
+  //     final GoogleSignInAuthentication googleAuth =
+  //         await googleUser.authentication;
+  //
+  //     final credential = GoogleAuthProvider.credential(
+  //       accessToken: googleAuth.accessToken,
+  //       idToken: googleAuth.idToken,
+  //     );
+  //
+  //     final result = await _auth.signInWithCredential(credential);
+  //
+  //     // Create user profile in Firestore if it doesn't exist
+  //     await _createUserProfile(result.user!);
+  //
+  //     return result;
+  //   } catch (e) {
+  //     throw _handleAuthError(e);
+  //   }
+  // }
 
   Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    // Temporarily disabled due to AppCheckCore dependency conflict
+    // await _googleSignIn.signOut();
     await _auth.signOut();
   }
 

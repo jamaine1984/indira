@@ -320,7 +320,7 @@ class AnalyticsService {
     try {
       await _analytics.logEvent(
         name: eventName,
-        parameters: parameters,
+        parameters: parameters?.cast<String, Object>(),
       );
 
       logger.logEvent(eventName, parameters: parameters);

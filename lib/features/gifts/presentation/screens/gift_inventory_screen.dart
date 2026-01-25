@@ -34,7 +34,6 @@ class GiftInventoryScreen extends ConsumerWidget {
         stream: FirebaseFirestore.instance
             .collection('user_gifts')
             .where('userId', isEqualTo: currentUser.uid)
-            .orderBy('obtainedAt', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.hasError) {
@@ -45,7 +44,15 @@ class GiftInventoryScreen extends ConsumerWidget {
             return const Center(child: CircularProgressIndicator());
           }
 
-          final gifts = snapshot.data?.docs ?? [];
+          // Get gifts and sort client-side to avoid composite index requirement
+          final gifts = (snapshot.data?.docs ?? [])..sort((a, b) {
+            final aTime = (a.data() as Map<String, dynamic>)['obtainedAt'] as Timestamp?;
+            final bTime = (b.data() as Map<String, dynamic>)['obtainedAt'] as Timestamp?;
+            if (aTime == null && bTime == null) return 0;
+            if (aTime == null) return 1;
+            if (bTime == null) return -1;
+            return bTime.compareTo(aTime); // Descending order (newest first)
+          });
 
           if (gifts.isEmpty) {
             return Center(

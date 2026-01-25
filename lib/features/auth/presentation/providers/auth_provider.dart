@@ -63,17 +63,18 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> signInWithGoogle() async {
-    state = state.copyWith(isLoading: true, error: null);
-
-    try {
-      await _authService.signInWithGoogle();
-      state = state.copyWith(isLoading: false);
-    } catch (e) {
-      state = state.copyWith(isLoading: false, error: e.toString());
-      rethrow;
-    }
-  }
+  // Temporarily disabled due to AppCheckCore dependency conflict
+  // Future<void> signInWithGoogle() async {
+  //   state = state.copyWith(isLoading: true, error: null);
+  //
+  //   try {
+  //     await _authService.signInWithGoogle();
+  //     state = state.copyWith(isLoading: false);
+  //   } catch (e) {
+  //     state = state.copyWith(isLoading: false, error: e.toString());
+  //     rethrow;
+  //   }
+  // }
 
   Future<void> signOut() async {
     state = state.copyWith(isLoading: true, error: null);

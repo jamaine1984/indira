@@ -56,30 +56,31 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     }
   }
 
-  Future<void> _signInWithGoogle() async {
-    setState(() => _isLoading = true);
-
-    try {
-      await ref.read(authProvider.notifier).signInWithGoogle();
-
-      if (mounted) {
-        context.go('/discover');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
-  }
+  // Temporarily disabled due to AppCheckCore dependency conflict
+  // Future<void> _signInWithGoogle() async {
+  //   setState(() => _isLoading = true);
+  //
+  //   try {
+  //     await ref.read(authProvider.notifier).signInWithGoogle();
+  //
+  //     if (mounted) {
+  //       context.go('/discover');
+  //     }
+  //   } catch (e) {
+  //     if (mounted) {
+  //       ScaffoldMessenger.of(context).showSnackBar(
+  //         SnackBar(
+  //           content: Text(e.toString()),
+  //           backgroundColor: Colors.red,
+  //         ),
+  //       );
+  //     }
+  //   } finally {
+  //     if (mounted) {
+  //       setState(() => _isLoading = false);
+  //     }
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -261,41 +262,41 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
                   const SizedBox(height: 24),
 
-                  // Google Sign In
-                  SizedBox(
-                    width: double.infinity,
-                    height: 56,
-                    child: OutlinedButton(
-                      onPressed: _isLoading ? null : _signInWithGoogle,
-                      style: OutlinedButton.styleFrom(
-                        side: const BorderSide(color: Colors.white, width: 2),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(28),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Image.asset(
-                            'assets/icons/google.png',
-                            height: 24,
-                            width: 24,
-                            errorBuilder: (context, error, stackTrace) =>
-                                const Icon(Icons.g_mobiledata, color: Colors.white),
-                          ),
-                          const SizedBox(width: 12),
-                          const Text(
-                            'Continue with Google',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
+                  // Google Sign In - Temporarily disabled due to AppCheckCore dependency conflict
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   height: 56,
+                  //   child: OutlinedButton(
+                  //     onPressed: _isLoading ? null : _signInWithGoogle,
+                  //     style: OutlinedButton.styleFrom(
+                  //       side: const BorderSide(color: Colors.white, width: 2),
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(28),
+                  //       ),
+                  //     ),
+                  //     child: Row(
+                  //       mainAxisAlignment: MainAxisAlignment.center,
+                  //       children: [
+                  //         Image.asset(
+                  //           'assets/icons/google.png',
+                  //           height: 24,
+                  //           width: 24,
+                  //           errorBuilder: (context, error, stackTrace) =>
+                  //               const Icon(Icons.g_mobiledata, color: Colors.white),
+                  //         ),
+                  //         const SizedBox(width: 12),
+                  //         const Text(
+                  //           'Continue with Google',
+                  //           style: TextStyle(
+                  //             color: Colors.white,
+                  //             fontSize: 16,
+                  //             fontWeight: FontWeight.w600,
+                  //           ),
+                  //         ),
+                  //       ],
+                  //     ),
+                  //   ),
+                  // ),
 
                   const SizedBox(height: 32),
 

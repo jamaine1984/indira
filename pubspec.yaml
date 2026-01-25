@@ -11,17 +11,17 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^1.0.2
 
-  # Firebase
-  firebase_core: ^2.24.2
-  firebase_auth: ^4.17.9
-  cloud_firestore: ^4.15.9
-  firebase_storage: ^11.6.10
-  firebase_messaging: ^14.7.10
-  firebase_analytics: ^10.8.10
-  firebase_crashlytics: ^3.4.9
-  firebase_performance: ^0.9.3+6
-  firebase_remote_config: ^4.3.9
-  firebase_app_check: ^0.2.1+9
+  # Firebase - Upgraded to v3+ for BoringSSL-GRPC 0.0.37 compatibility with Xcode 26.2
+  firebase_core: ^3.8.1
+  firebase_auth: ^5.3.4
+  cloud_firestore: ^5.5.2
+  firebase_storage: ^12.3.8
+  firebase_messaging: ^15.1.5
+  firebase_analytics: ^11.3.5
+  firebase_crashlytics: ^4.1.8
+  firebase_performance: ^0.10.0+8
+  firebase_remote_config: ^5.1.8
+  firebase_app_check: ^0.3.2+8
 
   # UI & Animation
   flutter_animate: ^4.5.0
@@ -53,7 +53,7 @@ dependencies:
   google_mobile_ads: ^5.0.0
 
   # Social & Authentication
-  google_sign_in: ^6.2.1
+  # google_sign_in: ^6.2.1  # Temporarily disabled due to AppCheckCore conflict
   sign_in_with_apple: ^7.0.0
 
   # In-App Purchases
@@ -64,8 +64,9 @@ dependencies:
   # Charts & Analytics
   fl_chart: ^0.66.0
 
-  # ML Kit for face detection
-  google_mlkit_face_detection: ^0.10.0
+  # ML Kit for face detection - Temporarily disabled due to iOS deployment target requirement
+  # TODO: Re-enable after testing or find alternative for face verification
+  # google_mlkit_face_detection: ^0.13.0
 
   # Audio recording for voice messages
   record: ^6.0.0

@@ -604,8 +604,8 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     );
                   }
 
-                  // Delete account and all data
-                  await AccountDeletionService().deleteAccount(user.uid);
+                  // Request account deletion (30-day grace period)
+                  await AccountDeletionService().requestAccountDeletion(user.uid);
 
                   // Sign out
                   await ref.read(authProvider.notifier).signOut();

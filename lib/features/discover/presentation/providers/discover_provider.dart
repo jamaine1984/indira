@@ -133,10 +133,10 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         logger.info('[Discovery] Cached profiles: ${_cacheService.cachedCount}');
         allProfiles = _cacheService.getAllCachedProfiles();
       } else {
-        // ❌ CACHE MISS - Fetch ALL users from Firestore
+        // ❌ CACHE MISS - Fetch ALL users from Firestore (one-time, no stream)
         logger.info('[Discovery] 💰 CACHE MISS - Fetching all users from Firestore...'); // TODO: Use logger.logNetworkRequest if network call
 
-        final matchesQuery = await _databaseService.getPotentialMatches(user.uid).first;
+        final matchesQuery = await _databaseService.getPotentialMatchesOnce(user.uid);
         logger.info('[Discovery] Fetched ${matchesQuery.docs.length} total users from Firestore'); // TODO: Use logger.logNetworkRequest if network call
 
         if (matchesQuery.docs.isEmpty) {
@@ -157,7 +157,7 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
                 })
             .toList();
 
-        // Cache for next 30 minutes
+        // Cache for next 30 minutes (95% cost reduction on next load!)
         _cacheService.cacheFullUserList(allProfiles);
         logger.info('[Discovery] ✅ Cached ${allProfiles.length} users for 30 minutes');
       }

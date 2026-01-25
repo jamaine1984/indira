@@ -86,5 +86,42 @@
 	<array>
 		<string>remote-notification</string>
 	</array>
+
+	<!-- Face ID / Touch ID for biometric authentication -->
+	<key>NSFaceIDUsageDescription</key>
+	<string>Indira Love uses Face ID to securely log you in and protect your account.</string>
+
+	<!-- Contacts (for inviting friends - optional) -->
+	<key>NSContactsUsageDescription</key>
+	<string>Indira Love can access your contacts to help you invite friends to the app.</string>
+
+	<!-- App Transport Security - Allow Firebase/AdMob connections -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+
+	<!-- iTunes File Sharing - Disabled for privacy -->
+	<key>UIFileSharingEnabled</key>
+	<false/>
+	<key>LSSupportsOpeningDocumentsInPlace</key>
+	<false/>
+
+	<!-- Disable status bar on launch for cleaner UI -->
+	<key>UIStatusBarHidden</key>
+	<false/>
+
+	<!-- Performance optimizations -->
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>UIApplicationSupportsIndirectInputEvents</key>
+	<true/>
+
+	<!-- Privacy - Data Collection (for App Store Privacy Nutrition Labels) -->
+	<key>NSUserTrackingUsageDescription</key>
+	<string>This allows Indira Love to provide you with personalized ads and measure their effectiveness.</string>
 </dict>
 </plist>

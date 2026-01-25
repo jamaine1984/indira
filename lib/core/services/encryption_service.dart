@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:encrypt/encrypt.dart' as encrypt;
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:crypto/crypto.dart';
 import 'logger_service.dart';
 
 /// AES-256 encryption service for secure message storage
@@ -198,8 +199,8 @@ class EncryptionService {
   String hashData(String data) {
     // Use SHA-256 for hashing
     final bytes = utf8.encode(data);
-    final hash = encrypt.SHA256().convert(bytes);
-    return hash;
+    final hash = sha256.convert(bytes);
+    return hash.toString();
   }
 
   /// Encrypt file data (for image/video encryption if needed)
