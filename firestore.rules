@@ -166,7 +166,7 @@ service cloud.firestore {
     }
 
     // ============================================================
-    // USER GIFTS
+    // USER GIFTS (Inventory - gifts owned by user)
     // ============================================================
 
     match /user_gifts/{giftId} {
@@ -174,12 +174,17 @@ service cloud.firestore {
       // 'read' = single document reads, 'list' = query operations
       allow read, list: if isAuth();
 
+      // Allow users to add gifts to their own inventory (from ads, subscriptions, etc.)
+      // Also allow gifts with senderId/receiverId (sent between users)
       allow create: if isAuth() &&
-                     (request.resource.data.senderId == request.auth.uid ||
+                     (request.resource.data.userId == request.auth.uid ||
+                      request.resource.data.senderId == request.auth.uid ||
                       request.resource.data.receiverId == request.auth.uid);
 
+      // Allow users to update their own gifts
       allow update: if isAuth() &&
-                    (resource.data.receiverId == request.auth.uid ||
+                    (resource.data.userId == request.auth.uid ||
+                     resource.data.receiverId == request.auth.uid ||
                      resource.data.senderId == request.auth.uid);
 
       allow delete: if false;
