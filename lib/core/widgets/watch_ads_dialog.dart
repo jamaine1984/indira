@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
@@ -145,7 +146,7 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
           _showRewardedAd();
         },
         onAdFailedToLoad: (error) {
-          print('RewardedAd failed to load: $error');
+          logger.error('RewardedAd failed to load: $error');
           if (mounted) {
             setState(() {
               _isWatchingAd = false;
@@ -167,10 +168,10 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
 
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
       onAdShowedFullScreenContent: (ad) {
-        print('RewardedAd showed full screen content');
+        logger.info('RewardedAd showed full screen content');
       },
       onAdDismissedFullScreenContent: (ad) {
-        print('RewardedAd dismissed full screen content');
+        logger.info('RewardedAd dismissed full screen content');
         ad.dispose();
         _rewardedAd = null;
         if (mounted) {
@@ -180,7 +181,7 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
         }
       },
       onAdFailedToShowFullScreenContent: (ad, error) {
-        print('RewardedAd failed to show: $error');
+        logger.error('RewardedAd failed to show: $error');
         ad.dispose();
         _rewardedAd = null;
         if (mounted) {
@@ -199,7 +200,7 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
 
     _rewardedAd!.show(
       onUserEarnedReward: (ad, reward) {
-        print('User earned reward: ${reward.amount} ${reward.type}');
+        logger.info('User earned reward: ${reward.amount} ${reward.type}');
         if (mounted) {
           setState(() {
             _adsWatched++;

@@ -1,4 +1,5 @@
 import 'package:geolocator/geolocator.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LocationService {
@@ -48,7 +49,7 @@ class LocationService {
         desiredAccuracy: LocationAccuracy.high,
       );
     } catch (e) {
-      print('Error getting location: $e');
+      logger.error('Error getting location: $e');
       return null;
     }
   }
@@ -66,7 +67,7 @@ class LocationService {
 
       return true;
     } catch (e) {
-      print('Error updating user location: $e');
+      logger.error('Error updating user location: $e');
       return false;
     }
   }

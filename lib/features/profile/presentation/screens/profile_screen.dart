@@ -5,6 +5,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
+import 'package:indira_love/core/services/data_export_service.dart';
+import 'package:indira_love/core/services/account_deletion_service.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
@@ -264,6 +266,39 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         },
                       ),
 
+                      // GDPR COMPLIANCE SECTION
+                      const Padding(
+                        padding: EdgeInsets.symmetric(vertical: 16.0),
+                        child: Divider(color: Colors.white30, thickness: 1),
+                      ),
+
+                      Text(
+                        'Privacy & Data',
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.2,
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+
+                      _buildProfileOption(
+                        context,
+                        'Export My Data',
+                        Icons.download,
+                        () => _showExportDataDialog(context),
+                      ),
+
+                      _buildProfileOption(
+                        context,
+                        'Delete Account',
+                        Icons.delete_forever,
+                        () => _showDeleteAccountDialog(context),
+                        isDestructive: true,
+                      ),
+
                       _buildProfileOption(
                         context,
                         'Developer Settings',
@@ -317,8 +352,11 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
     BuildContext context,
     String title,
     IconData icon,
-    VoidCallback onTap,
-  ) {
+    VoidCallback onTap, {
+    bool isDestructive = false,
+  }) {
+    final color = isDestructive ? Colors.red : Colors.white;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -328,19 +366,19 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
       child: ListTile(
         leading: Icon(
           icon,
-          color: Colors.white,
+          color: color,
         ),
         title: Text(
           title,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: color,
             fontSize: 16,
             fontWeight: FontWeight.w500,
           ),
         ),
-        trailing: const Icon(
+        trailing: Icon(
           Icons.chevron_right,
-          color: Colors.white,
+          color: color,
         ),
         onTap: onTap,
       ),
@@ -416,6 +454,182 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showExportDataDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.download, color: AppTheme.primaryRose),
+            SizedBox(width: 8),
+            Text('Export My Data'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'GDPR Article 20 - Right to Data Portability',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'Your data will be prepared and sent to your registered email address within 24 hours.',
+              style: TextStyle(fontSize: 14),
+            ),
+            SizedBox(height: 16),
+            Text(
+              'This includes:\n• Profile information\n• Messages and matches\n• Photos and media\n• Activity logs',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              final user = AuthService().currentUser;
+              if (user != null) {
+                try {
+                  await DataExportService().exportUserData(user.uid);
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('✅ Data export started. Check your email in 24 hours.'),
+                        backgroundColor: Colors.green,
+                        duration: Duration(seconds: 5),
+                      ),
+                    );
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Export failed: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryRose,
+            ),
+            child: const Text('Export Data'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showDeleteAccountDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.warning, color: Colors.red),
+            SizedBox(width: 8),
+            Text('Delete Account?'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: const [
+            Text(
+              'GDPR Article 17 - Right to Erasure',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            SizedBox(height: 16),
+            Text(
+              '⚠️ This action cannot be undone!',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: Colors.red,
+              ),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'All your data will be permanently deleted:\n• Profile and photos\n• Messages and matches\n• Likes and activity\n• Subscription status',
+              style: TextStyle(fontSize: 14),
+            ),
+            SizedBox(height: 12),
+            Text(
+              'You will be immediately signed out.',
+              style: TextStyle(fontSize: 12, color: Colors.grey),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () async {
+              Navigator.pop(context);
+
+              final user = AuthService().currentUser;
+              if (user != null) {
+                try {
+                  // Show loading indicator
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('🗑️ Deleting account...'),
+                        duration: Duration(seconds: 30),
+                      ),
+                    );
+                  }
+
+                  // Delete account and all data
+                  await AccountDeletionService().deleteAccount(user.uid);
+
+                  // Sign out
+                  await ref.read(authProvider.notifier).signOut();
+
+                  // Navigate to welcome screen
+                  if (context.mounted) {
+                    context.go('/welcome');
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('❌ Deletion failed: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                }
+              }
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Delete Permanently'),
           ),
         ],
       ),

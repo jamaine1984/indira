@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Global Speed Dating</string>
+	<string>Indira Love</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -46,21 +46,21 @@
 
 	<!-- Camera and Microphone permissions -->
 	<key>NSCameraUsageDescription</key>
-	<string>This app needs camera access for video calls</string>
+	<string>Indira Love needs camera access to take profile photos and verification selfies.</string>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>This app needs microphone access for video calls</string>
+	<string>Indira Love needs microphone access to record voice messages.</string>
 
 	<!-- Photo Library permissions -->
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>This app needs photo library access to upload profile pictures</string>
+	<string>Indira Love needs photo library access to upload profile pictures and Lovers Anonymous posts.</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
-	<string>This app needs permission to save photos to your library</string>
+	<string>Indira Love needs permission to save photos to your library.</string>
 
 	<!-- Location permissions -->
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>This app needs location access to find matches nearby</string>
+	<string>Indira Love uses your location to find nearby singles.</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>This app needs location access to find matches nearby</string>
+	<string>Indira Love uses your location to find nearby singles.</string>
 
 	<!-- Notification permissions -->
 	<key>UNUserNotificationCenter</key>
@@ -77,16 +77,13 @@
 	<key>FirebaseAppDelegateProxyEnabled</key>
 	<false/>
 
-	<!-- ZegoCloud -->
-	<key>ZegoAppID</key>
-	<string>2052516228</string>
-	<key>ZegoAppSign</key>
-	<string>73719726d5771b90798bca8777282976f396de31453f1ed517f86c1c4e686608</string>
+	<!-- AdMob App ID - iOS Production -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-7587025688858323~4798870148</string>
 
-	<!-- Background modes for calls -->
+	<!-- Background modes for push notifications -->
 	<key>UIBackgroundModes</key>
 	<array>
-		<string>voip</string>
 		<string>remote-notification</string>
 	</array>
 </dict>

@@ -23,9 +23,13 @@ class AdService {
   bool _isRewardedAdReady = false;
   DateTime? _lastInterstitialTime;
   DateTime? _lastRewardedTime;
+  DateTime? _rewardedAdStartTime; // Track when ad started showing
   int _interstitialsToday = 0;
   int _rewardedAdsToday = 0;
   DateTime _dayStart = DateTime.now();
+
+  // Anti-abuse: minimum watch time for rewarded ads
+  static const int _minWatchTimeSeconds = 5;
 
   // Initialize ads
   Future<void> initialize() async {
@@ -253,6 +257,7 @@ class AdService {
     required String placement,
     required Function(int amount) onUserEarnedReward,
     VoidCallback? onAdDismissed,
+    VoidCallback? onAdSkippedEarly,
   }) async {
     // Check daily limit
     if (_rewardedAdsToday >= AdConfig.maxRewardedAdsPerDay) {
@@ -263,14 +268,45 @@ class AdService {
 
     if (_isRewardedAdReady && _rewardedAd != null) {
       try {
+        // Track when ad starts showing
+        _rewardedAdStartTime = DateTime.now();
+
         await _rewardedAd!.show(
           onUserEarnedReward: (AdWithoutView ad, RewardItem reward) {
-            _analytics.logEvent('reward_earned', parameters: {
-              'placement': placement,
-              'reward_type': reward.type,
-              'reward_amount': reward.amount,
-            });
-            onUserEarnedReward(reward.amount.toInt());
+            // ANTI-ABUSE: Verify minimum watch time (5 seconds)
+            if (_rewardedAdStartTime != null) {
+              final watchDuration = DateTime.now().difference(_rewardedAdStartTime!);
+
+              if (watchDuration.inSeconds >= _minWatchTimeSeconds) {
+                // User watched long enough - grant reward
+                _logger.info('Rewarded ad watched for ${watchDuration.inSeconds}s - reward granted');
+                _analytics.logEvent('reward_earned', parameters: {
+                  'placement': placement,
+                  'reward_type': reward.type,
+                  'reward_amount': reward.amount,
+                  'watch_duration': watchDuration.inSeconds,
+                });
+                onUserEarnedReward(reward.amount.toInt());
+              } else {
+                // User skipped too early - no reward
+                _logger.logSecurityEvent(
+                  'Rewarded ad skipped early',
+                  userId: null,
+                  details: {
+                    'watch_duration': watchDuration.inSeconds,
+                    'required_duration': _minWatchTimeSeconds,
+                  },
+                );
+                _analytics.logEvent('reward_skipped_early', parameters: {
+                  'placement': placement,
+                  'watch_duration': watchDuration.inSeconds,
+                });
+                onAdSkippedEarly?.call();
+              }
+            } else {
+              // Fallback: grant reward if timestamp tracking failed
+              onUserEarnedReward(reward.amount.toInt());
+            }
           },
         );
 

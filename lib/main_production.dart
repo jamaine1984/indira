@@ -89,7 +89,7 @@ Future<void> _initializeEnvironment() async {
     await EnvConfig.initialize();
   } catch (e) {
     // Use default configuration if .env is missing
-    print('Using default configuration: $e');
+    logger.info('Using default configuration: $e');
   }
 }
 

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:indira_love/features/likes/models/boost_model.dart';
 
 class BoostService {
@@ -55,26 +56,26 @@ class BoostService {
     required int durationMinutes,
     required int adsWatched,
   }) async {
-    print('BoostService.createBoost: Starting for user $userId, duration: $durationMinutes min, ads: $adsWatched');
+    logger.info('BoostService.createBoost: Starting for user $userId, duration: $durationMinutes min, ads: $adsWatched');
 
     // Deactivate any existing active boosts
-    print('BoostService: Checking for existing active boosts...');
+    logger.info('BoostService: Checking for existing active boosts...');
     final existingBoosts = await _firestore
         .collection('boosts')
         .where('userId', isEqualTo: userId)
         .where('isActive', isEqualTo: true)
         .get();
 
-    print('BoostService: Found ${existingBoosts.docs.length} existing active boosts');
+    logger.info('BoostService: Found ${existingBoosts.docs.length} existing active boosts');
     for (var doc in existingBoosts.docs) {
-      print('BoostService: Deactivating boost ${doc.id}');
+      logger.info('BoostService: Deactivating boost ${doc.id}');
       await doc.reference.update({'isActive': false});
     }
 
     // Create new boost
     final now = DateTime.now();
     final endTime = now.add(Duration(minutes: durationMinutes));
-    print('BoostService: Creating boost from $now to $endTime');
+    logger.info('BoostService: Creating boost from $now to $endTime');
 
     final boostRef = await _firestore.collection('boosts').add({
       'userId': userId,
@@ -85,19 +86,19 @@ class BoostService {
       'isActive': true,
       'createdAt': FieldValue.serverTimestamp(),
     });
-    print('BoostService: Boost created with ID: ${boostRef.id}');
+    logger.info('BoostService: Boost created with ID: ${boostRef.id}');
 
     // Update user profile with boost status
-    print('BoostService: Updating user profile...');
+    logger.info('BoostService: Updating user profile...');
     await _firestore.collection('users').doc(userId).update({
       'isBoosted': true,
       'boostEndTime': Timestamp.fromDate(endTime),
       'lastBoostTime': FieldValue.serverTimestamp(),
     });
-    print('BoostService: User profile updated');
+    logger.info('BoostService: User profile updated');
 
     // Log analytics
-    print('BoostService: Logging analytics...');
+    logger.info('BoostService: Logging analytics...');
     await _firestore.collection('analytics').add({
       'userId': userId,
       'action': 'activate_boost',
@@ -105,7 +106,7 @@ class BoostService {
       'adsWatched': adsWatched,
       'timestamp': FieldValue.serverTimestamp(),
     });
-    print('BoostService: Boost creation complete!');
+    logger.info('BoostService: Boost creation complete!');
 
     return boostRef.id;
   }

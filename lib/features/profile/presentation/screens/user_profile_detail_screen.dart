@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -397,7 +398,7 @@ class UserProfileDetailScreen extends ConsumerWidget {
                                       }
                                     }
                                   } catch (e) {
-                                    print('Error querying matches: $e');
+                                    logger.error('Error querying matches: $e');
                                     // Continue to create new match if query fails
                                   }
 

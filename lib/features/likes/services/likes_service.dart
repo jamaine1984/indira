@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:indira_love/features/likes/models/like_model.dart';
 
 class LikesService {
@@ -7,17 +8,17 @@ class LikesService {
 
   /// Get all likes sent by current user
   Stream<List<LikeModel>> getLikesSent(String userId) {
-    print('DEBUG LIKES SERVICE: Getting likes sent by user: $userId');
+    logger.info('DEBUG LIKES SERVICE: Getting likes sent by user: $userId'); // TODO: Use logger.logNetworkRequest if network call
     return _firestore
         .collection('likes')
         .where('likerId', isEqualTo: userId)
         .orderBy('timestamp', descending: true)
         .snapshots()
         .map((snapshot) {
-          print('DEBUG LIKES SERVICE: Found ${snapshot.docs.length} likes sent by user $userId');
+          logger.debug('DEBUG LIKES SERVICE: Found ${snapshot.docs.length} likes sent by user $userId');
           for (var doc in snapshot.docs) {
             final data = doc.data();
-            print('DEBUG LIKES SERVICE: Like doc ${doc.id}: likerId=${data['likerId']}, likedUserId=${data['likedUserId']}');
+            logger.debug('DEBUG LIKES SERVICE: Like doc ${doc.id}: likerId=${data['likerId']}, likedUserId=${data['likedUserId']}');
           }
           return snapshot.docs
               .map((doc) => LikeModel.fromFirestore(doc))

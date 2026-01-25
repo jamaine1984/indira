@@ -105,37 +105,7 @@ exports.onMessageCreated = functions.firestore
     return null;
   });
 
-exports.onVideoCallCreated = functions.firestore
-  .document('video_calls/{callId}')
-  .onCreate(async (snap, context) => {
-    const callData = snap.data();
-    const { callerId, calleeId } = callData;
-
-    // Get callee's FCM token
-    const calleeDoc = await admin.firestore().collection('users').doc(calleeId).get();
-    const fcmToken = calleeDoc.data()?.fcmToken;
-
-    if (!fcmToken) return null;
-
-    // Send incoming call notification
-    const message = {
-      notification: {
-        title: 'Incoming Video Call',
-        body: 'Someone wants to video chat with you!',
-      },
-      data: {
-        type: 'video_call',
-        callId: context.params.callId,
-        callerId: callerId,
-      },
-    };
-
-    await admin.messaging().sendToDevice(fcmToken, message);
-
-    return null;
-  });
-
-// Scheduled function to clean up expired matches and calls
+// Scheduled function to clean up expired matches
 exports.cleanupExpiredData = functions.pubsub
   .schedule('every 24 hours')
   .onRun(async (context) => {
@@ -159,6 +129,81 @@ exports.cleanupExpiredData = functions.pubsub
     console.log(`Cleaned up ${expiredMatches.size} expired matches`);
 
     return null;
+  });
+
+// Scheduled function to clean up expired voice messages (7-day expiry)
+// Saves storage costs by deleting old voice messages from Storage and Firestore
+exports.cleanupExpiredVoiceMessages = functions.pubsub
+  .schedule('every 24 hours')
+  .onRun(async (context) => {
+    console.log('Starting voice message cleanup...');
+
+    const db = admin.firestore();
+    const storage = admin.storage();
+    const now = admin.firestore.Timestamp.now();
+
+    let deletedCount = 0;
+
+    try {
+      // Get all matches with messages
+      const matchesSnapshot = await db.collection('matches').get();
+
+      for (const matchDoc of matchesSnapshot.docs) {
+        const matchId = matchDoc.id;
+
+        // Find expired voice messages in this match
+        const expiredMessages = await db
+          .collection('matches')
+          .doc(matchId)
+          .collection('messages')
+          .where('type', '==', 'voice')
+          .get();
+
+        for (const msgDoc of expiredMessages.docs) {
+          const messageData = msgDoc.data();
+          const metadata = messageData.metadata || {};
+          const expiresAt = metadata.expiresAt;
+          const audioUrl = metadata.audioUrl;
+
+          // Check if message has expired
+          if (expiresAt && expiresAt.toMillis() <= now.toMillis()) {
+            try {
+              // Delete from Firestore
+              await msgDoc.ref.delete();
+
+              // Delete from Storage if URL exists
+              if (audioUrl && typeof audioUrl === 'string') {
+                try {
+                  // Extract storage path from URL
+                  // URL format: https://storage.googleapis.com/bucket/path/to/file.m4a?token=...
+                  const urlParts = audioUrl.split('/o/');
+                  if (urlParts.length > 1) {
+                    const pathWithQuery = urlParts[1];
+                    const storagePath = decodeURIComponent(pathWithQuery.split('?')[0]);
+
+                    await storage.bucket().file(storagePath).delete();
+                    console.log(`Deleted voice message: ${storagePath}`);
+                  }
+                } catch (storageError) {
+                  console.error('Storage deletion error:', storageError.message);
+                  // Continue even if storage deletion fails
+                }
+              }
+
+              deletedCount++;
+            } catch (deleteError) {
+              console.error(`Error deleting message ${msgDoc.id}:`, deleteError.message);
+            }
+          }
+        }
+      }
+
+      console.log(`Voice message cleanup complete: ${deletedCount} messages deleted`);
+      return null;
+    } catch (error) {
+      console.error('Voice message cleanup error:', error);
+      return null;
+    }
   });
 
 // Function to update user online status

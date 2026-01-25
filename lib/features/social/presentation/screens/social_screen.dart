@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -28,7 +29,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
 
   Future<void> _pickImage() async {
     try {
-      print('DEBUG: Starting image picker...');
+      logger.debug('DEBUG: Starting image picker...');
       final XFile? image = await _imagePicker.pickImage(
         source: ImageSource.gallery,
         maxWidth: 1024,
@@ -36,18 +37,18 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         imageQuality: 85,
       );
 
-      print('DEBUG: Image picker returned: ${image?.path}');
+      logger.debug('DEBUG: Image picker returned: ${image?.path}');
       if (image != null) {
-        print('DEBUG: Setting image path to state: ${image.path}');
+        logger.debug('DEBUG: Setting image path to state: ${image.path}');
         setState(() {
           _selectedImagePath = image.path;
         });
-        print('DEBUG: Image path set successfully: $_selectedImagePath');
+        logger.debug('DEBUG: Image path set successfully: $_selectedImagePath');
       } else {
-        print('DEBUG: No image selected');
+        logger.debug('DEBUG: No image selected');
       }
     } catch (e) {
-      print('ERROR: Failed to pick image: $e');
+      logger.error('ERROR: Failed to pick image: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -61,27 +62,27 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
 
   Future<String?> _uploadImage(String imagePath) async {
     try {
-      print('DEBUG: Starting image upload for path: $imagePath');
+      logger.debug('DEBUG: Starting image upload for path: $imagePath');
       final currentUser = AuthService().currentUser;
       if (currentUser == null) {
-        print('ERROR: No current user for image upload');
+        logger.error('ERROR: No current user for image upload');
         return null;
       }
 
       final fileName = '${currentUser.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      print('DEBUG: Uploading to: social_posts/$fileName');
+      logger.info('DEBUG: Uploading to: social_posts/$fileName'); // TODO: Use logger.logNetworkRequest if network call
       final storageRef = FirebaseStorage.instance.ref().child('social_posts/$fileName');
 
-      print('DEBUG: Uploading file...');
+      logger.debug('DEBUG: Uploading file...');
       final uploadTask = await storageRef.putFile(File(imagePath));
-      print('DEBUG: Upload complete, getting download URL...');
+      logger.info('DEBUG: Upload complete, getting download URL...'); // TODO: Use logger.logNetworkRequest if network call
       final downloadUrl = await uploadTask.ref.getDownloadURL();
-      print('DEBUG: Download URL obtained: $downloadUrl');
+      logger.debug('DEBUG: Download URL obtained: $downloadUrl');
 
       return downloadUrl;
     } catch (e) {
-      print('ERROR: Failed to upload image: $e');
-      print('ERROR: Stack trace: ${StackTrace.current}');
+      logger.error('ERROR: Failed to upload image: $e');
+      logger.error('ERROR: Stack trace: ${StackTrace.current}');
       return null;
     }
   }
@@ -257,16 +258,16 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                 else
                   OutlinedButton.icon(
                     onPressed: () async {
-                      print('DEBUG: Add Image button pressed');
+                      logger.debug('DEBUG: Add Image button pressed');
                       await _pickImage();
-                      print('DEBUG: After _pickImage, path = $_selectedImagePath');
+                      logger.debug('DEBUG: After _pickImage, path = $_selectedImagePath');
                       // Force both dialog and main widget to rebuild
                       if (mounted) {
                         setDialogState(() {
-                          print('DEBUG: Updating dialog state');
+                          logger.debug('DEBUG: Updating dialog state');
                         });
                         setState(() {
-                          print('DEBUG: Updating main state');
+                          logger.debug('DEBUG: Updating main state');
                         });
                       }
                     },
@@ -302,17 +303,17 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   Future<void> _createPost(BuildContext context) async {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) {
-      print('ERROR: No current user for post creation');
+      logger.error('ERROR: No current user for post creation');
       return;
     }
 
     final content = _postController.text.trim();
     if (content.isEmpty && _selectedImagePath == null) {
-      print('DEBUG: No content or image, skipping post creation');
+      logger.warning('DEBUG: No content or image, skipping post creation');
       return;
     }
 
-    print('DEBUG: Creating post with content length: ${content.length}, has image: ${_selectedImagePath != null}');
+    logger.info('DEBUG: Creating post with content length: ${content.length}, has image: ${_selectedImagePath != null}'); // TODO: Use logger.logNetworkRequest if network call
 
     // Show loading indicator
     if (context.mounted) {
@@ -330,21 +331,21 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
 
       // Upload image if selected
       if (_selectedImagePath != null) {
-        print('DEBUG: Uploading image from path: $_selectedImagePath');
+        logger.debug('DEBUG: Uploading image from path: $_selectedImagePath');
         try {
           imageUrl = await _uploadImage(_selectedImagePath!).timeout(
             const Duration(seconds: 30),
             onTimeout: () {
-              print('ERROR: Image upload timed out after 30 seconds');
+              logger.error('ERROR: Image upload timed out after 30 seconds');
               return null;
             },
           );
           if (imageUrl == null) {
             throw Exception('Failed to upload image - timeout or network error');
           }
-          print('DEBUG: Image uploaded successfully: $imageUrl');
+          logger.debug('DEBUG: Image uploaded successfully: $imageUrl');
         } catch (uploadError) {
-          print('ERROR: Image upload failed: $uploadError');
+          logger.error('ERROR: Image upload failed: $uploadError');
           if (context.mounted) {
             Navigator.pop(context); // Close loading dialog
             ScaffoldMessenger.of(context).showSnackBar(
@@ -359,7 +360,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
       }
 
       // Create post with or without image
-      print('DEBUG: Creating Firestore document...');
+      logger.debug('DEBUG: Creating Firestore document...');
       await FirebaseFirestore.instance.collection('social_posts').add({
         'userId': currentUser.uid,
         'content': content,
@@ -368,7 +369,7 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         'likes': [],
         'comments': [],
       });
-      print('DEBUG: Post created successfully');
+      logger.info('DEBUG: Post created successfully'); // TODO: Use logger.logNetworkRequest if network call
 
       _postController.clear();
       if (mounted) {
@@ -390,8 +391,8 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         );
       }
     } catch (e) {
-      print('ERROR: Failed to create post: $e');
-      print('ERROR: Stack trace: ${StackTrace.current}');
+      logger.error('ERROR: Failed to create post: $e');
+      logger.error('ERROR: Stack trace: ${StackTrace.current}');
       if (context.mounted) {
         // Close loading dialog
         Navigator.pop(context);

@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/models/gift_model.dart';
 import 'package:indira_love/core/models/subscription_tier.dart';
 import 'package:indira_love/core/services/auth_service.dart';
+import 'package:indira_love/core/services/encryption_service.dart';
+import 'package:indira_love/core/services/rate_limiter_service.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -33,6 +36,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _imagePicker = ImagePicker();
+  final EncryptionService _encryption = EncryptionService();
+  final RateLimiterService _rateLimiter = RateLimiterService();
   SubscriptionTier _userTier = SubscriptionTier.free;
   bool _showGiftPicker = false;
   bool _isUploading = false;
@@ -40,8 +45,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeEncryption();
     _loadUserTier();
     _markMessagesAsRead();
+  }
+
+  Future<void> _initializeEncryption() async {
+    await _encryption.initialize();
+    logger.info('[Encryption] Service initialized: ${_encryption.isEncryptionEnabled()}');
   }
 
   Future<void> _loadUserTier() async {
@@ -88,7 +99,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       }
       await batch.commit();
     } catch (e) {
-      print('Error marking messages as read: $e');
+      logger.error('Error marking messages as read: $e');
     }
   }
 
@@ -347,8 +358,15 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         ],
       );
     } else {
+      // Decrypt text message if encrypted
+      final rawText = message['text'] ?? '';
+      final isEncrypted = message['encrypted'] ?? false;
+      final displayText = isEncrypted
+          ? _encryption.decryptMessage(rawText)
+          : rawText; // Legacy unencrypted message
+
       messageContent = Text(
-        message['text'] ?? '',
+        displayText,
         style: TextStyle(
           color: isMe ? Colors.white : AppTheme.textCharcoal,
           fontSize: 16,
@@ -592,10 +610,30 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) return;
 
+    // RATE LIMITING: Check if user can send message
+    final messageLimit = await _rateLimiter.checkMessageLimit(currentUser.uid);
+    if (!messageLimit.allowed) {
+      logger.logSecurityEvent('[RateLimit] Message blocked: ${messageLimit.reason}');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Slow down! ${messageLimit.reason}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     final messageText = _messageController.text.trim();
     _messageController.clear();
 
     try {
+      // Encrypt message before sending (AES-256)
+      final encryptedText = _encryption.encryptMessage(messageText);
+      logger.info('[Encryption] Message encrypted: ${messageText.length} chars -> ${encryptedText.length} chars'); // TODO: Use logger.logNetworkRequest if network call
+
       await FirebaseFirestore.instance
           .collection('matches')
           .doc(widget.matchId)
@@ -603,18 +641,20 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           .add({
         'senderId': currentUser.uid,
         'receiverId': widget.otherUserId,
-        'text': messageText,
+        'text': encryptedText,
+        'encrypted': true, // Flag to indicate encryption
         'type': 'text',
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
 
-      // Update last message in match doc
+      // Update last message in match doc (store encrypted for privacy)
       await FirebaseFirestore.instance
           .collection('matches')
           .doc(widget.matchId)
           .update({
-        'lastMessage': messageText,
+        'lastMessage': encryptedText,
+        'lastMessageEncrypted': true,
         'lastMessageTime': FieldValue.serverTimestamp(),
       });
 
@@ -698,7 +738,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           'read': false,
         });
       } catch (e) {
-        print('Warning: Could not save to user_gifts: $e');
+        logger.warning('Warning: Could not save to user_gifts: $e');
       }
 
       // Update last message in match doc
@@ -733,7 +773,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         );
       }
     } catch (e) {
-      print('Error sending gift: $e');
+      logger.error('Error sending gift: $e');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

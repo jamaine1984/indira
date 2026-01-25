@@ -58,13 +58,22 @@ service firebase.storage {
       allow delete: if request.auth.token.admin == true;
     }
 
-    // Post images (social feed)
+    // Post images (social feed) - Legacy path
     match /posts/{postId}/{fileName} {
       allow read: if true; // Public read for social feed
       allow write: if isValidUser() &&
                       isValidImage() &&
                       fileName.matches('.*\\.(jpg|jpeg|png|gif)$');
       allow delete: if isValidUser();
+    }
+
+    // Social posts images (Lovers Anonymous)
+    match /social_posts/{fileName} {
+      allow read: if true; // Public read for social feed
+      allow write: if isAuthenticated() &&
+                      isValidImage() &&
+                      fileName.matches('.*\\.(jpg|jpeg|png)$');
+      allow delete: if isAuthenticated();
     }
 
     // Chat images (messages between users)

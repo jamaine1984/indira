@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
@@ -259,25 +260,25 @@ class BoostDialog extends ConsumerWidget {
     int adsRequired,
     bool isGold,
   ) {
-    print('DEBUG BOOST: _activateBoost called - duration: $duration, adsRequired: $adsRequired, isGold: $isGold');
+    logger.debug('DEBUG BOOST: _activateBoost called - duration: $duration, adsRequired: $adsRequired, isGold: $isGold');
     Navigator.pop(context); // Close dialog
 
     if (isGold) {
       // Gold users activate boost immediately
-      print('DEBUG BOOST: Gold user, creating boost immediately');
+      logger.debug('DEBUG BOOST: Gold user, creating boost immediately');
       _createBoost(context, ref, duration, 0);
     } else {
       // Free/Silver users watch ads first
-      print('DEBUG BOOST: Free/Silver user, showing ad dialog');
+      logger.debug('DEBUG BOOST: Free/Silver user, showing ad dialog');
       showWatchAdsDialog(
         context,
         type: 'boost',
         adsRequired: adsRequired,
         onComplete: () async {
-          print('DEBUG BOOST: Ads completed callback triggered!');
-          print('DEBUG BOOST: Creating boost after watching $adsRequired ads for $duration minutes');
+          logger.debug('DEBUG BOOST: Ads completed callback triggered!');
+          logger.debug('DEBUG BOOST: Creating boost after watching $adsRequired ads for $duration minutes');
           await _createBoost(context, ref, duration, adsRequired);
-          print('DEBUG BOOST: Boost creation completed');
+          logger.debug('DEBUG BOOST: Boost creation completed');
         },
       );
     }
@@ -289,26 +290,26 @@ class BoostDialog extends ConsumerWidget {
     int duration,
     int adsWatched,
   ) async {
-    print('DEBUG BOOST: _createBoost called - duration: $duration, adsWatched: $adsWatched');
+    logger.debug('DEBUG BOOST: _createBoost called - duration: $duration, adsWatched: $adsWatched');
     final user = AuthService().currentUser;
     if (user == null) {
-      print('ERROR BOOST: No current user!');
+      logger.error('ERROR BOOST: No current user!');
       return;
     }
 
-    print('DEBUG BOOST: User ID: ${user.uid}');
+    logger.debug('DEBUG BOOST: User ID: ${user.uid}');
 
     try {
-      print('DEBUG BOOST: Calling BoostService.createBoost...');
+      logger.debug('DEBUG BOOST: Calling BoostService.createBoost...');
       final boostId = await ref.read(boostServiceProvider).createBoost(
             userId: user.uid,
             durationMinutes: duration,
             adsWatched: adsWatched,
           );
-      print('DEBUG BOOST: Boost created with ID: $boostId');
+      logger.debug('DEBUG BOOST: Boost created with ID: $boostId');
 
       if (context.mounted) {
-        print('DEBUG BOOST: Showing success snackbar');
+        logger.debug('DEBUG BOOST: Showing success snackbar');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('🚀 Profile boosted for $duration minutes!'),
@@ -319,15 +320,15 @@ class BoostDialog extends ConsumerWidget {
       }
 
       // Refresh active boost - this should trigger the timer to appear
-      print('DEBUG BOOST: Invalidating activeBoostProvider to refresh timer');
+      logger.debug('DEBUG BOOST: Invalidating activeBoostProvider to refresh timer');
       ref.invalidate(activeBoostProvider);
 
       // Force a rebuild of the widget
       await Future.delayed(const Duration(milliseconds: 100));
-      print('DEBUG BOOST: Boost activation complete!');
+      logger.debug('DEBUG BOOST: Boost activation complete!');
     } catch (e) {
-      print('ERROR BOOST: Failed to create boost: $e');
-      print('ERROR BOOST: Stack trace: ${StackTrace.current}');
+      logger.error('ERROR BOOST: Failed to create boost: $e');
+      logger.error('ERROR BOOST: Stack trace: ${StackTrace.current}');
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -3,11 +3,12 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 
 /// Handle background messages
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('Handling a background message: ${message.messageId}');
+  logger.debug('Handling background message: ${message.messageId}', tag: 'PushNotifications');
   // You can show a notification here if needed
 }
 
@@ -34,7 +35,7 @@ class PushNotificationService {
     // Request permission
     final settings = await _requestPermission();
     if (settings.authorizationStatus != AuthorizationStatus.authorized) {
-      print('User declined or has not accepted push notifications');
+      logger.warning('User declined or has not accepted push notifications', tag: 'PushNotifications');
       return;
     }
 
@@ -60,7 +61,7 @@ class PushNotificationService {
     }
 
     _initialized = true;
-    print('Push notifications initialized successfully');
+    logger.info('Push notifications initialized successfully', tag: 'PushNotifications');
   }
 
   /// Request notification permission
@@ -110,12 +111,12 @@ class PushNotificationService {
       'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
     });
 
-    print('FCM Token saved: $fcmToken');
+    logger.logSecurityEvent('FCM Token updated', details: {'platform': Platform.isIOS ? 'ios' : 'android'});
   }
 
   /// Handle foreground messages
   void _handleForegroundMessage(RemoteMessage message) {
-    print('Received foreground message: ${message.messageId}');
+    logger.debug('Received foreground message: ${message.messageId}', tag: 'PushNotifications');
 
     final notification = message.notification;
     final android = message.notification?.android;
@@ -131,13 +132,13 @@ class PushNotificationService {
 
   /// Handle notification tap
   void _onNotificationTap(NotificationResponse response) {
-    print('Notification tapped: ${response.payload}');
+    logger.logUserAction('notification_tapped', details: {'payload': response.payload});
     // TODO: Navigate to appropriate screen based on payload
   }
 
   /// Handle message when app is opened from background
   void _handleMessageOpenedApp(RemoteMessage message) {
-    print('Message opened app: ${message.messageId}');
+    logger.logUserAction('notification_opened_app', details: {'messageId': message.messageId});
     // TODO: Navigate to appropriate screen based on message data
   }
 

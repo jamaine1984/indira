@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:indira_love/core/services/location_service.dart';
 
 class MatchingAlgorithmService {
@@ -49,7 +50,7 @@ class MatchingAlgorithmService {
       }
     } catch (e) {
       // Skip distance scoring if location data is invalid
-      print('Warning: Could not calculate distance score: $e');
+      logger.warning('Warning: Could not calculate distance score: $e');
     }
 
     // 3. Age compatibility (15 points max)
@@ -184,7 +185,7 @@ class MatchingAlgorithmService {
           }
         } catch (e) {
           // Skip distance filter if location data is invalid
-          print('Warning: Could not filter by distance: $e');
+          logger.warning('Warning: Could not filter by distance: $e');
         }
       }
 
@@ -259,7 +260,7 @@ class MatchingAlgorithmService {
 
       return _locationService.calculateDistance(location1, location2);
     } catch (e) {
-      print('Warning: Could not calculate distance between users: $e');
+      logger.warning('Warning: Could not calculate distance between users: $e');
       return null;
     }
   }

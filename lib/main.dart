@@ -22,7 +22,7 @@ void main() async {
     try {
       await dotenv.load(fileName: '.env');
     } catch (e) {
-      print('Warning: .env file not found, continuing without it');
+      logger.warning('Warning: .env file not found, continuing without it');
     }
 
     // Initialize Firebase
@@ -52,7 +52,7 @@ void main() async {
       logger.error('Push notification initialization failed', error: e);
     });
   } catch (e) {
-    print('Initialization error: $e');
+    logger.error('Initialization error: $e');
   }
 
   runApp(const ProviderScope(child: IndiraLoveApp()));

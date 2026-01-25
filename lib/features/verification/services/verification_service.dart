@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_mlkit_face_detection/google_mlkit_face_detection.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 
 class VerificationService {
   // Connect to the nam5 database instance where all users are stored
@@ -139,7 +140,7 @@ class VerificationService {
 
       return true;
     } catch (e) {
-      print('Error submitting verification selfie: $e');
+      logger.error('Error submitting verification selfie', error: e, tag: 'VerificationService');
       return false;
     }
   }
@@ -241,7 +242,7 @@ class VerificationService {
 
       return true;
     } catch (e) {
-      print('Error submitting full verification: $e');
+      logger.error('Error submitting full verification', error: e, tag: 'VerificationService');
       return false;
     }
   }

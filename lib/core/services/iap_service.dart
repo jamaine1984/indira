@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'dart:io';
 import 'package:in_app_purchase/in_app_purchase.dart';
 import 'package:in_app_purchase_android/in_app_purchase_android.dart';
@@ -64,7 +65,7 @@ class IAPService {
     // Load products
     await loadProducts();
 
-    print('IAP initialized successfully');
+    logger.info('IAP initialized successfully');
   }
 
   /// Load available products
@@ -74,17 +75,17 @@ class IAPService {
     final ProductDetailsResponse response = await _iap.queryProductDetails(_productIds);
 
     if (response.error != null) {
-      print('Error loading products: ${response.error}');
+      logger.error('Error loading products: ${response.error}');
       return;
     }
 
     if (response.productDetails.isEmpty) {
-      print('No products found');
+      logger.info('No products found');
       return;
     }
 
     _products = response.productDetails;
-    print('Loaded ${_products.length} products');
+    logger.info('Loaded ${_products.length} products');
   }
 
   /// Get product by ID
@@ -99,13 +100,13 @@ class IAPService {
   /// Purchase a product
   Future<bool> purchase(String productId) async {
     if (!_isAvailable) {
-      print('IAP not available');
+      logger.info('IAP not available');
       return false;
     }
 
     final product = getProduct(productId);
     if (product == null) {
-      print('Product not found: $productId');
+      logger.info('Product not found: $productId');
       return false;
     }
 
@@ -114,7 +115,7 @@ class IAPService {
     try {
       return await _iap.buyNonConsumable(purchaseParam: purchaseParam);
     } catch (e) {
-      print('Error purchasing: $e');
+      logger.error('Error purchasing: $e');
       return false;
     }
   }
@@ -126,21 +127,21 @@ class IAPService {
     try {
       await _iap.restorePurchases();
     } catch (e) {
-      print('Error restoring purchases: $e');
+      logger.error('Error restoring purchases: $e');
     }
   }
 
   /// Handle purchase updates
   void _onPurchaseUpdate(List<PurchaseDetails> purchaseDetailsList) async {
     for (final purchaseDetails in purchaseDetailsList) {
-      print('Purchase status: ${purchaseDetails.status}');
+      logger.info('Purchase status: ${purchaseDetails.status}');
 
       if (purchaseDetails.status == PurchaseStatus.pending) {
         // Handle pending purchase
-        print('Purchase pending');
+        logger.info('Purchase pending');
       } else if (purchaseDetails.status == PurchaseStatus.error) {
         // Handle error
-        print('Purchase error: ${purchaseDetails.error}');
+        logger.error('Purchase error: ${purchaseDetails.error}');
       } else if (purchaseDetails.status == PurchaseStatus.purchased ||
           purchaseDetails.status == PurchaseStatus.restored) {
         // Verify and deliver purchase
@@ -169,7 +170,7 @@ class IAPService {
   Future<void> _deliverProduct(PurchaseDetails purchaseDetails) async {
     final user = _auth.currentUser;
     if (user == null) {
-      print('User not logged in');
+      logger.info('User not logged in');
       return;
     }
 
@@ -217,9 +218,9 @@ class IAPService {
         'verificationData': purchaseDetails.verificationData.serverVerificationData,
       });
 
-      print('Product delivered: $productId');
+      logger.info('Product delivered: $productId');
     } catch (e) {
-      print('Error delivering product: $e');
+      logger.error('Error delivering product: $e');
     }
   }
 
@@ -271,7 +272,7 @@ class IAPService {
         'expiryDate': expiryTimestamp?.toDate(),
       };
     } catch (e) {
-      print('Error checking subscription: $e');
+      logger.error('Error checking subscription: $e');
       return {
         'tier': 'free',
         'active': false,

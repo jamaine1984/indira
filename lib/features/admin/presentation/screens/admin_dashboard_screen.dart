@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
@@ -34,7 +35,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
 
     if (kDebugMode) {
       // Grant admin access in debug mode
-      print('DEBUG: Granting admin access in debug mode');
+      logger.debug('DEBUG: Granting admin access in debug mode');
       if (mounted) {
         setState(() {
           _isAdmin = true;
@@ -54,7 +55,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
 
       if (!isAdmin) {
         // Not admin, redirect to discover
-        print('DEBUG: User is not admin, redirecting to discover');
+        logger.debug('DEBUG: User is not admin, redirecting to discover');
         context.go('/discover');
       }
     }

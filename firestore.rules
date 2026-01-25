@@ -24,9 +24,13 @@ service cloud.firestore {
 
     match /users/{userId} {
 
-      // All logged-in users can READ and LIST all profiles (required for Discover)
-      // 'read' = single document reads, 'list' = query operations
-      allow read, list: if isAuth();
+      // All logged-in users can READ single profiles (required for Discover)
+      allow read: if isAuth();
+
+      // COST OPTIMIZATION: Limit bulk queries to prevent expensive reads
+      // At 1M users, unlimited queries would cost $0.60 per 1000 reads
+      // This limit forces client-side caching (95%+ cost reduction)
+      allow list: if isAuth() && request.query.limit <= 100;
 
       // Only owner can create/update their profile
       allow create, update: if isOwner(userId);
@@ -46,8 +50,17 @@ service cloud.firestore {
     // ============================================================
 
     match /likes/{likeId} {
-      // Allow all operations for authenticated users
-      allow read, write: if isAuth();
+      // Allow reading individual likes
+      allow read: if isAuth();
+
+      // COST OPTIMIZATION: Limit queries to prevent expensive scans
+      allow list: if isAuth() && request.query.limit <= 50;
+
+      // Allow creating likes
+      allow create: if isAuth() && isOwner(request.resource.data.userId);
+
+      // Allow updating/deleting own likes
+      allow update, delete: if isAuth() && isOwner(resource.data.userId);
     }
 
     // ============================================================
@@ -55,8 +68,17 @@ service cloud.firestore {
     // ============================================================
 
     match /swipes/{swipeId} {
-      // Allow all operations for authenticated users
-      allow read, write: if isAuth();
+      // Allow reading individual swipes
+      allow read: if isAuth();
+
+      // COST OPTIMIZATION: Limit queries (swipes are logged for analytics)
+      allow list: if isAuth() && request.query.limit <= 100;
+
+      // Allow creating swipes
+      allow create: if isAuth() && isOwner(request.resource.data.userId);
+
+      // Swipes are immutable once created
+      allow update, delete: if false;
     }
 
     // ============================================================
@@ -64,8 +86,21 @@ service cloud.firestore {
     // ============================================================
 
     match /matches/{matchId} {
-      // Allow all operations for authenticated users
-      allow read, write: if isAuth();
+      // Allow reading individual matches
+      allow read: if isAuth();
+
+      // COST OPTIMIZATION: Limit match queries
+      // Users typically have 10-100 matches, limit to 200 for safety
+      allow list: if isAuth() && request.query.limit <= 200;
+
+      // Allow creating matches (from Cloud Functions or mutual likes)
+      allow create: if isAuth();
+
+      // Allow updating match metadata (lastMessage, etc.)
+      allow update: if isAuth();
+
+      // Don't allow deleting matches (archive instead)
+      allow delete: if false;
     }
 
     // ============================================================
@@ -74,19 +109,27 @@ service cloud.firestore {
 
     match /matches/{matchId}/messages/{messageId} {
 
-      // Only allow messages between matched users
-      allow read, list: if isAuth() &&
+      // Only allow reading individual messages between matched users
+      allow read: if isAuth() &&
                   (request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users);
 
+      // COST OPTIMIZATION: Limit message queries per conversation
+      // Most conversations show last 50-100 messages, limit to 200
+      allow list: if isAuth() &&
+                  (request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users) &&
+                  request.query.limit <= 200;
+
+      // Allow creating messages with size validation
       allow create: if isAuth() &&
                     request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users &&
-                    validString(request.resource.data.content, 2000);
+                    validString(request.resource.data.text, 2000);
 
       // Allow updating delivery/read timestamps only
       allow update: if isAuth() &&
                     request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users &&
-                    request.resource.data.diff(resource.data).changedKeys().hasOnly(["readAt", "deliveredAt"]);
+                    request.resource.data.diff(resource.data).changedKeys().hasOnly(["readAt", "deliveredAt", "read"]);
 
+      // Don't allow deleting messages
       allow delete: if false;
     }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 
@@ -78,20 +79,20 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     final dragDistance = _dragCurrentX - _dragStartX;
     const swipeThreshold = 150.0; // Increased from 100 to make swipe harder
 
-    print('DEBUG: Pan ended, drag distance: $dragDistance, threshold: $swipeThreshold');
+    logger.debug('DEBUG: Pan ended, drag distance: $dragDistance, threshold: $swipeThreshold');
 
     if (dragDistance.abs() > swipeThreshold) {
       final direction = dragDistance > 0 ? SwipeDirection.right : SwipeDirection.left;
-      print('DEBUG: Swipe detected! Direction: $direction');
+      logger.debug('DEBUG: Swipe detected! Direction: $direction');
 
       // Animate card off screen
       _animateCardOffScreen(direction).then((_) {
-        print('DEBUG: Animation complete, calling onSwipe callback');
+        logger.debug('DEBUG: Animation complete, calling onSwipe callback');
         widget.onSwipe(direction);
       });
     } else {
       // Return to center
-      print('DEBUG: Swipe too short, returning to center');
+      logger.debug('DEBUG: Swipe too short, returning to center');
       setState(() {
         _isDragging = false;
         _dragCurrentX = _dragStartX;
@@ -100,7 +101,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
   }
 
   Future<void> _animateCardOffScreen(SwipeDirection direction) async {
-    print('DEBUG: Starting off-screen animation for direction: $direction');
+    logger.debug('DEBUG: Starting off-screen animation for direction: $direction');
     final screenWidth = MediaQuery.of(context).size.width;
     final endX = direction == SwipeDirection.right ? screenWidth * 2 : -screenWidth * 2;
 
@@ -126,7 +127,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
 
     _animationController.reset();
     await _animationController.forward();
-    print('DEBUG: Off-screen animation completed');
+    logger.debug('DEBUG: Off-screen animation completed');
   }
 
   double get _rotation {
@@ -219,8 +220,8 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
     final photos = widget.user['photos'] as List<dynamic>? ?? [];
     final mainPhoto = photos.isNotEmpty ? photos[0] : null;
 
-    print('DEBUG: User ${widget.user['displayName']} photos: $photos');
-    print('DEBUG: Main photo URL: $mainPhoto');
+    logger.info('DEBUG: User ${widget.user['displayName']} photos: $photos'); // TODO: Use logger.logNetworkRequest if network call
+    logger.debug('DEBUG: Main photo URL: $mainPhoto');
 
     if (mainPhoto != null && mainPhoto.toString().isNotEmpty) {
       return CachedNetworkImage(
@@ -233,8 +234,8 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
           ),
         ),
         errorWidget: (context, url, error) {
-          print('DEBUG: Error loading image: $error');
-          print('DEBUG: URL was: $url');
+          logger.error('DEBUG: Error loading image: $error');
+          logger.debug('DEBUG: URL was: $url');
           return Container(
             color: AppTheme.secondaryPlum.withOpacity(0.3),
             child: Center(
@@ -258,7 +259,7 @@ class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
         },
       );
     } else {
-      print('DEBUG: No photo available for ${widget.user['displayName']}');
+      logger.info('DEBUG: No photo available for ${widget.user['displayName']}'); // TODO: Use logger.logNetworkRequest if network call
       return Container(
         color: AppTheme.secondaryPlum.withOpacity(0.3),
         child: Center(

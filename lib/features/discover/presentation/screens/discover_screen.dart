@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
@@ -31,7 +32,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final state = ref.read(discoverProvider);
       if (state.potentialMatches.isEmpty && !state.isLoading) {
-        print('DEBUG DISCOVER: No users loaded on init, loading now...');
+        logger.debug('DEBUG DISCOVER: No users loaded on init, loading now...');
         ref.read(discoverProvider.notifier).loadPotentialMatches();
       }
     });
@@ -132,7 +133,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             user: discoverState.potentialMatches.first,
                             isActive: true,
                             onSwipe: (direction) {
-                              print('DEBUG: onSwipe callback triggered for user: ${discoverState.potentialMatches.first['uid']}');
+                              logger.debug('DEBUG: onSwipe callback triggered for user: ${discoverState.potentialMatches.first['uid']}');
                               ref.read(discoverProvider.notifier).handleSwipe(
                                     direction,
                                     discoverState.potentialMatches.first['uid'],

@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 
 class MatchesService {
   // Connect to the nam5 database instance where all users are stored
@@ -41,7 +42,7 @@ class MatchesService {
 
       return false;
     } catch (e) {
-      print('Error checking/creating match: $e');
+      logger.error('Error checking/creating match: $e');
       return false;
     }
   }

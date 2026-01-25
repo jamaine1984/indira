@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -39,7 +40,7 @@ class VoiceMessageService {
       }
       return false;
     } catch (e) {
-      print('Error starting recording: $e');
+      logger.error('Error starting recording: $e');
       return false;
     }
   }
@@ -51,7 +52,7 @@ class VoiceMessageService {
       _isRecording = false;
       return path;
     } catch (e) {
-      print('Error stopping recording: $e');
+      logger.error('Error stopping recording: $e');
       return null;
     }
   }
@@ -62,7 +63,7 @@ class VoiceMessageService {
       await _recorder.stop();
       _isRecording = false;
     } catch (e) {
-      print('Error canceling recording: $e');
+      logger.error('Error canceling recording: $e');
     }
   }
 
@@ -101,7 +102,7 @@ class VoiceMessageService {
         'fileName': fileName,
       };
     } catch (e) {
-      print('Error uploading voice message: $e');
+      logger.error('Error uploading voice message: $e');
       return null;
     }
   }
@@ -136,7 +137,7 @@ class VoiceMessageService {
         'lastMessageSenderId': user.uid,
       });
     } catch (e) {
-      print('Error sending voice message: $e');
+      logger.error('Error sending voice message: $e');
     }
   }
 
@@ -166,7 +167,7 @@ class VoiceMessageService {
         });
       }
     } catch (e) {
-      print('Error playing voice message: $e');
+      logger.error('Error playing voice message: $e');
     }
   }
 
@@ -176,7 +177,7 @@ class VoiceMessageService {
       await _player.pause();
       _isPlaying = false;
     } catch (e) {
-      print('Error pausing playback: $e');
+      logger.error('Error pausing playback: $e');
     }
   }
 
@@ -187,7 +188,7 @@ class VoiceMessageService {
       _isPlaying = false;
       _currentlyPlayingId = null;
     } catch (e) {
-      print('Error stopping playback: $e');
+      logger.error('Error stopping playback: $e');
     }
   }
 
@@ -210,7 +211,7 @@ class VoiceMessageService {
 
       return duration?.inSeconds ?? 0;
     } catch (e) {
-      print('Error getting audio duration: $e');
+      logger.error('Error getting audio duration: $e');
       return 0;
     }
   }

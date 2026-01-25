@@ -1,4 +1,5 @@
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:permission_handler/permission_handler.dart';
 
@@ -137,5 +138,5 @@ class NotificationService {
 
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // Handle background message
-  print('Handling a background message: ${message.messageId}');
+  logger.info('Handling a background message: ${message.messageId}');
 }

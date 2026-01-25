@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:indira_love/core/services/logger_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class DatabaseService {
@@ -28,7 +29,7 @@ class DatabaseService {
       {int limit = 1000}) {
     // Get ALL users (no limit) - we'll filter client-side
     // This ensures users always see everyone available
-    print('DEBUG DATABASE: Fetching users from Firestore (limit: $limit)');
+    logger.info('DEBUG DATABASE: Fetching users from Firestore (limit: $limit)'); // TODO: Use logger.logNetworkRequest if network call
     return _firestore
         .collection('users')
         .limit(limit) // Get up to 1000 users
@@ -69,7 +70,7 @@ class DatabaseService {
 
       return interactedIds;
     } catch (e) {
-      print('Error getting interacted user IDs: $e');
+      logger.error('Error getting interacted user IDs: $e');
       return {};
     }
   }
@@ -94,7 +95,7 @@ class DatabaseService {
       return swipeDoc.exists;
     } catch (e) {
       // If there's an error checking, assume no interaction
-      print('Error checking interaction: $e');
+      logger.error('Error checking interaction: $e');
       return false;
     }
   }
@@ -111,12 +112,12 @@ class DatabaseService {
 
   // Likes and Matches
   Future<void> likeUser(String likerId, String likedId) async {
-    print('DEBUG LIKE: Creating like from $likerId to $likedId');
+    logger.debug('DEBUG LIKE: Creating like from $likerId to $likedId');
     final batch = _firestore.batch();
 
     // Add like with correct field names for likes page
     final likeRef = _firestore.collection('likes').doc('${likerId}_$likedId');
-    print('DEBUG LIKE: Setting like document with ID: ${likerId}_$likedId');
+    logger.debug('DEBUG LIKE: Setting like document with ID: ${likerId}_$likedId');
     batch.set(likeRef, {
       'likerId': likerId,
       'likedUserId': likedId, // Changed from 'likedId' to match likes service
@@ -124,7 +125,7 @@ class DatabaseService {
       'isRevealed': false, // For blur feature
       'isMutualMatch': false, // Will be updated if match occurs
     });
-    print('DEBUG LIKE: Like document prepared with fields: likerId=$likerId, likedUserId=$likedId');
+    logger.debug('DEBUG LIKE: Like document prepared with fields: likerId=$likerId, likedUserId=$likedId');
 
     // Check for mutual like (match)
     final mutualLikeRef =
@@ -150,7 +151,7 @@ class DatabaseService {
     }
 
     await batch.commit();
-    print('DEBUG LIKE: Batch committed successfully! Like should now be in Firestore');
+    logger.debug('DEBUG LIKE: Batch committed successfully! Like should now be in Firestore');
   }
 
   Future<void> _sendMatchNotification(String userId, String matchedUserId) async {
@@ -418,7 +419,7 @@ class DatabaseService {
 
       return blockedIds;
     } catch (e) {
-      print('Error getting blocked user IDs: $e');
+      logger.error('Error getting blocked user IDs: $e');
       return {};
     }
   }
