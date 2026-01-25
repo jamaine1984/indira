@@ -1,25 +1,28 @@
 import 'package:flutter/material.dart';
-import 'package:indira_love/core/services/logger_service.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:io';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
+import 'package:indira_love/core/services/logger_service.dart';
+import 'package:timeago/timeago.dart' as timeago;
 
-class SocialScreen extends ConsumerStatefulWidget {
+class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
 
   @override
-  ConsumerState<SocialScreen> createState() => _SocialScreenState();
+  State<SocialScreen> createState() => _SocialScreenState();
 }
 
-class _SocialScreenState extends ConsumerState<SocialScreen> {
+class _SocialScreenState extends State<SocialScreen> {
   final TextEditingController _postController = TextEditingController();
-  final ImagePicker _imagePicker = ImagePicker();
-  String? _selectedImagePath;
+  String? _cachedDisplayName;
+  bool _isPosting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserDisplayName();
+  }
 
   @override
   void dispose() {
@@ -27,69 +30,28 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    try {
-      logger.debug('DEBUG: Starting image picker...');
-      final XFile? image = await _imagePicker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 85,
-      );
+  Future<void> _loadUserDisplayName() async {
+    final currentUser = AuthService().currentUser;
+    if (currentUser == null) return;
 
-      logger.debug('DEBUG: Image picker returned: ${image?.path}');
-      if (image != null) {
-        logger.debug('DEBUG: Setting image path to state: ${image.path}');
-        setState(() {
-          _selectedImagePath = image.path;
-        });
-        logger.debug('DEBUG: Image path set successfully: $_selectedImagePath');
-      } else {
-        logger.debug('DEBUG: No image selected');
-      }
-    } catch (e) {
-      logger.error('ERROR: Failed to pick image: $e');
+    try {
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(currentUser.uid)
+          .get();
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to pick image: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        setState(() {
+          _cachedDisplayName = userDoc.data()?['displayName'] ?? 'Anonymous';
+        });
       }
-    }
-  }
-
-  Future<String?> _uploadImage(String imagePath) async {
-    try {
-      logger.debug('DEBUG: Starting image upload for path: $imagePath');
-      final currentUser = AuthService().currentUser;
-      if (currentUser == null) {
-        logger.error('ERROR: No current user for image upload');
-        return null;
-      }
-
-      final fileName = '${currentUser.uid}_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      logger.info('DEBUG: Uploading to: social_posts/$fileName'); // TODO: Use logger.logNetworkRequest if network call
-      final storageRef = FirebaseStorage.instance.ref().child('social_posts/$fileName');
-
-      logger.debug('DEBUG: Uploading file...');
-      final uploadTask = await storageRef.putFile(File(imagePath));
-      logger.info('DEBUG: Upload complete, getting download URL...'); // TODO: Use logger.logNetworkRequest if network call
-      final downloadUrl = await uploadTask.ref.getDownloadURL();
-      logger.debug('DEBUG: Download URL obtained: $downloadUrl');
-
-      return downloadUrl;
     } catch (e) {
-      logger.error('ERROR: Failed to upload image: $e');
-      logger.error('ERROR: Stack trace: ${StackTrace.current}');
-      return null;
+      logger.error('Failed to load display name: $e');
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = AuthService().currentUser;
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -98,24 +60,29 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
+              // Header - Fixed size to prevent overflow
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'Lovers Anonymous',
-                      style: Theme.of(context).textTheme.displaySmall?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
+                    Flexible(
+                      child: Text(
+                        'Lovers Anonymous',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 22,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     IconButton(
                       onPressed: () => _showCreatePostDialog(context),
                       icon: const Icon(
-                        Icons.add,
+                        Icons.add_circle,
                         color: Colors.white,
+                        size: 32,
                       ),
                     ),
                   ],
@@ -130,70 +97,71 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
                   ),
-                  child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance
-                        .collection('social_posts')
-                        .where('timestamp', isGreaterThan: Timestamp.fromDate(
-                          DateTime.now().subtract(const Duration(days: 30)),
-                        ))
-                        .orderBy('timestamp', descending: true)
-                        .limit(50)
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
-                      }
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20),
+                    child: StreamBuilder<QuerySnapshot>(
+                      stream: FirebaseFirestore.instance
+                          .collection('social_posts')
+                          .orderBy('timestamp', descending: true)
+                          .limit(50)
+                          .snapshots(),
+                      builder: (context, snapshot) {
+                        if (snapshot.hasError) {
+                          return Center(child: Text('Error: ${snapshot.error}'));
+                        }
 
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: CircularProgressIndicator());
+                        }
 
-                      final posts = snapshot.data?.docs ?? [];
+                        final posts = snapshot.data?.docs ?? [];
 
-                      if (posts.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.forum,
-                                size: 80,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No posts yet',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
+                        if (posts.isEmpty) {
+                          return Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.forum,
+                                  size: 80,
+                                  color: Colors.grey[400],
                                 ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Be the first to share something!',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No posts yet',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    color: Colors.grey[600],
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
-                              ),
-                            ],
-                          ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Be the first to share something!',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Colors.grey[500],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: posts.length,
+                          itemBuilder: (context, index) {
+                            final post = posts[index];
+                            return _buildPostItem(context, post);
+                          },
                         );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: posts.length,
-                        itemBuilder: (context, index) {
-                          final post = posts[index];
-                          return _buildPostItem(context, post);
-                        },
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
               ),
+              const SizedBox(height: 16),
             ],
           ),
         ),
@@ -202,105 +170,45 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
   }
 
   void _showCreatePostDialog(BuildContext context) {
+    _postController.clear();
+
     showDialog(
       context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setDialogState) => AlertDialog(
-          title: const Text('Create Post'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: _postController,
-                  decoration: const InputDecoration(
-                    hintText: 'Share your thoughts...',
-                    border: OutlineInputBorder(),
-                  ),
-                  maxLines: 5,
-                  maxLength: 500,
-                ),
-                const SizedBox(height: 16),
-                // Image preview
-                if (_selectedImagePath != null)
-                  Stack(
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.file(
-                          File(_selectedImagePath!),
-                          height: 200,
-                          width: double.infinity,
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      Positioned(
-                        top: 8,
-                        right: 8,
-                        child: IconButton(
-                          onPressed: () {
-                            setDialogState(() {
-                              _selectedImagePath = null;
-                            });
-                            setState(() {
-                              _selectedImagePath = null;
-                            });
-                          },
-                          icon: const Icon(Icons.close),
-                          style: IconButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Colors.black,
-                          ),
-                        ),
-                      ),
-                    ],
-                  )
-                else
-                  OutlinedButton.icon(
-                    onPressed: () async {
-                      logger.debug('DEBUG: Add Image button pressed');
-                      await _pickImage();
-                      logger.debug('DEBUG: After _pickImage, path = $_selectedImagePath');
-                      // Force both dialog and main widget to rebuild
-                      if (mounted) {
-                        setDialogState(() {
-                          logger.debug('DEBUG: Updating dialog state');
-                        });
-                        setState(() {
-                          logger.debug('DEBUG: Updating main state');
-                        });
-                      }
-                    },
-                    icon: const Icon(Icons.image),
-                    label: const Text('Add Image'),
-                  ),
-              ],
-            ),
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Create Post'),
+        content: TextField(
+          controller: _postController,
+          decoration: const InputDecoration(
+            hintText: 'Share your thoughts anonymously...',
+            border: OutlineInputBorder(),
           ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                setState(() {
-                  _selectedImagePath = null;
-                });
-                Navigator.pop(context);
-              },
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () => _createPost(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppTheme.primaryRose,
-              ),
-              child: const Text('Post'),
-            ),
-          ],
+          maxLines: 5,
+          maxLength: 500,
         ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: _isPosting ? null : () => _createPost(dialogContext),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppTheme.primaryRose,
+            ),
+            child: _isPosting
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  )
+                : const Text('Post', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
 
-  Future<void> _createPost(BuildContext context) async {
+  Future<void> _createPost(BuildContext dialogContext) async {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) {
       logger.error('ERROR: No current user for post creation');
@@ -308,94 +216,46 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
     }
 
     final content = _postController.text.trim();
-    if (content.isEmpty && _selectedImagePath == null) {
-      logger.warning('DEBUG: No content or image, skipping post creation');
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please write something to post')),
+      );
       return;
     }
 
-    logger.info('DEBUG: Creating post with content length: ${content.length}, has image: ${_selectedImagePath != null}'); // TODO: Use logger.logNetworkRequest if network call
-
-    // Show loading indicator
-    if (context.mounted) {
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-    }
+    setState(() => _isPosting = true);
 
     try {
-      String? imageUrl;
+      String displayName = _cachedDisplayName ?? 'Anonymous';
 
-      // Upload image if selected
-      if (_selectedImagePath != null) {
-        logger.debug('DEBUG: Uploading image from path: $_selectedImagePath');
-        try {
-          imageUrl = await _uploadImage(_selectedImagePath!).timeout(
-            const Duration(seconds: 30),
-            onTimeout: () {
-              logger.error('ERROR: Image upload timed out after 30 seconds');
-              return null;
-            },
-          );
-          if (imageUrl == null) {
-            throw Exception('Failed to upload image - timeout or network error');
-          }
-          logger.debug('DEBUG: Image uploaded successfully: $imageUrl');
-        } catch (uploadError) {
-          logger.error('ERROR: Image upload failed: $uploadError');
-          if (context.mounted) {
-            Navigator.pop(context); // Close loading dialog
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Image upload failed: $uploadError'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-          return; // Exit early on upload failure
-        }
-      }
-
-      // Create post with or without image
-      logger.debug('DEBUG: Creating Firestore document...');
+      // Create post
       await FirebaseFirestore.instance.collection('social_posts').add({
         'userId': currentUser.uid,
+        'displayName': displayName,
         'content': content,
-        'imageUrl': imageUrl,
         'timestamp': FieldValue.serverTimestamp(),
-        'likes': [],
-        'comments': [],
+        'likes': 0,
+        'likedBy': [],
       });
-      logger.info('DEBUG: Post created successfully'); // TODO: Use logger.logNetworkRequest if network call
 
+      logger.info('Post created successfully');
       _postController.clear();
-      if (mounted) {
-        setState(() {
-          _selectedImagePath = null;
-        });
+
+      if (dialogContext.mounted) {
+        Navigator.pop(dialogContext);
       }
 
-      if (context.mounted) {
-        // Close loading dialog
-        Navigator.pop(context);
-        // Close create post dialog
-        Navigator.pop(context);
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Post created!'),
+            content: Text('Post shared!'),
             backgroundColor: Colors.green,
           ),
         );
       }
     } catch (e) {
-      logger.error('ERROR: Failed to create post: $e');
-      logger.error('ERROR: Stack trace: ${StackTrace.current}');
-      if (context.mounted) {
-        // Close loading dialog
-        Navigator.pop(context);
+      logger.error('Failed to create post: $e');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to create post: $e'),
@@ -403,233 +263,138 @@ class _SocialScreenState extends ConsumerState<SocialScreen> {
           ),
         );
       }
+    } finally {
+      if (mounted) {
+        setState(() => _isPosting = false);
+      }
     }
   }
 
-  Widget _buildPostItem(BuildContext context, DocumentSnapshot postDoc) {
-    final postData = postDoc.data() as Map<String, dynamic>;
-    final userId = postData['userId'] as String? ?? '';
-    final content = postData['content'] as String? ?? '';
-    final imageUrl = postData['imageUrl'] as String?;
-    final timestamp = (postData['timestamp'] as Timestamp?)?.toDate();
-    final likes = List<String>.from(postData['likes'] ?? []);
-    final currentUser = AuthService().currentUser;
-    final isLiked = currentUser != null && likes.contains(currentUser.uid);
-    return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
-      builder: (context, userSnapshot) {
-        final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
-        final displayName = userData?['displayName'] ?? 'Anonymous User';
-        final photos = (userData?['photos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
-        final photoUrl = photos.isNotEmpty ? photos[0] : null;
+  Widget _buildPostItem(BuildContext context, DocumentSnapshot post) {
+    final data = post.data() as Map<String, dynamic>?;
+    if (data == null) return const SizedBox();
 
-        return Container(
-          margin: const EdgeInsets.only(bottom: 16),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: AppTheme.neutralWhite,
-            borderRadius: BorderRadius.circular(12),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.1),
-                blurRadius: 8,
-                spreadRadius: 2,
-              ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // User Info
-              Row(
-                children: [
-                  CircleAvatar(
-                    radius: 20,
-                    backgroundColor: AppTheme.primaryRose.withOpacity(0.2),
-                    backgroundImage: photoUrl != null ? CachedNetworkImageProvider(photoUrl) : null,
-                    child: photoUrl == null
-                        ? const Icon(
-                            Icons.person,
-                            color: AppTheme.primaryRose,
-                          )
-                        : null,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          displayName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 14,
-                          ),
+    final userId = data['userId'] ?? '';
+    final displayName = data['displayName'] ?? 'Anonymous';
+    final content = data['content'] ?? '';
+    final timestamp = data['timestamp'] as Timestamp?;
+    final likes = data['likes'] ?? 0;
+    final likedBy = List<String>.from(data['likedBy'] ?? []);
+    final currentUser = AuthService().currentUser;
+    final hasLiked = currentUser != null && likedBy.contains(currentUser.uid);
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header with user photo
+            Row(
+              children: [
+                FutureBuilder<DocumentSnapshot>(
+                  future: FirebaseFirestore.instance
+                      .collection('users')
+                      .doc(userId)
+                      .get(),
+                  builder: (context, userSnapshot) {
+                    if (userSnapshot.hasData && userSnapshot.data != null) {
+                      final userData = userSnapshot.data!.data() as Map<String, dynamic>?;
+                      final photoUrl = userData?['photoUrl'] as String?;
+
+                      if (photoUrl != null && photoUrl.isNotEmpty) {
+                        return CircleAvatar(
+                          radius: 20,
+                          backgroundImage: CachedNetworkImageProvider(photoUrl),
+                        );
+                      }
+                    }
+
+                    // Fallback to initial
+                    return CircleAvatar(
+                      radius: 20,
+                      backgroundColor: AppTheme.primaryRose,
+                      child: Text(
+                        displayName.isNotEmpty ? displayName[0].toUpperCase() : '?',
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    );
+                  },
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        displayName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
                         ),
+                      ),
+                      if (timestamp != null)
                         Text(
-                          timestamp != null ? _formatTimestamp(timestamp) : 'Just now',
-                          style: const TextStyle(
-                            color: Colors.grey,
+                          timeago.format(timestamp.toDate()),
+                          style: TextStyle(
+                            color: Colors.grey[600],
                             fontSize: 12,
                           ),
                         ),
-                      ],
-                    ),
-                  ),
-                  if (currentUser?.uid == userId)
-                    IconButton(
-                      onPressed: () => _deletePost(postDoc.id),
-                      icon: const Icon(Icons.delete_outline),
-                      iconSize: 20,
-                      color: Colors.red,
-                    ),
-                ],
-              ),
-
-              const SizedBox(height: 12),
-
-              // Post Content
-              if (content.isNotEmpty)
-                Text(
-                  content,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-
-              // Post Image
-              if (imageUrl != null) ...[
-                if (content.isNotEmpty) const SizedBox(height: 12),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: CachedNetworkImage(
-                    imageUrl: imageUrl,
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    placeholder: (context, url) => Container(
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Center(
-                        child: CircularProgressIndicator(),
-                      ),
-                    ),
-                    errorWidget: (context, url, error) => Container(
-                      height: 200,
-                      color: Colors.grey[300],
-                      child: const Icon(Icons.error),
-                    ),
+                    ],
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: 12),
 
-              const SizedBox(height: 12),
+            // Content
+            Text(
+              content,
+              style: const TextStyle(fontSize: 15),
+            ),
+            const SizedBox(height: 12),
 
-              // Action Buttons
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Row(
-                    children: [
-                      IconButton(
-                        onPressed: () => _toggleLike(postDoc.id, likes),
-                        icon: Icon(
-                          isLiked ? Icons.favorite : Icons.favorite_border,
-                          color: isLiked ? Colors.red : Colors.grey,
-                        ),
-                        iconSize: 20,
-                      ),
-                      Text(
-                        '${likes.length}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      const Icon(
-                        Icons.chat_bubble_outline,
-                        color: Colors.grey,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${(postData['comments'] as List?)?.length ?? 0}',
-                        style: const TextStyle(
-                          color: Colors.grey,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
+            // Actions - Only like button, no comments
+            Row(
+              children: [
+                IconButton(
+                  onPressed: () => _toggleLike(post.id, hasLiked),
+                  icon: Icon(
+                    hasLiked ? Icons.favorite : Icons.favorite_border,
+                    color: hasLiked ? Colors.red : Colors.grey,
                   ),
-                ],
-              ),
-            ],
-          ),
-        );
-      },
+                ),
+                Text('$likes'),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 
-  String _formatTimestamp(DateTime timestamp) {
-    final now = DateTime.now();
-    final difference = now.difference(timestamp);
-
-    if (difference.inMinutes < 1) {
-      return 'Just now';
-    } else if (difference.inHours < 1) {
-      return '${difference.inMinutes}m ago';
-    } else if (difference.inDays < 1) {
-      return '${difference.inHours}h ago';
-    } else if (difference.inDays < 7) {
-      return '${difference.inDays}d ago';
-    } else {
-      return '${timestamp.month}/${timestamp.day}/${timestamp.year}';
-    }
-  }
-
-  Future<void> _toggleLike(String postId, List<String> currentLikes) async {
+  Future<void> _toggleLike(String postId, bool hasLiked) async {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) return;
 
     try {
-      if (currentLikes.contains(currentUser.uid)) {
-        // Unlike
+      if (hasLiked) {
         await FirebaseFirestore.instance.collection('social_posts').doc(postId).update({
-          'likes': FieldValue.arrayRemove([currentUser.uid]),
+          'likes': FieldValue.increment(-1),
+          'likedBy': FieldValue.arrayRemove([currentUser.uid]),
         });
       } else {
-        // Like
         await FirebaseFirestore.instance.collection('social_posts').doc(postId).update({
-          'likes': FieldValue.arrayUnion([currentUser.uid]),
+          'likes': FieldValue.increment(1),
+          'likedBy': FieldValue.arrayUnion([currentUser.uid]),
         });
       }
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to update like: $e')),
-        );
-      }
-    }
-  }
-
-  Future<void> _deletePost(String postId) async {
-    try {
-      await FirebaseFirestore.instance.collection('social_posts').doc(postId).delete();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Post deleted'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to delete post: $e')),
-        );
-      }
+      logger.error('Failed to toggle like: $e');
     }
   }
 }

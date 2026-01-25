@@ -252,6 +252,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       },
                     ),
                     _buildMenuItem(
+                      icon: Icons.notifications_active,
+                      title: 'Activity',
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/activity');
+                      },
+                    ),
+                    _buildMenuItem(
                       icon: Icons.person,
                       title: 'Profile',
                       onTap: () {

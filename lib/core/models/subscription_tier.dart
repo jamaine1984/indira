@@ -20,11 +20,11 @@ class SubscriptionLimits {
   });
 
   static const free = SubscriptionLimits(
-    dailyMessages: 10,
-    dailyLikes: 10,
+    dailyMessages: 3,  // Free users get 3 messages per day
+    dailyLikes: 3,     // Free users get 3 likes per day
     unlimitedGifts: false,
     hasAds: true,
-    adsToRefill: 3,
+    adsToRefill: 3,    // Watch 3 ads to refill
   );
 
   static const silver = SubscriptionLimits(
@@ -79,8 +79,8 @@ class SubscriptionPlan {
     priceDisplay: 'Free',
     limits: SubscriptionLimits.free,
     features: [
-      '10 messages per day',
-      '10 likes per day',
+      '3 messages per day',
+      '3 likes per day',
       'Watch 3 ads to refill',
       'Basic matching',
     ],
@@ -89,8 +89,8 @@ class SubscriptionPlan {
   static const silverPlan = SubscriptionPlan(
     tier: SubscriptionTier.silver,
     name: 'Silver',
-    price: 5.99,
-    priceDisplay: '\$5.99/month',
+    price: 2.99,
+    priceDisplay: '\$2.99/month',
     limits: SubscriptionLimits.silver,
     features: [
       '50 messages per day',
@@ -104,8 +104,8 @@ class SubscriptionPlan {
   static const goldPlan = SubscriptionPlan(
     tier: SubscriptionTier.gold,
     name: 'Gold',
-    price: 14.99,
-    priceDisplay: '\$14.99/month',
+    price: 9.99,
+    priceDisplay: '\$9.99/month',
     limits: SubscriptionLimits.gold,
     features: [
       'Unlimited messages',

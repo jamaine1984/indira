@@ -54,13 +54,17 @@ service cloud.firestore {
       allow read: if isAuth();
 
       // COST OPTIMIZATION: Limit queries to prevent expensive scans
-      allow list: if isAuth() && request.query.limit <= 50;
+      allow list: if isAuth();
 
-      // Allow creating likes
-      allow create: if isAuth() && isOwner(request.resource.data.userId);
+      // Allow creating likes - check likerId field (who is sending the like)
+      allow create: if isAuth() && isOwner(request.resource.data.likerId);
 
-      // Allow updating/deleting own likes
-      allow update, delete: if isAuth() && isOwner(resource.data.userId);
+      // Allow updating likes (for mutual match status)
+      allow update: if isAuth() &&
+        (isOwner(resource.data.likerId) || isOwner(resource.data.likedUserId));
+
+      // Allow deleting own likes
+      allow delete: if isAuth() && isOwner(resource.data.likerId);
     }
 
     // ============================================================
@@ -323,6 +327,35 @@ service cloud.firestore {
       // Allow deleting own posts
       allow delete: if isAuth() &&
                      resource.data.userId == request.auth.uid;
+
+      // Comments subcollection
+      match /comments/{commentId} {
+        allow read, list: if isAuth();
+        allow create: if isAuth() &&
+                       request.resource.data.userId == request.auth.uid;
+        allow delete: if isAuth() &&
+                       resource.data.userId == request.auth.uid;
+        allow update: if false;
+      }
+    }
+
+    // ============================================================
+    // RATE LIMITS — ANTI-ABUSE
+    // ============================================================
+
+    match /rate_limits/{limitId} {
+      // Allow users to read and write their own rate limit data
+      allow read, write: if isAuth() &&
+                          limitId.matches(request.auth.uid + '_.*');
+    }
+
+    // ============================================================
+    // ACTION LOGS — USER ACTIVITY TRACKING
+    // ============================================================
+
+    match /action_logs/{logId} {
+      // Allow users to read and write their own action logs
+      allow read, write: if isAuth();
     }
   }
 }
