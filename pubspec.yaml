@@ -81,6 +81,7 @@ dependencies:
 
   # Development
   flutter_dotenv: ^5.1.0
+  timeago: ^3.7.1
 
 dev_dependencies:
   flutter_test:

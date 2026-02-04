@@ -14,7 +14,8 @@
       "Bash(git push:*)",
       "Bash(adb:*)",
       "Bash(echo:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(flutter pub add:*)"
     ],
     "deny": [],
     "ask": []

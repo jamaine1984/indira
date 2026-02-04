@@ -268,40 +268,39 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
 
     // All tiers must watch 1 ad per gift (even Gold)
     showWatchAdsDialog(
-        context,
-        type: 'gift',
-        adsRequired: 1,
-        onComplete: () async {
-          try {
-            await FirebaseFirestore.instance.collection('user_gifts').add({
-              'userId': user.uid,
-              'giftId': gift.id,
-              'giftName': gift.name,
-              'giftEmoji': gift.emoji,
-              'obtainedAt': FieldValue.serverTimestamp(),
-              'obtainedVia': 'ad_reward',
-            });
+      context,
+      type: 'gift',
+      adsRequired: 1,
+      onComplete: () async {
+        try {
+          await FirebaseFirestore.instance.collection('user_gifts').add({
+            'userId': user.uid,
+            'giftId': gift.id,
+            'giftName': gift.name,
+            'giftEmoji': gift.emoji,
+            'obtainedAt': FieldValue.serverTimestamp(),
+            'obtainedVia': 'ad_reward',
+          });
 
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            }
-          } catch (e) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Failed to save gift: $e'),
-                  backgroundColor: Colors.red,
-                ),
-              );
-            }
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
+                backgroundColor: Colors.green,
+              ),
+            );
           }
-        },
-      );
-    }
+        } catch (e) {
+          if (context.mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Failed to save gift: $e'),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
+        }
+      },
+    );
   }
 }
