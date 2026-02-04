@@ -696,11 +696,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       return const Stream.empty();
     }
 
-    // Get matches with unread messages
+    // Get matches with unread messages - simplified query
     return FirebaseFirestore.instance
         .collection('matches')
         .where('users', arrayContains: currentUser.uid)
-        .where('unreadBy.$currentUser.uid', isEqualTo: true)
         .snapshots();
   }
 }
