@@ -323,6 +323,7 @@ class CulturalOptions {
     'Kerala',
     'Madhya Pradesh',
     'Maharashtra',
+    'Mumbai', // Major city
     'Manipur',
     'Meghalaya',
     'Mizoram',
@@ -337,6 +338,7 @@ class CulturalOptions {
     'Uttar Pradesh',
     'Uttarakhand',
     'West Bengal',
+    'Bangladesh', // Neighboring country
     'Abroad/NRI',
   ];
 

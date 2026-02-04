@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
+import 'package:indira_love/core/models/cultural_preferences.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:indira_love/core/services/auth_service.dart';
@@ -26,6 +27,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String _gender = '';
   String _lookingFor = ''; // Gender preference for matching
   final List<String> _interests = [];
+
+  // Cultural Preferences
+  String? _religion;
+  String? _dietType;
+  String? _motherTongue = 'English';
+  String? _marriageTimeline;
+  String? _state = 'Delhi';
 
   // Popular countries list
   final List<String> _countries = [
@@ -118,7 +126,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < 4) {
+    if (_currentPage < 5) {
       // Validate current page
       if (_currentPage == 0 && !_validateBasicInfo()) return;
       if (_currentPage == 1 && _mainImage == null) {
@@ -127,7 +135,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         );
         return;
       }
-      if (_currentPage == 2 && _interests.length < 3) {
+      if (_currentPage == 2) {
+        // Cultural preferences are optional, just proceed
+      }
+      if (_currentPage == 3 && _interests.length < 3) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Please select at least 3 interests')),
         );
@@ -227,6 +238,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         'interests': _interests,
         'photos': photoUrls,
         'profileComplete': true,
+        'culturalPreferences': {
+          'religion': _religion,
+          'dietType': _dietType,
+          'motherTongue': _motherTongue,
+          'marriageTimeline': _marriageTimeline,
+          'state': _state,
+          'currentCity': _selectedCountry,
+        },
       });
 
       if (mounted) {
@@ -263,7 +282,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: List.generate(
-                    5,
+                    6,
                     (index) => Expanded(
                       child: Container(
                         height: 4,
@@ -291,6 +310,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   children: [
                     _buildBasicInfoPage(),
                     _buildPhotoUploadPage(),
+                    _buildCulturalPreferencesPage(),
                     _buildInterestsPage(),
                     _buildBioPage(),
                     _buildReviewPage(),
@@ -341,7 +361,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(
-                                _currentPage == 4 ? 'Complete Profile' : 'Next',
+                                _currentPage == 5 ? 'Complete Profile' : 'Next',
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -655,6 +675,149 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 return Container();
               }
             },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCulturalPreferencesPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Cultural & Lifestyle',
+            style: Theme.of(context).textTheme.displaySmall?.copyWith(
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Help us find your perfect match',
+            style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 16),
+          ),
+          const SizedBox(height: 32),
+
+          // Religion
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _religion,
+              decoration: const InputDecoration(
+                labelText: 'Religion',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              items: CulturalOptions.religions.map((religion) {
+                return DropdownMenuItem(
+                  value: religion,
+                  child: Text(religion),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _religion = value),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Diet
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _dietType,
+              decoration: const InputDecoration(
+                labelText: 'Diet Preference',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              items: CulturalOptions.dietTypes.map((diet) {
+                return DropdownMenuItem(
+                  value: diet,
+                  child: Text(diet),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _dietType = value),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Mother Tongue
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _motherTongue,
+              decoration: const InputDecoration(
+                labelText: 'Mother Tongue',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              items: CulturalOptions.motherTongues.take(10).map((language) {
+                return DropdownMenuItem(
+                  value: language,
+                  child: Text(language),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _motherTongue = value),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Marriage Timeline
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _marriageTimeline,
+              decoration: const InputDecoration(
+                labelText: 'When to Get Married?',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              items: CulturalOptions.marriageTimelines.map((timeline) {
+                return DropdownMenuItem(
+                  value: timeline,
+                  child: Text(timeline),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _marriageTimeline = value),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // State
+          Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.9),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: DropdownButtonFormField<String>(
+              value: _state,
+              decoration: const InputDecoration(
+                labelText: 'State/Location',
+                border: InputBorder.none,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              ),
+              items: CulturalOptions.indianStates.map((state) {
+                return DropdownMenuItem(
+                  value: state,
+                  child: Text(state),
+                );
+              }).toList(),
+              onChanged: (value) => setState(() => _state = value),
+            ),
           ),
         ],
       ),

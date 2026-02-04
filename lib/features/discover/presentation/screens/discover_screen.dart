@@ -72,7 +72,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         children: [
           // Top bar with logo and hamburger menu
           Container(
-            color: Colors.black.withOpacity(0.3),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppTheme.primaryRose.withOpacity(0.8),
+                  AppTheme.secondaryPlum.withOpacity(0.6),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
             child: SafeArea(
               bottom: false,
               child: Padding(
@@ -227,14 +236,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/likes');
-                      },
-                    ),
-                    _buildMenuItem(
-                      icon: Icons.filter_list,
-                      title: 'Filters',
-                      onTap: () {
-                        Navigator.pop(context);
-                        _showFiltersDialog(context);
                       },
                     ),
                     _buildMenuItem(

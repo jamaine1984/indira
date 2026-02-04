@@ -99,7 +99,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     children: [
                       // Tagline
                       Text(
-                        'Find Your Perfect Match\nAcross Borders',
+                        'Find Your Perfect Match',
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -118,7 +118,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
                       // Description
                       Text(
-                        'Connect with amazing people worldwide\nthrough video speed dating',
+                        'Discover meaningful connections with\nverified profiles & cultural compatibility',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                           color: Colors.white.withOpacity(0.9),
                           height: 1.5,

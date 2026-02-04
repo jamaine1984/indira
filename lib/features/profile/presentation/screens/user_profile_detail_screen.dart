@@ -132,9 +132,16 @@ class UserProfileDetailScreen extends ConsumerWidget {
               // Profile Info
               SliverToBoxAdapter(
                 child: Container(
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppTheme.neutralWhite,
+                        AppTheme.accentGold.withOpacity(0.1),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
                       topLeft: Radius.circular(30),
                       topRight: Radius.circular(30),
                     ),
@@ -246,6 +253,20 @@ class UserProfileDetailScreen extends ConsumerWidget {
                               );
                             }).toList(),
                           ),
+                          const SizedBox(height: 24),
+                        ],
+
+                        // Cultural & Lifestyle Section
+                        if (userData['culturalPreferences'] != null) ...[
+                          const Text(
+                            'Cultural & Lifestyle',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          _buildCulturalInfo(userData['culturalPreferences']),
                           const SizedBox(height: 24),
                         ],
 
@@ -461,6 +482,136 @@ class UserProfileDetailScreen extends ConsumerWidget {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildCulturalInfo(Map<String, dynamic> culturalPrefs) {
+    final List<Widget> items = [];
+
+    // Religion & Diet
+    if (culturalPrefs['religion'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.temple_hindu,
+        label: culturalPrefs['religion'],
+        color: AppTheme.secondaryPlum,
+      ));
+    }
+
+    if (culturalPrefs['dietType'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.restaurant,
+        label: culturalPrefs['dietType'],
+        color: culturalPrefs['dietType'] == 'Vegetarian' ||
+               culturalPrefs['dietType'] == 'Vegan' ||
+               culturalPrefs['dietType'] == 'Jain'
+               ? Colors.green
+               : Colors.orange,
+      ));
+    }
+
+    // Language
+    if (culturalPrefs['motherTongue'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.language,
+        label: culturalPrefs['motherTongue'],
+        color: AppTheme.primaryRose,
+      ));
+    }
+
+    // Family & Marriage
+    if (culturalPrefs['marriageTimeline'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.favorite,
+        label: culturalPrefs['marriageTimeline'],
+        color: Colors.red,
+      ));
+    }
+
+    if (culturalPrefs['familyValues'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.family_restroom,
+        label: culturalPrefs['familyValues'],
+        color: AppTheme.secondaryPlum,
+      ));
+    }
+
+    // Education & Profession
+    if (culturalPrefs['educationLevel'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.school,
+        label: culturalPrefs['educationLevel'],
+        color: Colors.blue,
+      ));
+    }
+
+    if (culturalPrefs['profession'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.work,
+        label: culturalPrefs['profession'],
+        color: Colors.indigo,
+      ));
+    }
+
+    // Location
+    if (culturalPrefs['state'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.location_on,
+        label: culturalPrefs['state'],
+        color: Colors.teal,
+      ));
+    }
+
+    if (culturalPrefs['isNRI'] == true) {
+      items.add(_buildInfoChip(
+        icon: Icons.flight,
+        label: 'NRI',
+        color: Colors.purple,
+      ));
+    }
+
+    // Manglik Status
+    if (culturalPrefs['manglik'] != null) {
+      items.add(_buildInfoChip(
+        icon: Icons.star,
+        label: culturalPrefs['manglik'] == true ? 'Manglik' : 'Non-Manglik',
+        color: culturalPrefs['manglik'] == true ? Colors.orange : Colors.green,
+      ));
+    }
+
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: items,
+    );
+  }
+
+  Widget _buildInfoChip({
+    required IconData icon,
+    required String label,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
