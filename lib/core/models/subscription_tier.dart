@@ -28,11 +28,11 @@ class SubscriptionLimits {
   );
 
   static const silver = SubscriptionLimits(
-    dailyMessages: 50,
-    dailyLikes: 50,
+    dailyMessages: 25,  // Silver users get 25 messages per day
+    dailyLikes: 10,     // Silver users get 10 likes per day
     unlimitedGifts: false,
     hasAds: true,
-    adsToRefill: 3,
+    adsToRefill: 3,    // Watch 3 ads to refill
   );
 
   static const gold = SubscriptionLimits(
@@ -93,8 +93,8 @@ class SubscriptionPlan {
     priceDisplay: '\$2.99/month',
     limits: SubscriptionLimits.silver,
     features: [
-      '50 messages per day',
-      '50 likes per day',
+      '25 messages per day',
+      '10 likes per day',
       'Watch 3 ads to refill',
       'Priority matching',
       'See who liked you',
@@ -110,8 +110,8 @@ class SubscriptionPlan {
     features: [
       'Unlimited messages',
       'Unlimited likes',
-      'Unlimited gifts',
-      'No ads',
+      'Profile boost',
+      'No ads (except 1 for gifts)',
       'Priority matching',
       'See who liked you',
       'Advanced filters',

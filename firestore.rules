@@ -123,10 +123,15 @@ service cloud.firestore {
                   (request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users) &&
                   request.query.limit <= 200;
 
-      // Allow creating messages with size validation
+      // Allow creating messages with size validation (support text, image, gift messages)
       allow create: if isAuth() &&
                     request.auth.uid in get(/databases/$(database)/documents/matches/$(matchId)).data.users &&
-                    validString(request.resource.data.text, 2000);
+                    (
+                      (request.resource.data.text != null && validString(request.resource.data.text, 2000)) ||
+                      request.resource.data.imageUrl != null ||
+                      request.resource.data.giftId != null ||
+                      request.resource.data.type != null
+                    );
 
       // Allow updating delivery/read timestamps only
       allow update: if isAuth() &&
@@ -158,8 +163,9 @@ service cloud.firestore {
         // Allow authenticated users to read and list messages
         allow read, list: if isAuth();
 
-        // Allow creating messages
-        allow create: if isAuth();
+        // Allow creating messages (text, image, gift, etc.)
+        allow create: if isAuth() &&
+                      request.resource.data.senderId == request.auth.uid;
 
         // Allow updating message status (read, delivered)
         allow update: if isAuth();

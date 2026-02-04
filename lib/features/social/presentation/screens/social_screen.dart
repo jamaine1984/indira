@@ -278,7 +278,9 @@ class _SocialScreenState extends State<SocialScreen> {
     final displayName = data['displayName'] ?? 'Anonymous';
     final content = data['content'] ?? '';
     final timestamp = data['timestamp'] as Timestamp?;
-    final likes = data['likes'] ?? 0;
+    // Safely handle likes as it might be stored as different types
+    final likesData = data['likes'];
+    final likes = likesData is int ? likesData : (likesData is String ? int.tryParse(likesData) ?? 0 : 0);
     final likedBy = List<String>.from(data['likedBy'] ?? []);
     final currentUser = AuthService().currentUser;
     final hasLiked = currentUser != null && likedBy.contains(currentUser.uid);
