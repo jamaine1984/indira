@@ -15,7 +15,8 @@
       "Bash(adb:*)",
       "Bash(echo:*)",
       "Bash(ls:*)",
-      "Bash(flutter pub add:*)"
+      "Bash(flutter pub add:*)",
+      "Bash(copy:*)"
     ],
     "deny": [],
     "ask": []

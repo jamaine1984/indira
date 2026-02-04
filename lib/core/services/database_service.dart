@@ -36,6 +36,54 @@ class DatabaseService {
         .get(); // One-time fetch, no limit, no stream
   }
 
+  // Paginated version for 1M+ users scalability
+  Future<QuerySnapshot> getPotentialMatchesPaginated({
+    required String currentUserId,
+    required int limit,
+    DocumentSnapshot? startAfter,
+    Map<String, dynamic>? filters,
+  }) async {
+    logger.info('[Database] Fetching paginated users: limit=$limit, hasStartAfter=${startAfter != null}');
+
+    Query query = _firestore
+        .collection('users')
+        .where(FieldPath.documentId, isNotEqualTo: currentUserId);
+
+    // Apply location filter if provided (reduces dataset significantly)
+    if (filters != null) {
+      if (filters['city'] != null) {
+        query = query.where('city', isEqualTo: filters['city']);
+      } else if (filters['state'] != null) {
+        query = query.where('state', isEqualTo: filters['state']);
+      } else if (filters['country'] != null) {
+        query = query.where('country', isEqualTo: filters['country']);
+      }
+
+      // Apply age filter if provided
+      if (filters['minAge'] != null && filters['maxAge'] != null) {
+        final currentYear = DateTime.now().year;
+        final maxBirthYear = currentYear - (filters['minAge'] as int);
+        final minBirthYear = currentYear - (filters['maxAge'] as int);
+
+        query = query
+            .where('birthYear', isGreaterThanOrEqualTo: minBirthYear)
+            .where('birthYear', isLessThanOrEqualTo: maxBirthYear);
+      }
+    }
+
+    // Order by a consistent field for pagination
+    query = query.orderBy(FieldPath.documentId);
+
+    // Apply pagination
+    if (startAfter != null) {
+      query = query.startAfterDocument(startAfter);
+    }
+
+    query = query.limit(limit);
+
+    return await query.get();
+  }
+
   // Get all user IDs that current user has already interacted with
   Future<Set<String>> getAllInteractedUserIds(String userId) async {
     try {

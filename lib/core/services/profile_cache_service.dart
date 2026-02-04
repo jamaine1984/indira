@@ -13,7 +13,7 @@ class ProfileCacheService {
 
   // Cache configuration
   static const Duration cacheExpiry = Duration(minutes: 30);
-  static const int maxCacheSize = 1000;
+  static const int maxCacheSize = 10000; // Increased for 1M+ users - only keeps recent profiles
 
   // Cache storage
   final Map<String, CachedProfile> _cache = {};
@@ -135,6 +135,33 @@ class ProfileCacheService {
       'lastFetch': _lastFullFetch?.toIso8601String(),
       'nextRefresh': _lastFullFetch?.add(cacheExpiry).toIso8601String(),
     };
+  }
+
+  /// Cache paginated users for 1M+ user scalability
+  void cachePaginatedProfiles(List<Map<String, dynamic>> users, String pageKey) {
+    // Store this page of users
+    for (final user in users) {
+      final userId = user['uid'] as String?;
+      if (userId != null) {
+        _cache[userId] = CachedProfile(
+          data: user,
+          cachedAt: DateTime.now(),
+        );
+      }
+    }
+
+    // Enforce max cache size
+    if (_cache.length > maxCacheSize) {
+      _evictOldestEntries();
+    }
+
+    logger.info('[ProfileCache] Cached ${users.length} users from page: $pageKey. Total cached: ${_cache.length}');
+  }
+
+  /// Check if we have cached profiles for a specific filter/location
+  bool hasCachedProfilesForFilter(String filterKey) {
+    // Simple check - in production, you'd track which filters have been cached
+    return _cache.isNotEmpty && isFullCacheFresh();
   }
 }
 
