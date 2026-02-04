@@ -359,12 +359,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         ],
       );
     } else {
-      // Decrypt text message if encrypted
-      final rawText = message['text'] ?? '';
-      final isEncrypted = message['encrypted'] ?? false;
-      final displayText = isEncrypted
-          ? _encryption.decryptMessage(rawText)
-          : rawText; // Legacy unencrypted message
+      // Get the message text directly - skip encryption for now
+      final displayText = message['text'] ?? message['content'] ?? '';
 
       messageContent = Text(
         displayText,
@@ -652,10 +648,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     _messageController.clear();
 
     try {
-      // Encrypt message before sending (AES-256)
-      final encryptedText = _encryption.encryptMessage(messageText);
-      logger.info('[Encryption] Message encrypted: ${messageText.length} chars -> ${encryptedText.length} chars'); // TODO: Use logger.logNetworkRequest if network call
-
+      // Send message without encryption for now
       await FirebaseFirestore.instance
           .collection('matches')
           .doc(widget.matchId)
@@ -663,8 +656,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           .add({
         'senderId': currentUser.uid,
         'receiverId': widget.otherUserId,
-        'text': encryptedText,
-        'encrypted': true, // Flag to indicate encryption
+        'text': messageText,
+        'encrypted': false, // No encryption for now
         'type': 'text',
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
@@ -673,13 +666,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       // Increment daily message count
       await usageService.incrementMessageCount(currentUser.uid);
 
-      // Update last message in match doc (store encrypted for privacy)
+      // Update last message in match doc
       await FirebaseFirestore.instance
           .collection('matches')
           .doc(widget.matchId)
           .update({
-        'lastMessage': encryptedText,
-        'lastMessageEncrypted': true,
+        'lastMessage': messageText,
+        'lastMessageEncrypted': false,
         'lastMessageTime': FieldValue.serverTimestamp(),
       });
 
