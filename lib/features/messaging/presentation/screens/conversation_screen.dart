@@ -8,6 +8,7 @@ import 'package:indira_love/core/models/subscription_tier.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/services/encryption_service.dart';
 import 'package:indira_love/core/services/rate_limiter_service.dart';
+import 'package:indira_love/core/services/usage_service.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -610,7 +611,28 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) return;
 
-    // RATE LIMITING: Check if user can send message
+    // Check daily message limit FIRST
+    final usageService = UsageService();
+    final canSend = await usageService.canSendMessage(currentUser.uid);
+    if (!canSend) {
+      logger.info('[Usage] Daily message limit reached for user: ${currentUser.uid}');
+      if (mounted) {
+        // Show watch ads dialog to refill messages
+        showWatchAdsDialog(
+          context,
+          type: 'messages',
+          adsRequired: 3,
+          onComplete: () async {
+            await usageService.refillMessages(currentUser.uid, 3);
+            // Try sending the message again after refill
+            _sendTextMessage();
+          },
+        );
+      }
+      return;
+    }
+
+    // RATE LIMITING: Check if user can send message (rapid fire prevention)
     final messageLimit = await _rateLimiter.checkMessageLimit(currentUser.uid);
     if (!messageLimit.allowed) {
       logger.logSecurityEvent('[RateLimit] Message blocked: ${messageLimit.reason}');
@@ -647,6 +669,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         'timestamp': FieldValue.serverTimestamp(),
         'read': false,
       });
+
+      // Increment daily message count
+      await usageService.incrementMessageCount(currentUser.uid);
 
       // Update last message in match doc (store encrypted for privacy)
       await FirebaseFirestore.instance
