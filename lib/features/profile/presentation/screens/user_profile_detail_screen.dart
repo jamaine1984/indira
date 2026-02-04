@@ -137,8 +137,9 @@ class UserProfileDetailScreen extends ConsumerWidget {
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
                       colors: [
-                        AppTheme.neutralWhite,
-                        AppTheme.accentGold.withOpacity(0.1),
+                        const Color(0xFFFFF5F5), // Very light pink
+                        AppTheme.primaryRose.withOpacity(0.08), // Subtle rose
+                        AppTheme.accentGold.withOpacity(0.12), // Light gold
                       ],
                     ),
                     borderRadius: const BorderRadius.only(

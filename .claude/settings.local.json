@@ -16,7 +16,8 @@
       "Bash(echo:*)",
       "Bash(ls:*)",
       "Bash(flutter pub add:*)",
-      "Bash(copy:*)"
+      "Bash(copy:*)",
+      "Bash(flutter run:*)"
     ],
     "deny": [],
     "ask": []
