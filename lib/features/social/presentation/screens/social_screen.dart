@@ -60,13 +60,20 @@ class _SocialScreenState extends State<SocialScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // Header - Fixed size to prevent overflow
+              // Header with Back Button
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Flexible(
+                    IconButton(
+                      onPressed: () => Navigator.pop(context),
+                      icon: const Icon(
+                        Icons.arrow_back,
+                        color: Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                    Expanded(
                       child: Text(
                         'Lovers Anonymous',
                         style: const TextStyle(
@@ -84,6 +91,71 @@ class _SocialScreenState extends State<SocialScreen> {
                         color: Colors.white,
                         size: 32,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Info Box with Indian Quote
+              Container(
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    const Icon(
+                      Icons.info_outline,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Share Your Heart Anonymously',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Express your feelings, share your crush stories, or seek advice about love. Keep it respectful and from the heart. No inappropriate content allowed.',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.9),
+                        fontSize: 13,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(color: Colors.white30, thickness: 1),
+                    const SizedBox(height: 8),
+                    Text(
+                      '"प्रेम वह शक्ति है जो दो आत्माओं को एक कर देती है"',
+                      style: TextStyle(
+                        color: AppTheme.accentGold,
+                        fontSize: 14,
+                        fontStyle: FontStyle.italic,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '(Love is the power that unites two souls)',
+                      style: TextStyle(
+                        color: Colors.white.withOpacity(0.7),
+                        fontSize: 11,
+                        fontStyle: FontStyle.italic,
+                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),

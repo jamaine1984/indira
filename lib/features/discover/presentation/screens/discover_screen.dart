@@ -3,6 +3,8 @@ import 'package:indira_love/core/services/logger_service.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
 import 'package:indira_love/core/services/location_service.dart';
@@ -246,20 +248,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                         _showLocationDialog(context);
                       },
                     ),
-                    _buildMenuItem(
-                      icon: Icons.chat_bubble,
-                      title: 'Messages',
-                      onTap: () {
-                        Navigator.pop(context);
-                        context.push('/messages');
-                      },
-                    ),
-                    _buildMenuItem(
-                      icon: Icons.favorite,
-                      title: 'Matches',
-                      onTap: () {
-                        Navigator.pop(context);
-                        context.push('/matches');
+                    StreamBuilder<QuerySnapshot>(
+                      stream: _getUnreadMessagesCount(),
+                      builder: (context, snapshot) {
+                        final unreadCount = snapshot.data?.docs.length ?? 0;
+                        return _buildMenuItem(
+                          icon: Icons.chat_bubble,
+                          title: 'Messages',
+                          badgeCount: unreadCount,
+                          onTap: () {
+                            Navigator.pop(context);
+                            context.push('/messages');
+                          },
+                        );
                       },
                     ),
                     _buildMenuItem(
@@ -276,14 +277,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/gifts');
-                      },
-                    ),
-                    _buildMenuItem(
-                      icon: Icons.notifications_active,
-                      title: 'Activity',
-                      onTap: () {
-                        Navigator.pop(context);
-                        context.push('/activity');
                       },
                     ),
                     _buildMenuItem(
@@ -335,9 +328,42 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     required IconData icon,
     required String title,
     required VoidCallback onTap,
+    int? badgeCount,
   }) {
     return ListTile(
-      leading: Icon(icon, color: Colors.white, size: 28),
+      leading: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          Icon(icon, color: Colors.white, size: 28),
+          if (badgeCount != null && badgeCount > 0)
+            Positioned(
+              right: -8,
+              top: -8,
+              child: Container(
+                padding: const EdgeInsets.all(4),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: Colors.white, width: 1),
+                ),
+                constraints: const BoxConstraints(
+                  minWidth: 20,
+                  minHeight: 20,
+                ),
+                child: Center(
+                  child: Text(
+                    badgeCount > 99 ? '99+' : badgeCount.toString(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
       title: Text(
         title,
         style: const TextStyle(
@@ -662,5 +688,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ],
       ),
     );
+  }
+
+  Stream<QuerySnapshot> _getUnreadMessagesCount() {
+    final currentUser = AuthService().currentUser;
+    if (currentUser == null) {
+      return const Stream.empty();
+    }
+
+    // Get matches with unread messages
+    return FirebaseFirestore.instance
+        .collection('matches')
+        .where('users', arrayContains: currentUser.uid)
+        .where('unreadBy.$currentUser.uid', isEqualTo: true)
+        .snapshots();
   }
 }

@@ -314,15 +314,6 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         isDestructive: true,
                       ),
 
-                      _buildProfileOption(
-                        context,
-                        'Developer Settings',
-                        Icons.developer_mode,
-                        () {
-                          context.push('/developer-settings');
-                        },
-                      ),
-
                       const SizedBox(height: 32),
 
                       // Sign Out Button
