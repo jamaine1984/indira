@@ -8,6 +8,7 @@ import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/services/data_export_service.dart';
 import 'package:indira_love/core/services/account_deletion_service.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
+import 'package:indira_love/features/profile/presentation/screens/cultural_preferences_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -227,6 +228,20 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         Icons.edit,
                         () {
                           context.push('/edit-profile');
+                        },
+                      ),
+
+                      _buildProfileOption(
+                        context,
+                        'Cultural & Lifestyle',
+                        Icons.temple_hindu,
+                        () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const CulturalPreferencesScreen(),
+                            ),
+                          );
                         },
                       ),
 

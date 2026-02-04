@@ -8,6 +8,7 @@ import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
 import 'package:indira_love/core/services/location_service.dart';
 import 'package:indira_love/features/discover/presentation/widgets/swipe_card.dart';
 import 'package:indira_love/features/discover/presentation/providers/discover_provider.dart';
+import 'package:indira_love/features/discover/presentation/screens/cultural_filters_screen.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
 import 'package:indira_love/features/likes/presentation/widgets/boost_timer_widget.dart';
 
@@ -94,16 +95,41 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           ),
                     ),
 
-                    // Hamburger Menu Icon
-                    IconButton(
-                      icon: const Icon(
-                        Icons.menu,
-                        color: Colors.white,
-                        size: 32,
-                      ),
-                      onPressed: () {
-                        _scaffoldKey.currentState?.openEndDrawer();
-                      },
+                    // Action buttons
+                    Row(
+                      children: [
+                        // Cultural Filters Button
+                        IconButton(
+                          icon: const Icon(
+                            Icons.filter_list,
+                            color: Colors.white,
+                            size: 28,
+                          ),
+                          onPressed: () async {
+                            await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const CulturalFiltersScreen(),
+                              ),
+                            );
+                            // Refresh after applying filters
+                            ref.read(discoverProvider.notifier).loadPotentialMatches();
+                          },
+                          tooltip: 'Cultural Filters',
+                        ),
+
+                        // Hamburger Menu Icon
+                        IconButton(
+                          icon: const Icon(
+                            Icons.menu,
+                            color: Colors.white,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            _scaffoldKey.currentState?.openEndDrawer();
+                          },
+                        ),
+                      ],
                     ),
                   ],
                 ),

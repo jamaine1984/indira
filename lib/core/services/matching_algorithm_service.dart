@@ -92,27 +92,144 @@ class MatchingAlgorithmService {
       factors++;
     }
 
-    // 5. Profile completeness (10 points max)
+    // 5. Cultural & Religious Compatibility (25 points max) - CRITICAL for Indian dating
+    final myCultural = currentUser['culturalPreferences'] as Map<String, dynamic>?;
+    final theirCultural = potentialMatch['culturalPreferences'] as Map<String, dynamic>?;
+
+    if (myCultural != null && theirCultural != null) {
+      double culturalScore = 0;
+
+      // Religion match (10 points) - Very important in India
+      if (myCultural['religion'] == theirCultural['religion'] &&
+          myCultural['religion'] != null) {
+        culturalScore += 10;
+
+        // Additional points for similar religious practice level (2 points)
+        if (myCultural['religiousPractice'] == theirCultural['religiousPractice']) {
+          culturalScore += 2;
+        }
+      }
+
+      // Diet compatibility (8 points) - Critical for daily life
+      final myDiet = myCultural['dietType'];
+      final theirDiet = theirCultural['dietType'];
+      if (myDiet == theirDiet && myDiet != null) {
+        culturalScore += 8;
+      } else if (myDiet == 'Vegetarian' && theirDiet == 'Eggetarian') {
+        culturalScore += 4; // Partial compatibility
+      } else if ((myDiet == 'Vegetarian' || myDiet == 'Vegan' || myDiet == 'Jain') &&
+                 (theirDiet == 'Non-Vegetarian')) {
+        culturalScore -= 5; // Major incompatibility
+      }
+
+      // Language match (5 points)
+      if (myCultural['motherTongue'] == theirCultural['motherTongue'] &&
+          myCultural['motherTongue'] != null) {
+        culturalScore += 5;
+      }
+
+      // Marriage timeline compatibility (5 points)
+      final myTimeline = myCultural['marriageTimeline'];
+      final theirTimeline = theirCultural['marriageTimeline'];
+      if (myTimeline == theirTimeline && myTimeline != null) {
+        culturalScore += 5;
+      }
+
+      // Family values match (3 points)
+      if (myCultural['familyValues'] == theirCultural['familyValues']) {
+        culturalScore += 3;
+      }
+
+      // Manglik compatibility (Important for many) - penalty for mismatch
+      final myManglik = myCultural['manglik'] as bool?;
+      final theirManglik = theirCultural['manglik'] as bool?;
+      if (myManglik != null && theirManglik != null) {
+        if (myManglik == theirManglik) {
+          culturalScore += 2; // Bonus for match
+        } else {
+          culturalScore -= 8; // Significant penalty for mismatch
+        }
+      }
+
+      totalScore += culturalScore.clamp(0, 25);
+      factors++;
+    }
+
+    // 6. Professional & Education Match (10 points max)
+    if (myCultural != null && theirCultural != null) {
+      double professionalScore = 0;
+
+      // Education level compatibility (5 points)
+      final myEdu = myCultural['educationLevel'];
+      final theirEdu = theirCultural['educationLevel'];
+      if (myEdu == theirEdu && myEdu != null) {
+        professionalScore += 5;
+      } else if (myEdu != null && theirEdu != null) {
+        // Partial score for similar education levels
+        final eduLevels = ['High School', 'Diploma', "Bachelor's", "Master's", 'Doctorate'];
+        final myIndex = eduLevels.indexOf(myEdu);
+        final theirIndex = eduLevels.indexOf(theirEdu);
+        if (myIndex >= 0 && theirIndex >= 0) {
+          final diff = (myIndex - theirIndex).abs();
+          if (diff == 1) professionalScore += 3;
+          else if (diff == 2) professionalScore += 1;
+        }
+      }
+
+      // Professional field match (5 points)
+      if (myCultural['profession'] == theirCultural['profession']) {
+        professionalScore += 5;
+      } else if (myCultural['educationField'] == theirCultural['educationField']) {
+        professionalScore += 3; // Similar field
+      }
+
+      totalScore += professionalScore;
+      factors++;
+    }
+
+    // 7. Location & NRI Status (10 points max)
+    if (myCultural != null && theirCultural != null) {
+      double locationScore = 0;
+
+      // Same state (5 points)
+      if (myCultural['state'] == theirCultural['state'] && myCultural['state'] != null) {
+        locationScore += 5;
+      }
+
+      // NRI compatibility (5 points)
+      final myNRI = myCultural['isNRI'] as bool? ?? false;
+      final theirNRI = theirCultural['isNRI'] as bool? ?? false;
+      if (myNRI == theirNRI) {
+        locationScore += 5;
+      }
+
+      totalScore += locationScore;
+      factors++;
+    }
+
+    // 8. Profile completeness (10 points max)
     final hasPhotos = (potentialMatch['photos'] as List?)?.isNotEmpty ?? false;
     final hasBio = (potentialMatch['bio'] as String?)?.isNotEmpty ?? false;
     final hasInterests = (potentialMatch['interests'] as List?)?.isNotEmpty ?? false;
+    final hasCultural = potentialMatch['culturalPreferences'] != null;
     int completenessScore = 0;
-    if (hasPhotos) completenessScore += 4;
-    if (hasBio) completenessScore += 3;
-    if (hasInterests) completenessScore += 3;
+    if (hasPhotos) completenessScore += 3;
+    if (hasBio) completenessScore += 2;
+    if (hasInterests) completenessScore += 2;
+    if (hasCultural) completenessScore += 3; // Cultural info is important
     totalScore += completenessScore;
     factors++;
 
-    // 6. Boost multiplier (bonus points)
+    // 9. Boost multiplier (bonus points)
     final isBoosted = potentialMatch['isBoosted'] ?? false;
     final boostEndTime = potentialMatch['boostEndTime'] as Timestamp?;
     if (isBoosted &&
         boostEndTime != null &&
         DateTime.now().isBefore(boostEndTime.toDate())) {
-      totalScore *= 1.5; // 50% boost to visibility
+      totalScore *= 1.3; // 30% boost to visibility
     }
 
-    // 7. Verification bonus (5 points max)
+    // 10. Verification bonus (5 points max)
     final isVerified = potentialMatch['isVerified'] ?? false;
     if (isVerified) {
       totalScore += 5;
