@@ -291,20 +291,25 @@ class MatchesScreen extends ConsumerWidget {
                     ),
                   ),
 
-                  // Message icon
+                  // Message icon - taps to open conversation
                   Positioned(
                     top: 8,
                     right: 8,
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: AppTheme.primaryRose,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.chat_bubble,
-                        color: Colors.white,
-                        size: 16,
+                    child: GestureDetector(
+                      onTap: () {
+                        context.push('/conversation/$otherUserId');
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: AppTheme.primaryRose,
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: const Icon(
+                          Icons.chat_bubble,
+                          color: Colors.white,
+                          size: 16,
+                        ),
                       ),
                     ),
                   ),

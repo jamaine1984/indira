@@ -390,6 +390,65 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
     state = state.copyWith(error: null);
   }
 
+  /// Process a swipe without modifying the potentialMatches list.
+  /// Used by the CardSwiper-based discover screen.
+  /// Returns true if the swipe resulted in a match.
+  Future<bool> processSwipe(SwipeDirection direction, String targetUserId) async {
+    final user = _authService.currentUser;
+    if (user == null) return false;
+
+    // Rate limiting check
+    final swipeLimit = await _rateLimiter.checkSwipeLimit(user.uid);
+    if (!swipeLimit.allowed) {
+      state = state.copyWith(
+        error: 'Slow down! ${swipeLimit.reason} Upgrade to Premium for unlimited swipes!',
+      );
+      return false;
+    }
+
+    try {
+      bool isMatch = false;
+
+      if (direction == SwipeDirection.right || direction == SwipeDirection.up) {
+        // Check daily limit
+        final canLike = await _usageService.canSendLike(user.uid);
+        if (!canLike) {
+          state = state.copyWith(showLimitDialog: true);
+          return false;
+        }
+
+        // Process like
+        await _usageService.incrementLikeCount(user.uid);
+        await _databaseService.likeUser(user.uid, targetUserId);
+
+        // Check for match
+        isMatch = await _matchesService.checkAndCreateMatch(user.uid, targetUserId);
+
+        // Update remaining likes
+        final remaining = await _usageService.getRemainingLikes(user.uid);
+        state = state.copyWith(remainingLikes: remaining);
+      }
+
+      // Record swipe direction
+      final dirStr = switch (direction) {
+        SwipeDirection.right => 'right',
+        SwipeDirection.up => 'up',
+        SwipeDirection.left => 'left',
+      };
+
+      await _databaseService.recordSwipe(user.uid, targetUserId, dirStr);
+      await _databaseService.logUserAction(user.uid, 'swipe', {
+        'direction': dirStr,
+        'targetUserId': targetUserId,
+      });
+
+      return isMatch;
+    } catch (e) {
+      logger.error('ERROR: processSwipe failed: $e');
+      return false;
+    }
+  }
+
   /// Apply new filters and reload users
   Future<void> applyFilters(Map<String, dynamic> filters) async {
     state = state.copyWith(

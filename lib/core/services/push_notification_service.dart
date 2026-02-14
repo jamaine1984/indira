@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/widgets.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -130,16 +131,58 @@ class PushNotificationService {
     }
   }
 
+  // Global navigator key for notification navigation
+  static final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
+
   /// Handle notification tap
   void _onNotificationTap(NotificationResponse response) {
     logger.logUserAction('notification_tapped', details: {'payload': response.payload});
-    // TODO: Navigate to appropriate screen based on payload
+    _navigateFromPayload(response.payload);
   }
 
   /// Handle message when app is opened from background
   void _handleMessageOpenedApp(RemoteMessage message) {
     logger.logUserAction('notification_opened_app', details: {'messageId': message.messageId});
-    // TODO: Navigate to appropriate screen based on message data
+    final type = message.data['type'] as String?;
+    final targetId = message.data['senderId'] ?? message.data['matchedUserId'] ?? message.data['likerId'];
+    _navigateByType(type, targetId);
+  }
+
+  /// Navigate based on notification payload string
+  void _navigateFromPayload(String? payload) {
+    if (payload == null || payload.isEmpty) return;
+    // Payload is data.toString() map - parse type if present
+    if (payload.contains('match')) {
+      _navigateByType('match', null);
+    } else if (payload.contains('message')) {
+      _navigateByType('message', null);
+    } else if (payload.contains('like')) {
+      _navigateByType('like', null);
+    }
+  }
+
+  /// Navigate by notification type
+  void _navigateByType(String? type, String? targetId) {
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+
+    switch (type) {
+      case 'match':
+        navigatorKey.currentState?.pushNamed('/matches');
+        break;
+      case 'message':
+        if (targetId != null) {
+          navigatorKey.currentState?.pushNamed('/conversation/$targetId');
+        } else {
+          navigatorKey.currentState?.pushNamed('/messages');
+        }
+        break;
+      case 'like':
+        navigatorKey.currentState?.pushNamed('/likes');
+        break;
+      default:
+        break;
+    }
   }
 
   /// Show local notification

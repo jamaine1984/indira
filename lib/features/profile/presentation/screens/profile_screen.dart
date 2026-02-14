@@ -277,7 +277,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         'Help & Support',
                         Icons.help,
                         () {
-                          // Navigate to help
+                          _showHelpSupportDialog(context);
                         },
                       ),
 
@@ -416,6 +416,60 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showHelpSupportDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: const [
+            Icon(Icons.help, color: AppTheme.primaryRose),
+            SizedBox(width: 8),
+            Text('Help & Support'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.email, color: AppTheme.primaryRose),
+              title: const Text('Email Support'),
+              subtitle: const Text('support@indiralove.com'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Email support@indiralove.com for assistance')),
+                );
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.report_problem, color: AppTheme.primaryRose),
+              title: const Text('Report a Problem'),
+              subtitle: const Text('Let us know about any issues'),
+              onTap: () {
+                Navigator.pop(context);
+                context.push('/safety');
+              },
+            ),
+            const Divider(),
+            ListTile(
+              leading: const Icon(Icons.info, color: AppTheme.primaryRose),
+              title: const Text('About'),
+              subtitle: const Text('Indira Love v1.0.0'),
+              onTap: () => Navigator.pop(context),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
       ),
     );
   }

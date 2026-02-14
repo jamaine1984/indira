@@ -24,6 +24,7 @@ dependencies:
   firebase_app_check: ^0.3.2+8
 
   # UI & Animation
+  flutter_card_swiper: ^7.0.1
   flutter_animate: ^4.5.0
   lottie: ^3.0.0
   cached_network_image: ^3.3.0

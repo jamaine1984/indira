@@ -228,8 +228,8 @@ class RateLimiterService {
       );
     } catch (e) {
       logger.error('Failed to check rate limit', error: e);
-      // Allow action if rate limiting fails (fail open)
-      return RateLimitResult(allowed: true, reason: 'Rate limit check failed');
+      // Fail closed - deny action if rate limiting check fails (security)
+      return RateLimitResult(allowed: false, reason: 'Rate limit check unavailable. Please try again.');
     }
   }
 

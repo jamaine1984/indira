@@ -30,22 +30,7 @@ class _AdminDashboardScreenState extends ConsumerState<AdminDashboardScreen>
   }
 
   Future<void> _checkAdminAccess() async {
-    // In debug mode, bypass admin check for development access
-    const bool kDebugMode = true; // Enable dev access to admin panel
-
-    if (kDebugMode) {
-      // Grant admin access in debug mode
-      logger.debug('DEBUG: Granting admin access in debug mode');
-      if (mounted) {
-        setState(() {
-          _isAdmin = true;
-          _isLoading = false;
-        });
-      }
-      return;
-    }
-
-    // Production admin check
+    // Production admin check - always verify via Firestore
     final isAdmin = await _adminService.isAdmin();
     if (mounted) {
       setState(() {

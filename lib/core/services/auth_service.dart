@@ -44,7 +44,9 @@ class AuthService {
       );
 
       // Create user profile in Firestore
-      await _createUserProfile(result.user!);
+      if (result.user != null) {
+        await _createUserProfile(result.user!);
+      }
 
       return result;
     } catch (e) {
@@ -142,19 +144,22 @@ class AuthService {
     if (error is FirebaseAuthException) {
       switch (error.code) {
         case 'user-not-found':
-          return Exception('No user found with this email.');
         case 'wrong-password':
-          return Exception('Wrong password provided.');
+        case 'invalid-credential':
+          // Generic message to prevent email enumeration attacks
+          return Exception('Invalid email or password. Please try again.');
         case 'email-already-in-use':
-          return Exception('An account already exists with this email.');
+          return Exception('Unable to create account. Please try a different email or sign in.');
         case 'weak-password':
-          return Exception('Password is too weak.');
+          return Exception('Password is too weak. Use at least 8 characters with uppercase, lowercase, and numbers.');
         case 'invalid-email':
-          return Exception('Invalid email address.');
+          return Exception('Please enter a valid email address.');
+        case 'too-many-requests':
+          return Exception('Too many attempts. Please wait a moment and try again.');
         default:
-          return Exception(error.message ?? 'Authentication failed.');
+          return Exception('Authentication failed. Please try again.');
       }
     }
-    return Exception('An unknown error occurred.');
+    return Exception('Something went wrong. Please try again.');
   }
 }

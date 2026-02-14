@@ -32,8 +32,9 @@ class EncryptionService {
       logger.info('EncryptionService initialized successfully');
     } catch (e) {
       logger.error('Failed to initialize EncryptionService', error: e);
-      // Fallback to default key (NOT RECOMMENDED for production)
-      _initializeDefaultKey();
+      // Do NOT fall back to insecure default key in production
+      // Encryption will remain disabled - messages will be flagged as unencrypted
+      _initialized = false;
     }
   }
 
@@ -86,26 +87,15 @@ class EncryptionService {
     }
   }
 
-  /// Initialize with default key (fallback only - NOT SECURE)
-  void _initializeDefaultKey() {
-    logger.warning('Using default encryption key - NOT RECOMMENDED for production');
-
-    // This is a fallback and should NEVER be used in production
-    final keyString = 'my32lengthsupersecretnooneknows1'; // 32 bytes
-    final ivString = '8bytesiv'; // 8 bytes, will be padded
-
-    _key = encrypt.Key.fromUtf8(keyString);
-    _iv = encrypt.IV.fromLength(16);
-    _encrypter = encrypt.Encrypter(encrypt.AES(_key, mode: encrypt.AESMode.cbc));
-
-    _initialized = true;
-  }
+  // Hardcoded fallback key removed for production security.
+  // If key loading from Firestore fails, encryption stays disabled
+  // and messages are sent with 'encrypted': false flag.
 
   /// Encrypt text message
   String encryptMessage(String plainText) {
     if (!_initialized) {
-      logger.warning('EncryptionService not initialized, returning plain text');
-      return plainText;
+      logger.warning('EncryptionService not initialized, encryption skipped');
+      throw Exception('Encryption not available');
     }
 
     try {
@@ -113,8 +103,7 @@ class EncryptionService {
       return encrypted.base64;
     } catch (e) {
       logger.error('Failed to encrypt message', error: e);
-      // In production, you might want to throw an error instead
-      return plainText;
+      throw Exception('Encryption failed: $e');
     }
   }
 

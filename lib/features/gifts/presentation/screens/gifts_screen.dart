@@ -258,7 +258,9 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
   }
 
   String _getButtonText() {
-    // All tiers must watch 1 ad per gift
+    if (_userTier == SubscriptionTier.gold) {
+      return 'Send Free';
+    }
     return 'Watch Ad';
   }
 
@@ -266,41 +268,50 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
     final user = AuthService().currentUser;
     if (user == null) return;
 
-    // All tiers must watch 1 ad per gift (even Gold)
+    // Gold tier gets gifts without watching ads
+    if (_userTier == SubscriptionTier.gold) {
+      await _saveGiftToInventory(context, user.uid, gift);
+      return;
+    }
+
     showWatchAdsDialog(
       context,
       type: 'gift',
       adsRequired: 1,
       onComplete: () async {
-        try {
-          await FirebaseFirestore.instance.collection('user_gifts').add({
-            'userId': user.uid,
-            'giftId': gift.id,
-            'giftName': gift.name,
-            'giftEmoji': gift.emoji,
-            'obtainedAt': FieldValue.serverTimestamp(),
-            'obtainedVia': 'ad_reward',
-          });
-
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
-                backgroundColor: Colors.green,
-              ),
-            );
-          }
-        } catch (e) {
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Failed to save gift: $e'),
-                backgroundColor: Colors.red,
-              ),
-            );
-          }
-        }
+        await _saveGiftToInventory(context, user.uid, gift);
       },
     );
+  }
+
+  Future<void> _saveGiftToInventory(BuildContext context, String userId, GiftModel gift) async {
+    try {
+      await FirebaseFirestore.instance.collection('user_gifts').add({
+        'userId': userId,
+        'giftId': gift.id,
+        'giftName': gift.name,
+        'giftEmoji': gift.emoji,
+        'obtainedAt': FieldValue.serverTimestamp(),
+        'obtainedVia': _userTier == SubscriptionTier.gold ? 'gold_perk' : 'ad_reward',
+      });
+
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to save gift: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
   }
 }

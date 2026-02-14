@@ -26,9 +26,8 @@ class IAPServiceImproved {
   List<ProductDetails> _products = [];
 
   // Backend endpoint for receipt verification
-  // TODO: Replace with your actual Cloud Function URL
   static const String _verificationEndpoint =
-      'https://us-central1-YOUR-PROJECT-ID.cloudfunctions.net/verifyReceipt';
+      'https://us-central1-indira-love.cloudfunctions.net/verifyReceipt';
 
   // Product IDs - must match App Store Connect and Google Play Console
   static const String silverMonthlyId = 'indira_love_silver_monthly';

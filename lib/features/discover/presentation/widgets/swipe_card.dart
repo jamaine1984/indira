@@ -1,483 +1,342 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:indira_love/core/services/logger_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 
-enum SwipeDirection { left, right }
+enum SwipeDirection { left, right, up }
 
-class SwipeCard extends StatefulWidget {
-  final Map<String, dynamic> user;
-  final bool isActive;
-  final Function(SwipeDirection) onSwipe;
-  final VoidCallback? onTap;
-
-  const SwipeCard({
+class ProfileCard extends StatelessWidget {
+  const ProfileCard({
     super.key,
     required this.user,
-    required this.isActive,
-    required this.onSwipe,
     this.onTap,
   });
 
-  @override
-  State<SwipeCard> createState() => _SwipeCardState();
-}
+  final Map<String, dynamic> user;
+  final VoidCallback? onTap;
 
-class _SwipeCardState extends State<SwipeCard> with TickerProviderStateMixin {
-  late AnimationController _animationController;
-  late Animation<double> _rotationAnimation;
-  late Animation<Offset> _positionAnimation;
-
-  double _dragStartX = 0;
-  double _dragCurrentX = 0;
-  bool _isDragging = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _animationController = AnimationController(
-      duration: const Duration(milliseconds: 300),
-      vsync: this,
-    );
-
-    _rotationAnimation = Tween<double>(
-      begin: 0,
-      end: 0,
-    ).animate(_animationController);
-
-    _positionAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: Offset.zero,
-    ).animate(_animationController);
-  }
-
-  @override
-  void dispose() {
-    _animationController.dispose();
-    super.dispose();
-  }
-
-  void _onPanStart(DragStartDetails details) {
-    if (!widget.isActive) return;
-    setState(() {
-      _isDragging = true;
-      _dragStartX = details.localPosition.dx;
-      _dragCurrentX = details.localPosition.dx;
-    });
-  }
-
-  void _onPanUpdate(DragUpdateDetails details) {
-    if (!widget.isActive || !_isDragging) return;
-    setState(() {
-      _dragCurrentX = details.localPosition.dx;
-    });
-  }
-
-  void _onPanEnd(DragEndDetails details) {
-    if (!widget.isActive || !_isDragging) return;
-
-    final dragDistance = _dragCurrentX - _dragStartX;
-    const swipeThreshold = 150.0; // Increased from 100 to make swipe harder
-
-    logger.debug('DEBUG: Pan ended, drag distance: $dragDistance, threshold: $swipeThreshold');
-
-    if (dragDistance.abs() > swipeThreshold) {
-      final direction = dragDistance > 0 ? SwipeDirection.right : SwipeDirection.left;
-      logger.debug('DEBUG: Swipe detected! Direction: $direction');
-
-      // Animate card off screen
-      _animateCardOffScreen(direction).then((_) {
-        logger.debug('DEBUG: Animation complete, calling onSwipe callback');
-        widget.onSwipe(direction);
-      });
-    } else {
-      // Return to center
-      logger.debug('DEBUG: Swipe too short, returning to center');
-      setState(() {
-        _isDragging = false;
-        _dragCurrentX = _dragStartX;
-      });
-    }
-  }
-
-  Future<void> _animateCardOffScreen(SwipeDirection direction) async {
-    logger.debug('DEBUG: Starting off-screen animation for direction: $direction');
-    final screenWidth = MediaQuery.of(context).size.width;
-    final endX = direction == SwipeDirection.right ? screenWidth * 2 : -screenWidth * 2;
-
-    setState(() {
-      _isDragging = false;
-    });
-
-    _rotationAnimation = Tween<double>(
-      begin: _rotation,
-      end: direction == SwipeDirection.right ? 0.3 : -0.3,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    _positionAnimation = Tween<Offset>(
-      begin: _position,
-      end: Offset(endX, 0),
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-
-    _animationController.reset();
-    await _animationController.forward();
-    logger.debug('DEBUG: Off-screen animation completed');
-  }
-
-  double get _rotation {
-    if (_animationController.isAnimating) {
-      return _rotationAnimation.value;
-    }
-    if (!_isDragging || !widget.isActive) return 0;
-    final dragDistance = _dragCurrentX - _dragStartX;
-    return dragDistance * 0.0005; // Reduced from 0.001 for slower rotation
-  }
-
-  Offset get _position {
-    if (_animationController.isAnimating) {
-      return _positionAnimation.value;
-    }
-    if (!_isDragging || !widget.isActive) return Offset.zero;
-    final dragDistance = _dragCurrentX - _dragStartX;
-    return Offset(dragDistance * 0.3, 0); // Reduced from 0.5 for slower movement
+  int get _compatibilityPercent {
+    final score = user['compatibilityScore'] as double?;
+    if (score != null) return score.round();
+    final uid = user['uid'] as String? ?? '';
+    return 60 + Random(uid.hashCode).nextInt(40);
   }
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
+    final photos = user['photos'] as List<dynamic>? ?? [];
+    final galleryCount = photos.length;
 
-    return AnimatedBuilder(
-      animation: _animationController,
-      builder: (context, child) {
-        return GestureDetector(
-          onTap: widget.isActive && widget.onTap != null ? widget.onTap : null,
-          onPanStart: _onPanStart,
-          onPanUpdate: _onPanUpdate,
-          onPanEnd: _onPanEnd,
-          child: Transform.translate(
-            offset: _position,
-            child: Transform.rotate(
-              angle: _rotation,
-              child: Container(
-            width: screenSize.width,
-            height: screenSize.height,
-            decoration: BoxDecoration(
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
-                  blurRadius: 20,
-                  spreadRadius: 5,
-                ),
-              ],
-            ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(0),
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  // Background Image
-                  _buildProfileImage(),
-
-                  // Gradient Overlay
-                  Container(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.1),
-                          Colors.black.withOpacity(0.3),
-                          Colors.black.withOpacity(0.7),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Swipe Indicators
-                  if (_isDragging && widget.isActive) _buildSwipeIndicators(),
-
-                  // Profile Info
-                  _buildProfileInfo(),
-                ],
-              ),
-            ),
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildProfileImage() {
-    final photos = widget.user['photos'] as List<dynamic>? ?? [];
-    final mainPhoto = photos.isNotEmpty ? photos[0] : null;
-
-    logger.info('DEBUG: User ${widget.user['displayName']} photos: $photos'); // TODO: Use logger.logNetworkRequest if network call
-    logger.debug('DEBUG: Main photo URL: $mainPhoto');
-
-    if (mainPhoto != null && mainPhoto.toString().isNotEmpty) {
-      return CachedNetworkImage(
-        imageUrl: mainPhoto.toString(),
-        fit: BoxFit.cover,
-        placeholder: (context, url) => Container(
-          color: AppTheme.secondaryPlum.withOpacity(0.3),
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
-          ),
-        ),
-        errorWidget: (context, url, error) {
-          logger.error('DEBUG: Error loading image: $error');
-          logger.debug('DEBUG: URL was: $url');
-          return Container(
-            color: AppTheme.secondaryPlum.withOpacity(0.3),
-            child: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.person,
-                    color: Colors.white,
-                    size: 80,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Photo Error',
-                    style: const TextStyle(color: Colors.white70, fontSize: 12),
-                  ),
-                ],
-              ),
-            ),
-          );
-        },
-      );
-    } else {
-      logger.info('DEBUG: No photo available for ${widget.user['displayName']}'); // TODO: Use logger.logNetworkRequest if network call
-      return Container(
-        color: AppTheme.secondaryPlum.withOpacity(0.3),
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.person,
-                color: Colors.white,
-                size: 80,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                widget.user['displayName'] ?? 'Unknown',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-  }
-
-  Widget _buildSwipeIndicators() {
-    final dragDistance = _dragCurrentX - _dragStartX;
-    final isLike = dragDistance > 50;
-    final isPass = dragDistance < -50;
-
-    return Positioned(
-      top: 50,
-      left: isPass ? 20 : null,
-      right: isLike ? 20 : null,
-      child: Transform.rotate(
-        angle: isPass ? -0.2 : 0.2,
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          decoration: BoxDecoration(
-            color: isLike ? Colors.green : Colors.red,
-            borderRadius: BorderRadius.circular(30),
-            border: Border.all(
-              color: Colors.white,
-              width: 3,
-            ),
-          ),
-          child: Text(
-            isLike ? 'LIKE' : 'PASS',
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildProfileInfo() {
-    final displayName = widget.user['displayName'] ?? 'Unknown';
-    final age = widget.user['age'] ?? 0;
-    final bio = widget.user['bio'] ?? '';
-    // Location is GeoPoint from Firestore, get city/country string if available
-    final locationString = widget.user['city'] as String? ?? widget.user['country'] as String? ?? '';
-    final interests = widget.user['interests'] as List<dynamic>? ?? [];
-    final compatibilityScore = widget.user['compatibilityScore'] as double?;
-
-    return Positioned(
-      bottom: 0,
-      left: 0,
-      right: 0,
+    return GestureDetector(
+      onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            colors: [
-              Colors.black.withOpacity(0.8),
-              Colors.black.withOpacity(0.4),
-              Colors.transparent,
-            ],
-          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: AppTheme.secondaryPlum.withOpacity(0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Match percentage badge (if available)
-            if (compatibilityScore != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(24),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Layer 1: Background Photo
+              _buildPhoto(photos),
+
+              // Layer 2: Gradient Overlay
+              Positioned.fill(
+                child: DecoratedBox(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
                       colors: [
-                        AppTheme.primaryRose,
-                        AppTheme.secondaryPlum,
+                        Colors.transparent,
+                        Colors.transparent,
+                        Colors.black.withOpacity(0.25),
+                        Colors.black.withOpacity(0.85),
                       ],
+                      stops: const [0.0, 0.4, 0.65, 1.0],
                     ),
-                    borderRadius: BorderRadius.circular(20),
-                    boxShadow: [
-                      BoxShadow(
-                        color: AppTheme.primaryRose.withOpacity(0.5),
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                      ),
-                    ],
+                  ),
+                ),
+              ),
+
+              // Layer 3: Compatibility Badge (Top-Right)
+              Positioned(
+                top: 16,
+                right: 16,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: AppTheme.secondaryPlum.withOpacity(0.85),
+                    borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(
-                        Icons.favorite,
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                      const SizedBox(width: 6),
+                      const Icon(Icons.favorite,
+                          color: AppTheme.accentGold, size: 14),
+                      const SizedBox(width: 4),
                       Text(
-                        '${compatibilityScore.round()}% Match',
+                        '$_compatibilityPercent%',
                         style: const TextStyle(
+                          fontFamily: 'Inter',
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
                           color: Colors.white,
-                          fontSize: 14,
-                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ],
                   ),
                 ),
               ),
-            // Name and Age
-            Row(
-              children: [
-                Text(
-                  '$displayName, $age',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                if (widget.user['isVerified'] == true)
-                  const Icon(
-                    Icons.verified,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-              ],
-            ),
 
-            const SizedBox(height: 4),
-
-            // Location (only show if we have a string location)
-            if (locationString.isNotEmpty)
-              Row(
-                children: [
-                  const Icon(
-                    Icons.location_on,
-                    color: Colors.white70,
-                    size: 16,
-                  ),
-                  const SizedBox(width: 4),
-                  Text(
-                    locationString,
-                    style: const TextStyle(
-                      color: Colors.white70,
-                      fontSize: 16,
-                    ),
-                  ),
-                ],
-              ),
-
-            const SizedBox(height: 12),
-
-            // Bio
-            if (bio.isNotEmpty)
-              Text(
-                bio,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  height: 1.4,
-                ),
-                maxLines: 3,
-                overflow: TextOverflow.ellipsis,
-              ),
-
-            const SizedBox(height: 12),
-
-            // Interests
-            if (interests.isNotEmpty)
-              Wrap(
-                spacing: 8,
-                runSpacing: 4,
-                children: interests.take(3).map((interest) {
-                  return Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              // Layer 4: Boosted Indicator (Top-Left)
+              if (user['isBoosted'] == true)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(20),
+                      color: Colors.black.withOpacity(0.5),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: Text(
-                      interest.toString(),
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: const BoxDecoration(
+                            color: Color(0xFF22C55E),
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        const Text(
+                          'Boosted',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
                     ),
-                  );
-                }).toList(),
+                  ),
+                ),
+
+              // Layer 5: Bottom Info Section
+              _buildBottomInfo(galleryCount),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPhoto(List<dynamic> photos) {
+    final mainPhoto = photos.isNotEmpty ? photos[0].toString() : null;
+
+    if (mainPhoto != null && mainPhoto.isNotEmpty) {
+      return CachedNetworkImage(
+        imageUrl: mainPhoto,
+        fit: BoxFit.cover,
+        placeholder: (_, __) => Container(
+          color: AppTheme.secondaryPlum.withOpacity(0.15),
+          child: const Center(
+            child: Icon(Icons.person, size: 80, color: AppTheme.primaryRose),
+          ),
+        ),
+        errorWidget: (_, __, ___) => Container(
+          color: AppTheme.secondaryPlum.withOpacity(0.15),
+          child: const Center(
+            child: Icon(Icons.person, size: 80, color: AppTheme.primaryRose),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      color: AppTheme.secondaryPlum.withOpacity(0.15),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.person, size: 80, color: AppTheme.primaryRose),
+            const SizedBox(height: 16),
+            Text(
+              user['displayName'] ?? 'Unknown',
+              style: const TextStyle(
+                fontFamily: 'PlayfairDisplay',
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
               ),
+            ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildBottomInfo(int galleryCount) {
+    final displayName = user['displayName'] ?? 'Unknown';
+    final age = user['age'];
+    final bio = user['bio'] as String? ?? '';
+    final city = user['city'] as String? ?? '';
+    final country = user['country'] as String? ?? '';
+    final interests = user['interests'] as List<dynamic>? ?? [];
+    final isVerified = user['isVerified'] == true;
+
+    String locationText = '';
+    if (city.isNotEmpty && country.isNotEmpty) {
+      locationText = '$city, $country';
+    } else if (city.isNotEmpty) {
+      locationText = city;
+    } else if (country.isNotEmpty) {
+      locationText = country;
+    }
+
+    return Positioned(
+      left: 20,
+      right: 20,
+      bottom: 24,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Name + Age + Verification
+          Row(
+            children: [
+              Flexible(
+                child: Text(
+                  age != null ? '$displayName, $age' : displayName,
+                  style: const TextStyle(
+                    fontFamily: 'PlayfairDisplay',
+                    fontSize: 28,
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              if (isVerified) ...[
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.verified,
+                  color: AppTheme.accentGold,
+                  size: 22,
+                ),
+              ],
+            ],
+          ),
+
+          const SizedBox(height: 6),
+
+          // Bio
+          if (bio.isNotEmpty)
+            Text(
+              bio,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+
+          const SizedBox(height: 10),
+
+          // Location + Interests chips
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
+            children: [
+              if (locationText.isNotEmpty)
+                _InfoChip(
+                  icon: Icons.location_on_outlined,
+                  label: locationText,
+                ),
+              ...interests.take(2).map((interest) => _InfoChip(
+                    icon: Icons.auto_awesome,
+                    label: interest.toString(),
+                  )),
+            ],
+          ),
+
+          // Gallery dots
+          if (galleryCount > 1) ...[
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                galleryCount.clamp(0, 6),
+                (i) => Container(
+                  width: 6,
+                  height: 6,
+                  margin: const EdgeInsets.symmetric(horizontal: 3),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color:
+                        i == 0 ? Colors.white : Colors.white.withOpacity(0.4),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  const _InfoChip({required this.icon, required this.label});
+
+  final IconData icon;
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: Colors.white.withOpacity(0.9)),
+          const SizedBox(width: 4),
+          Flexible(
+            child: Text(
+              label,
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 11,
+                fontWeight: FontWeight.w500,
+                color: Colors.white.withOpacity(0.9),
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
       ),
     );
   }

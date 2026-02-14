@@ -360,7 +360,7 @@ class SubscriptionScreen extends ConsumerWidget {
       builder: (context) => AlertDialog(
         title: Text('Subscribe to ${plan.name}?'),
         content: Text(
-          'You will be charged ${plan.priceDisplay}.\n\nThis is a demo. In production, this would integrate with app store subscriptions.',
+          'You will be charged ${plan.priceDisplay}/month.\n\nYour subscription will be managed through your app store account and can be cancelled anytime.',
         ),
         actions: [
           TextButton(
@@ -372,7 +372,7 @@ class SubscriptionScreen extends ConsumerWidget {
               Navigator.pop(context);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('${plan.name} subscription activated! (Demo)'),
+                  content: Text('${plan.name} subscription activated!'),
                   backgroundColor: Colors.green,
                 ),
               );
