@@ -25,6 +25,7 @@ class DiscoverState {
   final int remainingLikes;
   final String? error;
   final bool showLimitDialog;
+  final bool showRewindLimitDialog;
   final DocumentSnapshot? lastDocument; // For pagination
   final bool hasMoreUsers; // Track if more users available
   final Map<String, dynamic>? currentFilters; // Active filters
@@ -35,6 +36,7 @@ class DiscoverState {
     this.remainingLikes = 10,
     this.error,
     this.showLimitDialog = false,
+    this.showRewindLimitDialog = false,
     this.lastDocument,
     this.hasMoreUsers = true,
     this.currentFilters,
@@ -46,6 +48,7 @@ class DiscoverState {
     int? remainingLikes,
     String? error,
     bool? showLimitDialog,
+    bool? showRewindLimitDialog,
     DocumentSnapshot? lastDocument,
     bool? hasMoreUsers,
     Map<String, dynamic>? currentFilters,
@@ -56,6 +59,7 @@ class DiscoverState {
       remainingLikes: remainingLikes ?? this.remainingLikes,
       error: error ?? this.error,
       showLimitDialog: showLimitDialog ?? this.showLimitDialog,
+      showRewindLimitDialog: showRewindLimitDialog ?? this.showRewindLimitDialog,
       lastDocument: lastDocument,
       hasMoreUsers: hasMoreUsers ?? this.hasMoreUsers,
       currentFilters: currentFilters ?? this.currentFilters,
@@ -384,6 +388,38 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
 
   void dismissLimitDialog() {
     state = state.copyWith(showLimitDialog: false);
+  }
+
+  void dismissRewindLimitDialog() {
+    state = state.copyWith(showRewindLimitDialog: false);
+  }
+
+  /// Check if user can rewind, show limit dialog if not.
+  /// Returns true if rewind is allowed.
+  Future<bool> checkRewindLimit() async {
+    final user = _authService.currentUser;
+    if (user == null) return false;
+
+    final canRewind = await _usageService.canRewind(user.uid);
+    if (!canRewind) {
+      state = state.copyWith(showRewindLimitDialog: true);
+      return false;
+    }
+
+    await _usageService.incrementRewindCount(user.uid);
+    return true;
+  }
+
+  Future<void> refillRewindsAfterAds(int adsWatched) async {
+    final user = _authService.currentUser;
+    if (user == null) return;
+
+    try {
+      await _usageService.refillRewinds(user.uid, adsWatched);
+      state = state.copyWith(showRewindLimitDialog: false);
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+    }
   }
 
   void clearError() {

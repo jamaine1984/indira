@@ -29,6 +29,18 @@ class UsageService {
     return (usage['likesSent'] as int? ?? 0) < limits.dailyLikes;
   }
 
+  // Check if user can use a rewind
+  Future<bool> canRewind(String userId) async {
+    final usage = await _getTodayUsage(userId);
+    final user = await _getUserData(userId);
+    final tier = _getUserTier(user);
+    final limits = SubscriptionLimits.fromTier(tier);
+
+    if (limits.dailyRewinds == -1) return true; // Unlimited
+
+    return (usage['rewindsUsed'] as int? ?? 0) < limits.dailyRewinds;
+  }
+
   // Increment message count
   Future<void> incrementMessageCount(String userId) async {
     final today = _getTodayKey();
@@ -43,6 +55,15 @@ class UsageService {
     final today = _getTodayKey();
     await _firestore.collection('users').doc(userId).collection('usage').doc(today).set({
       'likesSent': FieldValue.increment(1),
+      'date': DateTime.now(),
+    }, SetOptions(merge: true));
+  }
+
+  // Increment rewind count
+  Future<void> incrementRewindCount(String userId) async {
+    final today = _getTodayKey();
+    await _firestore.collection('users').doc(userId).collection('usage').doc(today).set({
+      'rewindsUsed': FieldValue.increment(1),
       'date': DateTime.now(),
     }, SetOptions(merge: true));
   }
@@ -75,6 +96,21 @@ class UsageService {
       await _firestore.collection('users').doc(userId).collection('usage').doc(today).set({
         'likesSent': 0,
         'lastLikeRefill': DateTime.now(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  // Refill rewinds by watching ads
+  Future<void> refillRewinds(String userId, int adsWatched) async {
+    final user = await _getUserData(userId);
+    final tier = _getUserTier(user);
+    final limits = SubscriptionLimits.fromTier(tier);
+
+    if (adsWatched >= limits.adsToRefill) {
+      final today = _getTodayKey();
+      await _firestore.collection('users').doc(userId).collection('usage').doc(today).set({
+        'rewindsUsed': 0,
+        'lastRewindRefill': DateTime.now(),
       }, SetOptions(merge: true));
     }
   }
@@ -112,6 +148,20 @@ class UsageService {
     return remaining < 0 ? 0 : remaining;
   }
 
+  // Get remaining rewinds for today
+  Future<int> getRemainingRewinds(String userId) async {
+    final usage = await _getTodayUsage(userId);
+    final user = await _getUserData(userId);
+    final tier = _getUserTier(user);
+    final limits = SubscriptionLimits.fromTier(tier);
+
+    if (limits.dailyRewinds == -1) return -1; // Unlimited
+
+    final rewindsUsed = usage['rewindsUsed'] as int? ?? 0;
+    final remaining = limits.dailyRewinds - rewindsUsed;
+    return remaining < 0 ? 0 : remaining;
+  }
+
   // Private helper methods
   Future<Map<String, int>> _getTodayUsage(String userId) async {
     final today = _getTodayKey();
@@ -123,13 +173,14 @@ class UsageService {
         .get();
 
     if (!doc.exists) {
-      return {'messagesSent': 0, 'likesSent': 0};
+      return {'messagesSent': 0, 'likesSent': 0, 'rewindsUsed': 0};
     }
 
     final data = doc.data()!;
     return {
       'messagesSent': data['messagesSent'] ?? 0,
       'likesSent': data['likesSent'] ?? 0,
+      'rewindsUsed': data['rewindsUsed'] ?? 0,
     };
   }
 

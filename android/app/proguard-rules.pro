@@ -29,6 +29,11 @@
 # In-App Purchase
 -keep class com.android.vending.billing.** { *; }
 
+# Google Play Core (deferred components)
+-dontwarn com.google.android.play.core.splitcompat.**
+-dontwarn com.google.android.play.core.splitinstall.**
+-dontwarn com.google.android.play.core.tasks.**
+
 # Prevent stripping of annotations
 -keepattributes *Annotation*
 -keepattributes Signature

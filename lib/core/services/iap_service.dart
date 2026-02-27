@@ -59,7 +59,7 @@ class IAPService {
     _subscription = _iap.purchaseStream.listen(
       _onPurchaseUpdate,
       onDone: () => _subscription?.cancel(),
-      onError: (error) => print('Purchase stream error: $error'),
+      onError: (error) => logger.error('Purchase stream error: $error'),
     );
 
     // Load products

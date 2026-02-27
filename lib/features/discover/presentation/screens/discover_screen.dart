@@ -37,7 +37,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
   // Swipe feedback overlay states
   bool _showLike = false;
   bool _showNope = false;
-  bool _showSuperLike = false;
 
   // Match overlay
   bool _showMatchOverlay = false;
@@ -87,14 +86,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     setState(() {
       _showLike = type == 'like';
       _showNope = type == 'nope';
-      _showSuperLike = type == 'superlike';
     });
     Future.delayed(const Duration(milliseconds: 600), () {
       if (mounted) {
         setState(() {
           _showLike = false;
           _showNope = false;
-          _showSuperLike = false;
         });
       }
     });
@@ -117,8 +114,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         _flashOverlay('like');
         swipeDir = SwipeDirection.right;
       case CardSwiperDirection.top:
-        _flashOverlay('superlike');
-        swipeDir = SwipeDirection.up;
+        // Top swipe treated as regular like (superlike removed)
+        _flashOverlay('like');
+        swipeDir = SwipeDirection.right;
       case CardSwiperDirection.left:
         _flashOverlay('nope');
         swipeDir = SwipeDirection.left;
@@ -131,6 +129,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         .read(discoverProvider.notifier)
         .processSwipe(swipeDir, targetUserId);
 
+    // If the like limit was reached, keep the card in place
+    final currentState = ref.read(discoverProvider);
+    if (currentState.showLimitDialog) {
+      return false;
+    }
+
+    // If rate limited, keep the card in place
+    if (currentState.error != null && currentState.error!.contains('Slow down')) {
+      return false;
+    }
+
     if (isMatch && mounted) {
       setState(() {
         _matchedUser = targetUser;
@@ -140,8 +149,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
 
     // Prefetch more profiles when running low
     if (currentIndex != null && _profiles.length - currentIndex < 10) {
-      final discoverState = ref.read(discoverProvider);
-      if (discoverState.hasMoreUsers) {
+      if (currentState.hasMoreUsers) {
         ref.read(discoverProvider.notifier).loadPotentialMatches(loadMore: true);
       }
     }
@@ -149,24 +157,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     return true;
   }
 
-  void _onTapUndo() {
-    _swiperController.undo();
+  Future<void> _onTapUndo() async {
+    final canRewind = await ref.read(discoverProvider.notifier).checkRewindLimit();
+    if (canRewind) {
+      _swiperController.undo();
+    }
   }
 
   void _onTapDislike() {
     _swiperController.swipe(CardSwiperDirection.left);
   }
 
-  void _onTapSuperLike() {
-    _swiperController.swipe(CardSwiperDirection.top);
-  }
-
   void _onTapLike() {
     _swiperController.swipe(CardSwiperDirection.right);
-  }
-
-  void _onTapBoost() {
-    context.push('/subscription');
   }
 
   @override
@@ -177,18 +180,33 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     // Sync profiles from provider
     _syncProfiles(discoverState.potentialMatches);
 
-    // Show ad dialog when limit is reached
+    // Show ad dialog when like limit is reached
     if (discoverState.showLimitDialog) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         showWatchAdsDialog(
           context,
           type: 'likes',
-          adsRequired: 3,
+          adsRequired: 2,
           onComplete: () {
-            ref.read(discoverProvider.notifier).refillLikesAfterAds(3);
+            ref.read(discoverProvider.notifier).refillLikesAfterAds(2);
           },
         );
         ref.read(discoverProvider.notifier).dismissLimitDialog();
+      });
+    }
+
+    // Show ad dialog when rewind limit is reached
+    if (discoverState.showRewindLimitDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showWatchAdsDialog(
+          context,
+          type: 'rewinds',
+          adsRequired: 2,
+          onComplete: () {
+            ref.read(discoverProvider.notifier).refillRewindsAfterAds(2);
+          },
+        );
+        ref.read(discoverProvider.notifier).dismissRewindLimitDialog();
       });
     }
 
@@ -239,7 +257,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                                         const AllowedSwipeDirection.only(
                                       left: true,
                                       right: true,
-                                      up: true,
+                                      up: false,
                                     ),
                                     onSwipe: _onSwipe,
                                     onEnd: () {
@@ -280,9 +298,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                               _ActionButtonRow(
                                 onUndo: _onTapUndo,
                                 onDislike: _onTapDislike,
-                                onSuperLike: _onTapSuperLike,
                                 onLike: _onTapLike,
-                                onBoost: _onTapBoost,
                               ),
 
                               const SizedBox(height: 12),
@@ -305,13 +321,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
               color: AppTheme.primaryRose,
               label: 'NOPE',
             ),
-          if (_showSuperLike)
-            _SwipeFeedback(
-              icon: Icons.star_rounded,
-              color: AppTheme.accentGold,
-              label: 'SUPER LIKE',
-            ),
-
           // Match celebration overlay
           if (_showMatchOverlay && _matchedUser != null)
             _MatchOverlay(
@@ -830,16 +839,12 @@ class _ActionButtonRow extends StatelessWidget {
   const _ActionButtonRow({
     required this.onUndo,
     required this.onDislike,
-    required this.onSuperLike,
     required this.onLike,
-    required this.onBoost,
   });
 
   final VoidCallback onUndo;
   final VoidCallback onDislike;
-  final VoidCallback onSuperLike;
   final VoidCallback onLike;
-  final VoidCallback onBoost;
 
   @override
   Widget build(BuildContext context) {
@@ -854,7 +859,7 @@ class _ActionButtonRow extends StatelessWidget {
             size: 44,
             iconSize: 22,
             onTap: onUndo,
-            tooltip: 'Undo',
+            tooltip: 'Rewind',
           ),
           _ActionButton(
             icon: Icons.close_rounded,
@@ -865,28 +870,12 @@ class _ActionButtonRow extends StatelessWidget {
             tooltip: 'Pass',
           ),
           _ActionButton(
-            icon: Icons.star_rounded,
-            color: AppTheme.accentGold,
-            size: 44,
-            iconSize: 22,
-            onTap: onSuperLike,
-            tooltip: 'Super Like',
-          ),
-          _ActionButton(
             icon: Icons.favorite_rounded,
             color: const Color(0xFF22C55E),
             size: 56,
             iconSize: 28,
             onTap: onLike,
             tooltip: 'Like',
-          ),
-          _ActionButton(
-            icon: Icons.rocket_launch_rounded,
-            color: AppTheme.secondaryPlum,
-            size: 44,
-            iconSize: 22,
-            onTap: onBoost,
-            tooltip: 'Boost',
           ),
         ],
       ),

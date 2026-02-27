@@ -48,6 +48,11 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
         icon = Icons.message;
         message = 'You\'ve used all your $typeName for today!';
         break;
+      case 'rewinds':
+        typeName = 'Rewinds';
+        icon = Icons.undo;
+        message = 'You\'ve used all your $typeName for today!';
+        break;
       case 'gift':
         typeName = 'Gift';
         icon = Icons.card_giftcard;
@@ -217,6 +222,9 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
                 break;
               case 'messages':
                 message = 'Messages refilled!';
+                break;
+              case 'rewinds':
+                message = 'Rewinds refilled!';
                 break;
               case 'gift':
                 message = 'Gift added to inventory!';

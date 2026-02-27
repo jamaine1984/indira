@@ -7,6 +7,7 @@ enum SubscriptionTier {
 class SubscriptionLimits {
   final int dailyMessages;
   final int dailyLikes;
+  final int dailyRewinds;  // -1 means unlimited
   final bool unlimitedGifts;
   final bool hasAds;
   final int adsToRefill;
@@ -15,6 +16,7 @@ class SubscriptionLimits {
   const SubscriptionLimits({
     required this.dailyMessages,
     required this.dailyLikes,
+    required this.dailyRewinds,
     required this.unlimitedGifts,
     required this.hasAds,
     required this.adsToRefill,
@@ -22,30 +24,33 @@ class SubscriptionLimits {
   });
 
   static const free = SubscriptionLimits(
-    dailyMessages: 3,  // Free users get 3 messages per day
-    dailyLikes: 3,     // Free users get 3 likes per day
+    dailyMessages: 3,
+    dailyLikes: 3,
+    dailyRewinds: 3,
     unlimitedGifts: false,
     hasAds: true,
-    adsToRefill: 3,    // Watch 3 ads to refill
-    profileBoosts: 0,   // No boosts for free users
+    adsToRefill: 2,
+    profileBoosts: 0,
   );
 
   static const silver = SubscriptionLimits(
-    dailyMessages: 25,  // Silver users get 25 messages per day
-    dailyLikes: 10,     // Silver users get 10 likes per day
+    dailyMessages: 25,
+    dailyLikes: 10,
+    dailyRewinds: 10,
     unlimitedGifts: false,
     hasAds: true,
-    adsToRefill: 3,    // Watch 3 ads to refill
-    profileBoosts: 1,   // 1 boost per day for silver
+    adsToRefill: 2,
+    profileBoosts: 1,
   );
 
   static const gold = SubscriptionLimits(
-    dailyMessages: -1, // -1 means unlimited
-    dailyLikes: -1, // -1 means unlimited
+    dailyMessages: -1,
+    dailyLikes: -1,
+    dailyRewinds: -1,
     unlimitedGifts: true,
     hasAds: false,
     adsToRefill: 0,
-    profileBoosts: -1, // -1 means unlimited boosts
+    profileBoosts: -1,
   );
 
   static SubscriptionLimits fromTier(SubscriptionTier tier) {
@@ -86,7 +91,8 @@ class SubscriptionPlan {
     features: [
       '3 messages per day',
       '3 likes per day',
-      'Watch 3 ads to refill',
+      '3 rewinds per day',
+      'Watch 2 ads to refill',
       'Basic matching',
     ],
   );
@@ -100,8 +106,9 @@ class SubscriptionPlan {
     features: [
       '25 messages per day',
       '10 likes per day',
+      '10 rewinds per day',
       '1 profile boost per day',
-      'Watch 3 ads to refill',
+      'Watch 2 ads to refill',
       'Priority matching',
       'See who liked you',
     ],
@@ -116,6 +123,7 @@ class SubscriptionPlan {
     features: [
       'Unlimited messages',
       'Unlimited likes',
+      'Unlimited rewinds',
       'Unlimited profile boosts',
       'No ads (except 1 for gifts)',
       'Priority matching',

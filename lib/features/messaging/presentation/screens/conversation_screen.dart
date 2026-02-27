@@ -617,9 +617,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         showWatchAdsDialog(
           context,
           type: 'messages',
-          adsRequired: 3,
+          adsRequired: 2,
           onComplete: () async {
-            await usageService.refillMessages(currentUser.uid, 3);
+            await usageService.refillMessages(currentUser.uid, 2);
             // Try sending the message again after refill
             _sendTextMessage();
           },
