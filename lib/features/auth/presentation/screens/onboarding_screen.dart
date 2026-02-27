@@ -7,6 +7,8 @@ import 'package:indira_love/core/models/cultural_preferences.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:indira_love/core/services/auth_service.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'dart:io';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -83,18 +85,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        AppSnackBar.error(context, 'Error picking image: $e');
       }
     }
   }
 
   Future<void> _pickAdditionalImage() async {
     if (_additionalImages.length >= 6) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Maximum 6 additional images allowed')),
-      );
+      AppSnackBar.info(context, 'Maximum 6 additional images allowed');
       return;
     }
 
@@ -112,9 +110,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error picking image: $e')),
-        );
+        AppSnackBar.error(context, 'Error picking image: $e');
       }
     }
   }
@@ -130,18 +126,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       // Validate current page
       if (_currentPage == 0 && !_validateBasicInfo()) return;
       if (_currentPage == 1 && _mainImage == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please upload a main profile photo')),
-        );
+        AppSnackBar.info(context, 'Please upload a main profile photo');
         return;
       }
       if (_currentPage == 2) {
         // Cultural preferences are optional, just proceed
       }
       if (_currentPage == 3 && _interests.length < 3) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Please select at least 3 interests')),
-        );
+        AppSnackBar.info(context, 'Please select at least 3 interests');
         return;
       }
 
@@ -156,34 +148,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   bool _validateBasicInfo() {
     if (_ageController.text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your age')),
-      );
+      AppSnackBar.info(context, 'Please enter your age');
       return false;
     }
     final age = int.tryParse(_ageController.text) ?? 0;
     if (age < 18 || age > 99) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Age must be between 18 and 99')),
-      );
+      AppSnackBar.info(context, 'Age must be between 18 and 99');
       return false;
     }
     if (_gender.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your gender')),
-      );
+      AppSnackBar.info(context, 'Please select your gender');
       return false;
     }
     if (_lookingFor.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select who you are looking for')),
-      );
+      AppSnackBar.info(context, 'Please select who you are looking for');
       return false;
     }
     if (_selectedCountry.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select your country')),
-      );
+      AppSnackBar.info(context, 'Please select your country');
       return false;
     }
     return true;
@@ -253,12 +235,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Error: ${e.toString()}');
       }
     } finally {
       if (mounted) {
@@ -269,6 +246,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -334,9 +312,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             ),
                             minimumSize: const Size(double.infinity, 56),
                           ),
-                          child: const Text(
-                            'Back',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.back,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
@@ -361,7 +339,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(
-                                _currentPage == 5 ? 'Complete Profile' : 'Next',
+                                _currentPage == 5 ? l10n.done : l10n.next,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -869,9 +847,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     } else if (!selected) {
                       _interests.remove(interest);
                     } else if (_interests.length >= 5) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Maximum 5 interests allowed')),
-                      );
+                      AppSnackBar.info(context, 'Maximum 5 interests allowed');
                     }
                   });
                 },

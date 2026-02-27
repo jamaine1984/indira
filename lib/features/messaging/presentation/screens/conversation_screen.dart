@@ -14,6 +14,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:indira_love/features/video_call/services/video_call_service.dart';
+import 'package:indira_love/features/video_call/presentation/screens/video_call_screen.dart';
+import 'package:indira_love/features/icebreakers/services/icebreaker_service.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -74,6 +79,62 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   : SubscriptionTier.free;
         });
       }
+    }
+  }
+
+  Future<Map<String, dynamic>> _loadIcebreakerData() async {
+    final currentUser = AuthService().currentUser;
+    final currentDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser?.uid)
+        .get();
+    final otherDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(widget.otherUserId)
+        .get();
+    return {
+      'current': currentDoc.data() ?? {},
+      'other': otherDoc.data() ?? {},
+    };
+  }
+
+  Future<void> _initiateCall({required bool audioOnly}) async {
+    try {
+      // Check if user is allowed to call (mutual match or messaging history required)
+      final permission = await VideoCallService().canCall(widget.otherUserId);
+      if (!mounted) return;
+
+      if (permission['allowed'] != true) {
+        AppSnackBar.info(context, permission['reason'] as String? ?? 'You cannot call this user yet');
+        return;
+      }
+
+      final result = await VideoCallService().initiateCall(
+        targetUserId: widget.otherUserId,
+        targetUserName: widget.otherUserName,
+        audioOnly: audioOnly,
+      );
+      if (!mounted) return;
+
+      if (result['success'] != true) {
+        AppSnackBar.error(context, result['error'] as String? ?? 'Could not start call');
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => VideoCallScreen(
+            sessionId: result['sessionId'] as String,
+            targetUserId: widget.otherUserId,
+            targetUserName: widget.otherUserName,
+            isAudio: audioOnly,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      AppSnackBar.error(context, 'Could not start call: $e');
     }
   }
 
@@ -158,9 +219,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     } catch (e) {
       setState(() => _isUploading = false);
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send image: $e')),
-        );
+        AppSnackBar.error(context, 'Failed to send image: $e');
       }
     }
   }
@@ -174,6 +233,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppTheme.primaryRose,
@@ -205,6 +265,16 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             ),
           ],
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.call, color: Colors.white),
+            onPressed: () => _initiateCall(audioOnly: true),
+          ),
+          IconButton(
+            icon: const Icon(Icons.videocam, color: Colors.white),
+            onPressed: () => _initiateCall(audioOnly: false),
+          ),
+        ],
       ),
       body: Column(
         children: [
@@ -229,10 +299,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 final messages = snapshot.data?.docs ?? [];
 
                 if (messages.isEmpty) {
-                  return Center(
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.all(16),
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
+                        const SizedBox(height: 40),
                         const Icon(
                           Icons.chat_bubble_outline,
                           size: 64,
@@ -240,7 +311,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                         ),
                         const SizedBox(height: 16),
                         Text(
-                          'No messages yet',
+                          l10n.noMessagesYet,
                           style: TextStyle(
                             fontSize: 18,
                             color: Colors.grey[600],
@@ -253,6 +324,64 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             fontSize: 14,
                             color: Colors.grey[500],
                           ),
+                        ),
+                        const SizedBox(height: 24),
+                        // AI Icebreaker Suggestions
+                        FutureBuilder<Map<String, dynamic>>(
+                          future: _loadIcebreakerData(),
+                          builder: (context, snap) {
+                            if (!snap.hasData) return const SizedBox.shrink();
+                            final data = snap.data!;
+                            final suggestions = IcebreakerService().generateIcebreakers(
+                              currentUser: data['current'] as Map<String, dynamic>,
+                              otherUser: data['other'] as Map<String, dynamic>,
+                            );
+                            return Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: AppTheme.accentGold.withOpacity(0.08),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Text('\u{1F4A1}', style: TextStyle(fontSize: 18)),
+                                      const SizedBox(width: 8),
+                                      Text(l10n.suggestedIcebreakers, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  ...suggestions.take(3).map((s) => Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: InkWell(
+                                      onTap: () {
+                                        _messageController.text = s;
+                                      },
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                        decoration: BoxDecoration(
+                                          color: Colors.white,
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: AppTheme.primaryRose.withOpacity(0.2)),
+                                        ),
+                                        child: Row(
+                                          children: [
+                                            Expanded(child: Text(s, style: const TextStyle(fontSize: 13, height: 1.3))),
+                                            const SizedBox(width: 8),
+                                            Icon(Icons.arrow_forward_ios, size: 14, color: AppTheme.primaryRose.withOpacity(0.5)),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  )),
+                                ],
+                              ),
+                            );
+                          },
                         ),
                       ],
                     ),
@@ -427,6 +556,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   Widget _buildGiftPicker() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       height: 280,
       decoration: BoxDecoration(
@@ -447,9 +577,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                const Text(
-                  'Send a Gift',
-                  style: TextStyle(
+                Text(
+                  l10n.sendGift,
+                  style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                   ),
@@ -520,6 +650,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   Widget _buildMessageInput() {
+    final l10n = AppLocalizations.of(context);
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -558,8 +689,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               ),
               child: TextField(
                 controller: _messageController,
-                decoration: const InputDecoration(
-                  hintText: 'Type a message...',
+                decoration: InputDecoration(
+                  hintText: l10n.typeMessage,
                   border: InputBorder.none,
                 ),
                 maxLines: null,
@@ -633,13 +764,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     if (!messageLimit.allowed) {
       logger.logSecurityEvent('[RateLimit] Message blocked: ${messageLimit.reason}');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Slow down! ${messageLimit.reason}'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        AppSnackBar.error(context, 'Slow down! ${messageLimit.reason}');
       }
       return;
     }
@@ -686,9 +811,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Failed to send message: $e')),
-        );
+        AppSnackBar.error(context, 'Failed to send message: $e');
       }
     }
   }
@@ -718,9 +841,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('User not authenticated')),
-        );
+        AppSnackBar.error(context, 'User not authenticated');
       }
       return;
     }
@@ -773,13 +894,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           _showGiftPicker = false;
         });
 
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${gift.emoji} ${gift.name} sent successfully!'),
-            backgroundColor: Colors.green,
-            duration: const Duration(seconds: 2),
-          ),
-        );
+        AppSnackBar.success(context, '${gift.emoji} ${gift.name} sent successfully!');
       }
 
       // Scroll to bottom
@@ -793,13 +908,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     } catch (e) {
       logger.error('Error sending gift: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to send gift: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 3),
-          ),
-        );
+        AppSnackBar.error(context, 'Failed to send gift: $e');
       }
     }
   }

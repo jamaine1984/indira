@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
+import 'package:indira_love/core/widgets/shimmer_loading.dart';
+import 'package:indira_love/core/widgets/empty_state_widget.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/features/messaging/presentation/screens/conversation_screen.dart';
 
 class MessagesScreen extends ConsumerWidget {
@@ -10,6 +14,7 @@ class MessagesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -18,21 +23,13 @@ class MessagesScreen extends ConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
+              // Header (no back arrow - this is a tab)
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Messages',
+                      l10n.messages,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -61,40 +58,38 @@ class MessagesScreen extends ConsumerWidget {
                       }
 
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return ShimmerLoading.listLoading(count: 8);
                       }
 
                       final matches = snapshot.data?.docs ?? [];
 
                       if (matches.isEmpty) {
-                        return const Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.chat_bubble_outline, size: 64, color: Colors.grey),
-                              SizedBox(height: 16),
-                              Text(
-                                'No matches yet',
-                                style: TextStyle(fontSize: 18, color: Colors.grey),
-                              ),
-                              SizedBox(height: 8),
-                              Text(
-                                'Start swiping to find your matches!',
-                                style: TextStyle(fontSize: 14, color: Colors.grey),
-                              ),
-                            ],
-                          ),
+                        return EmptyStateWidget(
+                          icon: Icons.chat_bubble_outline,
+                          title: l10n.noMessagesYet,
+                          subtitle: l10n.noConversations,
                         );
                       }
 
-                      return ListView.builder(
-                        padding: const EdgeInsets.all(16),
-                        itemCount: matches.length,
-                        itemBuilder: (context, index) {
-                          final match = matches[index].data() as Map<String, dynamic>;
-                          final matchId = matches[index].id;
-                          return _buildConversationItem(context, ref, match, matchId);
-                        },
+                      return AnimationLimiter(
+                        child: ListView.builder(
+                          padding: const EdgeInsets.all(16),
+                          itemCount: matches.length,
+                          itemBuilder: (context, index) {
+                            final match = matches[index].data() as Map<String, dynamic>;
+                            final matchId = matches[index].id;
+                            return AnimationConfiguration.staggeredList(
+                              position: index,
+                              duration: const Duration(milliseconds: 375),
+                              child: SlideAnimation(
+                                verticalOffset: 50.0,
+                                child: FadeInAnimation(
+                                  child: _buildConversationItem(context, ref, match, matchId),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       );
                     },
                   ),

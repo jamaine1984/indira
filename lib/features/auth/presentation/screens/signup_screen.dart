@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
@@ -34,12 +36,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
   Future<void> _signup() async {
     if (!_formKey.currentState!.validate()) return;
     if (!_agreeToTerms) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please agree to the terms and conditions'),
-          backgroundColor: Colors.orange,
-        ),
-      );
+      AppSnackBar.info(context, 'Please agree to the terms and conditions');
       return;
     }
 
@@ -61,12 +58,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(e.toString()),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, e.toString());
       }
     } finally {
       if (mounted) {
@@ -77,6 +69,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -103,7 +96,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
 
                   // Title
                   Text(
-                    'Create Account',
+                    l10n.createAccount,
                     style: Theme.of(context).textTheme.displayMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -113,7 +106,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                   const SizedBox(height: 8),
 
                   Text(
-                    'Join our global community',
+                    l10n.welcomeSubtitle,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
                       color: Colors.white.withOpacity(0.8),
                     ),
@@ -126,7 +119,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     controller: _nameController,
                     style: const TextStyle(color: AppTheme.textCharcoal, fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
-                      labelText: 'Full Name',
+                      labelText: l10n.fullName,
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.95),
                       labelStyle: TextStyle(color: AppTheme.secondaryPlum.withOpacity(0.8)),
@@ -162,7 +155,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     keyboardType: TextInputType.emailAddress,
                     style: const TextStyle(color: AppTheme.textCharcoal, fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
-                      labelText: 'Email',
+                      labelText: l10n.email,
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.95),
                       labelStyle: TextStyle(color: AppTheme.secondaryPlum.withOpacity(0.8)),
@@ -198,7 +191,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     obscureText: _obscurePassword,
                     style: const TextStyle(color: AppTheme.textCharcoal, fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
-                      labelText: 'Password',
+                      labelText: l10n.password,
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.95),
                       labelStyle: TextStyle(color: AppTheme.secondaryPlum.withOpacity(0.8)),
@@ -246,7 +239,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     obscureText: _obscureConfirmPassword,
                     style: const TextStyle(color: AppTheme.textCharcoal, fontWeight: FontWeight.w500),
                     decoration: InputDecoration(
-                      labelText: 'Confirm Password',
+                      labelText: l10n.confirmPassword,
                       filled: true,
                       fillColor: Colors.white.withOpacity(0.95),
                       labelStyle: TextStyle(color: AppTheme.secondaryPlum.withOpacity(0.8)),
@@ -346,9 +339,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                       ),
                       child: _isLoading
                           ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                              'Create Account',
-                              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+                          : Text(
+                              l10n.createAccount,
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
                             ),
                     ),
                   ),
@@ -360,14 +353,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Already have an account? ',
+                        l10n.alreadyHaveAccount,
                         style: TextStyle(color: Colors.white.withOpacity(0.7)),
                       ),
                       TextButton(
                         onPressed: () => context.go('/login'),
-                        child: const Text(
-                          'Sign In',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.login,
+                          style: const TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
                           ),

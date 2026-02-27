@@ -1,0 +1,186 @@
+import 'package:indira_love/features/entertainment/models/game_models.dart';
+
+const List<TriviaQuestion> triviaQuestions = [
+  // ---- BOLLYWOOD ----
+  TriviaQuestion(
+    question: 'Which Bollywood film won the Academy Award for Best Picture?',
+    options: ['Lagaan', 'Slumdog Millionaire', 'RRR', 'Salaam Bombay!'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Who is known as the "King of Bollywood"?',
+    options: ['Amitabh Bachchan', 'Salman Khan', 'Shah Rukh Khan', 'Aamir Khan'],
+    correctIndex: 2,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Which film features the song "Kal Ho Naa Ho"?',
+    options: ['Kabhi Khushi Kabhie Gham', 'Kal Ho Naa Ho', 'Dil To Pagal Hai', 'Kuch Kuch Hota Hai'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Who directed the film "3 Idiots"?',
+    options: ['Karan Johar', 'Sanjay Leela Bhansali', 'Rajkumar Hirani', 'Anurag Kashyap'],
+    correctIndex: 2,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Which actress starred in "Queen" (2014)?',
+    options: ['Deepika Padukone', 'Kangana Ranaut', 'Alia Bhatt', 'Priyanka Chopra'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: '"Sholay" is set in a fictional village called:',
+    options: ['Chandni Chowk', 'Ramgarh', 'Rampur', 'Dhanabad'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Which film has the famous dialogue "Mogambo khush hua"?',
+    options: ['Don', 'Mr. India', 'Agneepath', 'Dhoom'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Who composed the music for "Roja"?',
+    options: ['Lata Mangeshkar', 'A.R. Rahman', 'R.D. Burman', 'Pritam'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Which Bollywood film is the highest-grossing of all time in India?',
+    options: ['Dangal', 'Baahubali 2', 'Pathaan', 'Jawan'],
+    correctIndex: 2,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: '"DDLJ" ran for how many years at Maratha Mandir?',
+    options: ['10 years', '15 years', '20 years', '25 years'],
+    correctIndex: 2,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Which actress is known as the "Dream Girl" of Bollywood?',
+    options: ['Rekha', 'Hema Malini', 'Sridevi', 'Madhubala'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Who played the villain Gabbar Singh in "Sholay"?',
+    options: ['Pran', 'Amjad Khan', 'Danny Denzongpa', 'Shakti Kapoor'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Which Bollywood star made their debut in "Deewana" (1992)?',
+    options: ['Hrithik Roshan', 'Salman Khan', 'Shah Rukh Khan', 'Akshay Kumar'],
+    correctIndex: 2,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'The song "Chaiyya Chaiyya" is from which film?',
+    options: ['Dil Se', 'Swades', 'Chennai Express', 'Jab We Met'],
+    correctIndex: 0,
+    category: 'bollywood',
+  ),
+  TriviaQuestion(
+    question: 'Who directed "Gangs of Wasseypur"?',
+    options: ['Vishal Bhardwaj', 'Anurag Kashyap', 'Dibakar Banerjee', 'Zoya Akhtar'],
+    correctIndex: 1,
+    category: 'bollywood',
+  ),
+  // ---- CRICKET ----
+  TriviaQuestion(
+    question: 'Who holds the record for most international centuries?',
+    options: ['Virat Kohli', 'Sachin Tendulkar', 'Ricky Ponting', 'Kumar Sangakkara'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Which country won the first Cricket World Cup in 1975?',
+    options: ['Australia', 'West Indies', 'England', 'India'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Who hit six sixes in an over in a T20 World Cup?',
+    options: ['Chris Gayle', 'Yuvraj Singh', 'AB de Villiers', 'Shahid Afridi'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'India won the 2011 Cricket World Cup under whose captaincy?',
+    options: ['Virat Kohli', 'Sachin Tendulkar', 'MS Dhoni', 'Sourav Ganguly'],
+    correctIndex: 2,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Which stadium is known as the "Home of Cricket"?',
+    options: ['Eden Gardens', 'MCG', 'Lord\'s', 'Wankhede'],
+    correctIndex: 2,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Who is called the "God of Cricket"?',
+    options: ['Don Bradman', 'Sachin Tendulkar', 'Brian Lara', 'Virat Kohli'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Which bowler has the most wickets in Test cricket?',
+    options: ['Shane Warne', 'Anil Kumble', 'Muttiah Muralitharan', 'James Anderson'],
+    correctIndex: 2,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'The IPL was founded in which year?',
+    options: ['2005', '2007', '2008', '2010'],
+    correctIndex: 2,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Which Pakistani cricketer is known as "Boom Boom"?',
+    options: ['Wasim Akram', 'Shahid Afridi', 'Shoaib Akhtar', 'Babar Azam'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Who scored the fastest century in ODI cricket?',
+    options: ['Chris Gayle', 'AB de Villiers', 'Shahid Afridi', 'Corey Anderson'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Which Bangladeshi cricketer is known as the "Tiger"?',
+    options: ['Shakib Al Hasan', 'Tamim Iqbal', 'Mushfiqur Rahim', 'Mashrafe Mortaza'],
+    correctIndex: 3,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'What is the highest individual score in Test cricket?',
+    options: ['375', '380', '400', '501'],
+    correctIndex: 2,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Who captained India to their first World Cup win in 1983?',
+    options: ['Sunil Gavaskar', 'Kapil Dev', 'Mohinder Amarnath', 'Ravi Shastri'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'The Ashes is played between which two countries?',
+    options: ['India and Pakistan', 'England and Australia', 'South Africa and England', 'New Zealand and Australia'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+  TriviaQuestion(
+    question: 'Who was the first cricketer to score a double century in ODIs?',
+    options: ['Virender Sehwag', 'Sachin Tendulkar', 'Rohit Sharma', 'Martin Guptill'],
+    correctIndex: 1,
+    category: 'cricket',
+  ),
+];

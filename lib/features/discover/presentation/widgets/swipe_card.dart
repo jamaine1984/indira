@@ -45,8 +45,11 @@ class ProfileCard extends StatelessWidget {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Layer 1: Background Photo
-              _buildPhoto(photos),
+              // Layer 1: Background Photo with Hero
+              Hero(
+                tag: 'profile-${user['uid'] ?? ''}',
+                child: _buildPhoto(photos),
+              ),
 
               // Layer 2: Gradient Overlay
               Positioned.fill(
@@ -238,6 +241,25 @@ class ProfileCard extends StatelessWidget {
                   Icons.verified,
                   color: AppTheme.accentGold,
                   size: 22,
+                ),
+              ],
+              if (user['loveLanguage'] != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${(user['loveLanguage'] as Map)['emoji'] ?? ''} ${(user['loveLanguage'] as Map)['shortName'] ?? ''}',
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: AppTheme.secondaryPlum,
+                    ),
+                  ),
                 ),
               ],
             ],

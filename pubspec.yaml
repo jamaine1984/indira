@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.2
 
   # Firebase - Upgraded to v3+ for BoringSSL-GRPC 0.0.37 compatibility with Xcode 26.2
@@ -29,6 +31,7 @@ dependencies:
   lottie: ^3.0.0
   cached_network_image: ^3.3.0
   flutter_staggered_animations: ^1.1.1
+  shimmer: ^3.0.0
 
   # State Management
   provider: ^6.1.1
@@ -38,7 +41,7 @@ dependencies:
   go_router: ^13.0.1
 
   # Utils
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.2.1
   path_provider: ^2.1.2
   shared_preferences: ^2.2.2
@@ -69,9 +72,16 @@ dependencies:
   # TODO: Re-enable after testing or find alternative for face verification
   # google_mlkit_face_detection: ^0.13.0
 
+  # ZegoCloud Video/Audio Calling
+  zego_uikit: ^2.28.40
+  zego_uikit_prebuilt_call: ^4.22.0
+
   # Audio recording for voice messages
   record: ^6.0.0
   audioplayers: ^6.0.0
+
+  # Text-to-speech for ringtones
+  flutter_tts: ^4.2.0
 
   # Security & Encryption
   encrypt: ^5.0.3
@@ -79,6 +89,9 @@ dependencies:
 
   # HTTP Client
   http: ^1.1.0
+
+  # Sharing
+  share_plus: ^12.0.1
 
   # Development
   flutter_dotenv: ^5.1.0

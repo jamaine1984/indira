@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/models/subscription_tier.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
 
 class SubscriptionScreen extends ConsumerWidget {
   const SubscriptionScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -30,7 +33,7 @@ class SubscriptionScreen extends ConsumerWidget {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Choose Your Plan',
+                      l10n.subscription,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -47,9 +50,9 @@ class SubscriptionScreen extends ConsumerWidget {
                   child: Column(
                     children: [
                       // Header Text
-                      const Text(
-                        'Unlock Your Perfect Match',
-                        style: TextStyle(
+                      Text(
+                        l10n.upgradeToPremium,
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -265,10 +268,9 @@ class SubscriptionScreen extends ConsumerWidget {
                   width: double.infinity,
                   child: ElevatedButton(
                     onPressed: () {
+                      final l10n = AppLocalizations.of(context);
                       if (plan.tier == SubscriptionTier.free) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('You are on the Free plan')),
-                        );
+                        AppSnackBar.info(context, l10n.currentPlan);
                       } else {
                         _showSubscribeDialog(context, plan);
                       }
@@ -285,8 +287,8 @@ class SubscriptionScreen extends ConsumerWidget {
                     ),
                     child: Text(
                       plan.tier == SubscriptionTier.free
-                          ? 'Current Plan'
-                          : 'Subscribe Now',
+                          ? AppLocalizations.of(context).currentPlan
+                          : AppLocalizations.of(context).subscription,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -355,29 +357,25 @@ class SubscriptionScreen extends ConsumerWidget {
   }
 
   void _showSubscribeDialog(BuildContext context, SubscriptionPlan plan) {
+    final l10n = AppLocalizations.of(context);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: Text('Subscribe to ${plan.name}?'),
         content: Text(
           'You will be charged ${plan.priceDisplay}/month.\n\nYour subscription will be managed through your app store account and can be cancelled anytime.',
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${plan.name} subscription activated!'),
-                  backgroundColor: Colors.green,
-                ),
-              );
+              Navigator.pop(dialogContext);
+              AppSnackBar.success(context, '${plan.name} ${l10n.subscription.toLowerCase()} activated!');
             },
-            child: const Text('Subscribe'),
+            child: Text(l10n.subscription),
           ),
         ],
       ),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 
 class WelcomeScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Stack(
         children: [
@@ -78,7 +80,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       ).animate().fadeIn(duration: 800.ms).scale(begin: const Offset(0.8, 0.8)),
                       const SizedBox(height: 24),
                       Text(
-                        'Indira Love',
+                        l10n.appName,
                         style: Theme.of(context).textTheme.displayMedium?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -99,7 +101,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                     children: [
                       // Tagline
                       Text(
-                        'Find Your Perfect Match',
+                        l10n.welcomeSubtitle,
                         style: Theme.of(context).textTheme.headlineSmall?.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w600,
@@ -146,9 +148,9 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                           elevation: 8,
                           shadowColor: AppTheme.primaryRose.withOpacity(0.5),
                         ),
-                        child: const Text(
-                          'Get Started',
-                          style: TextStyle(
+                        child: Text(
+                          l10n.createAccount,
+                          style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
                             color: Colors.white,
@@ -162,7 +164,7 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
                       TextButton(
                         onPressed: () => context.go('/login'),
                         child: Text(
-                          'Already have an account? Sign In',
+                          '${l10n.alreadyHaveAccount} ${l10n.login}',
                           style: TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,

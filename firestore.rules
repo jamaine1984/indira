@@ -363,5 +363,137 @@ service cloud.firestore {
       // Allow users to read and write their own action logs
       allow read, write: if isAuth();
     }
+
+    // ============================================================
+    // GAME SESSIONS — MULTIPLAYER ENTERTAINMENT
+    // ============================================================
+
+    match /game_sessions/{sessionId} {
+      allow read: if isAuth() &&
+                  (resource.data.createdBy == request.auth.uid ||
+                   resource.data.opponent == request.auth.uid);
+
+      allow list: if isAuth() && request.query.limit <= 50;
+
+      allow create: if isAuth() &&
+                     request.resource.data.createdBy == request.auth.uid;
+
+      allow update: if isAuth() &&
+                    (resource.data.createdBy == request.auth.uid ||
+                     resource.data.opponent == request.auth.uid);
+
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // THIS OR THAT STATS — COMMUNITY VOTING
+    // ============================================================
+
+    match /this_or_that_stats/{questionId} {
+      allow read: if isAuth();
+      allow list: if isAuth();
+      allow create, update: if isAuth();
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // VIDEO SESSIONS — ZEGOCLOUD CALLS
+    // ============================================================
+
+    match /video_sessions/{sessionId} {
+      allow read: if isAuth();
+      allow list: if isAuth() && request.query.limit <= 50;
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // CALL NOTIFICATIONS — INCOMING CALLS
+    // ============================================================
+
+    match /call_notifications/{notifId} {
+      allow read: if isAuth();
+      allow list: if isAuth();
+      allow create: if isAuth();
+      allow update: if isAuth();
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // ENDORSEMENTS — COMMUNITY REVIEWS
+    // ============================================================
+
+    match /endorsements/{endorseId} {
+      allow read: if isAuth();
+      allow list: if isAuth() && request.query.limit <= 50;
+      allow create: if isAuth() &&
+                     request.resource.data.fromUserId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // SAFETY CHECK-INS
+    // ============================================================
+
+    match /safety_checkins/{checkinId} {
+      allow read: if isAuth() &&
+                  resource.data.userId == request.auth.uid;
+      allow list: if isAuth();
+      allow create: if isAuth() &&
+                     request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() &&
+                    resource.data.userId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // FESTIVAL EVENTS
+    // ============================================================
+
+    match /festival_events/{eventId} {
+      allow read: if isAuth();
+      allow list: if isAuth();
+      // Allow authenticated users to RSVP (update rsvps array)
+      allow create, update: if isAuth();
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // ENGAGEMENT SIGNALS (AI matching)
+    // ============================================================
+
+    match /engagement_signals/{signalId} {
+      allow read: if isAuth() &&
+                  (resource.data.viewerId == request.auth.uid ||
+                   resource.data.userId == request.auth.uid);
+      allow list: if isAuth();
+      allow create: if isAuth() &&
+                     (request.resource.data.viewerId == request.auth.uid ||
+                      request.resource.data.userId == request.auth.uid);
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // AI PREFERENCES (cached per user)
+    // ============================================================
+
+    match /users/{userId}/aiPreferences/{docId} {
+      allow read: if isOwner(userId);
+      allow write: if isOwner(userId);
+    }
+
+    // ============================================================
+    // FAMILY SHARES
+    // ============================================================
+
+    match /family_shares/{shareId} {
+      allow read: if isAuth() &&
+                  resource.data.sharedBy == request.auth.uid;
+      allow list: if isAuth();
+      allow create: if isAuth() &&
+                     request.resource.data.sharedBy == request.auth.uid;
+      allow update, delete: if false;
+    }
   }
 }

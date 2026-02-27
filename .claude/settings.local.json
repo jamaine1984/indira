@@ -17,7 +17,22 @@
       "Bash(ls:*)",
       "Bash(flutter pub add:*)",
       "Bash(copy:*)",
-      "Bash(flutter run:*)"
+      "Bash(flutter run:*)",
+      "Bash(find:*)",
+      "Bash(cd:*)",
+      "Bash(head:*)",
+      "Bash(cd /c/Users/koike/Downloads/indira && flutter pub get 2>&1)",
+      "WebFetch(domain:sites.google.com)",
+      "Bash(tail:*)",
+      "Bash(midnight)",
+      "Bash(connect)",
+      "Bash(dating)",
+      "Bash(app \")",
+      "Bash(echo === $\\(basename \"$dir\"\\) ===:*)",
+      "Bash(find C:\\\\Users\\\\koike\\\\Downloads\\\\indira\\\\lib:*)",
+      "Bash(done)",
+      "WebSearch",
+      "Bash(flutter devices:*)"
     ],
     "deny": [],
     "ask": []

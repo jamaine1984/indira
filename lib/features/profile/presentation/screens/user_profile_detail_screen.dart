@@ -6,8 +6,12 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'package:indira_love/features/profile/presentation/widgets/report_dialog.dart';
 import 'package:indira_love/core/services/database_service.dart';
+import 'package:indira_love/features/endorsements/presentation/widgets/endorsement_section.dart';
+import 'package:indira_love/features/family/services/family_sharing_service.dart';
 
 class UserProfileDetailScreen extends ConsumerWidget {
   final String userId;
@@ -47,6 +51,7 @@ class UserProfileDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: StreamBuilder<DocumentSnapshot>(
         stream: FirebaseFirestore.instance.collection('users').doc(userId).snapshots(),
@@ -69,14 +74,14 @@ class UserProfileDetailScreen extends ConsumerWidget {
                   children: [
                     const Icon(Icons.error_outline, size: 64, color: Colors.white),
                     const SizedBox(height: 16),
-                    const Text(
-                      'User not found',
-                      style: TextStyle(color: Colors.white, fontSize: 20),
+                    Text(
+                      l10n.error,
+                      style: const TextStyle(color: Colors.white, fontSize: 20),
                     ),
                     const SizedBox(height: 24),
                     ElevatedButton(
                       onPressed: () => context.pop(),
-                      child: const Text('Go Back'),
+                      child: Text(l10n.back),
                     ),
                   ],
                 ),
@@ -100,32 +105,35 @@ class UserProfileDetailScreen extends ConsumerWidget {
                 expandedHeight: 400,
                 pinned: true,
                 flexibleSpace: FlexibleSpaceBar(
-                  background: photos.isNotEmpty
-                      ? GestureDetector(
-                          onTap: () => _showPhotoViewer(context, photos, 0),
-                          child: CachedNetworkImage(
-                            imageUrl: photos[0].toString(),
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(
-                              color: AppTheme.secondaryPlum.withOpacity(0.3),
-                              child: const Center(
-                                child: CircularProgressIndicator(color: Colors.white),
+                  background: Hero(
+                    tag: 'profile-$userId',
+                    child: photos.isNotEmpty
+                        ? GestureDetector(
+                            onTap: () => _showPhotoViewer(context, photos, 0),
+                            child: CachedNetworkImage(
+                              imageUrl: photos[0].toString(),
+                              fit: BoxFit.cover,
+                              placeholder: (context, url) => Container(
+                                color: AppTheme.secondaryPlum.withOpacity(0.3),
+                                child: const Center(
+                                  child: CircularProgressIndicator(color: Colors.white),
+                                ),
+                              ),
+                              errorWidget: (context, url, error) => Container(
+                                color: AppTheme.secondaryPlum.withOpacity(0.3),
+                                child: const Center(
+                                  child: Icon(Icons.person, size: 100, color: Colors.white),
+                                ),
                               ),
                             ),
-                            errorWidget: (context, url, error) => Container(
-                              color: AppTheme.secondaryPlum.withOpacity(0.3),
-                              child: const Center(
-                                child: Icon(Icons.person, size: 100, color: Colors.white),
-                              ),
+                          )
+                        : Container(
+                            color: AppTheme.secondaryPlum.withOpacity(0.3),
+                            child: const Center(
+                              child: Icon(Icons.person, size: 100, color: Colors.white),
                             ),
                           ),
-                        )
-                      : Container(
-                          color: AppTheme.secondaryPlum.withOpacity(0.3),
-                          child: const Center(
-                            child: Icon(Icons.person, size: 100, color: Colors.white),
-                          ),
-                        ),
+                  ),
                 ),
               ),
 
@@ -172,6 +180,37 @@ class UserProfileDetailScreen extends ConsumerWidget {
                           ],
                         ),
 
+                        // Love Language Badge
+                        if (userData['loveLanguage'] != null) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: AppTheme.secondaryPlum.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppTheme.secondaryPlum.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  (userData['loveLanguage'] as Map)['emoji']?.toString() ?? '',
+                                  style: const TextStyle(fontSize: 16),
+                                ),
+                                const SizedBox(width: 6),
+                                Text(
+                                  (userData['loveLanguage'] as Map)['primaryLanguage']?.toString() ?? '',
+                                  style: const TextStyle(
+                                    color: AppTheme.secondaryPlum,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 12),
 
                         // Location
@@ -198,9 +237,9 @@ class UserProfileDetailScreen extends ConsumerWidget {
 
                         // Bio Section
                         if (bio.isNotEmpty) ...[
-                          const Text(
-                            'About',
-                            style: TextStyle(
+                          Text(
+                            l10n.about,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -219,9 +258,9 @@ class UserProfileDetailScreen extends ConsumerWidget {
 
                         // Interests Section
                         if (interests.isNotEmpty) ...[
-                          const Text(
-                            'Interests',
-                            style: TextStyle(
+                          Text(
+                            l10n.interests,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -259,9 +298,9 @@ class UserProfileDetailScreen extends ConsumerWidget {
 
                         // Cultural & Lifestyle Section
                         if (userData['culturalPreferences'] != null) ...[
-                          const Text(
-                            'Cultural & Lifestyle',
-                            style: TextStyle(
+                          Text(
+                            l10n.culturalLifestyle,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -273,9 +312,9 @@ class UserProfileDetailScreen extends ConsumerWidget {
 
                         // Photos Grid
                         if (photos.length > 1) ...[
-                          const Text(
-                            'Photos',
-                            style: TextStyle(
+                          Text(
+                            l10n.photos,
+                            style: const TextStyle(
                               fontSize: 20,
                               fontWeight: FontWeight.bold,
                             ),
@@ -303,6 +342,53 @@ class UserProfileDetailScreen extends ConsumerWidget {
                             },
                           ),
                         ],
+
+                        // Community Reviews / Endorsements
+                        EndorsementSection(userId: userId),
+                        const SizedBox(height: 24),
+
+                        // Quick Actions (Kundli + Family Share)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () {
+                                  context.push('/kundli?userId=$userId');
+                                },
+                                icon: const Icon(Icons.auto_awesome, size: 18),
+                                label: Text(l10n.kundliMatch),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.secondaryPlum,
+                                  side: BorderSide(color: AppTheme.secondaryPlum.withOpacity(0.5)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () async {
+                                  try {
+                                    await FamilySharingService().shareWithFamily(userId);
+                                  } catch (e) {
+                                    if (context.mounted) {
+                                      AppSnackBar.error(context, '$e');
+                                    }
+                                  }
+                                },
+                                icon: const Icon(Icons.family_restroom, size: 18),
+                                label: Text(l10n.shareWithFamily),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppTheme.primaryRose,
+                                  side: BorderSide(color: AppTheme.primaryRose.withOpacity(0.5)),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
 
                         const SizedBox(height: 40),
 
@@ -341,20 +427,20 @@ class UserProfileDetailScreen extends ConsumerWidget {
                                 // Show confirmation dialog
                                 final confirm = await showDialog<bool>(
                                   context: context,
-                                  builder: (context) => AlertDialog(
-                                    title: const Text('Block User'),
-                                    content: Text('Are you sure you want to block $displayName? You will not see each other anymore.'),
+                                  builder: (dialogCtx) => AlertDialog(
+                                    title: Text(l10n.blockUser),
+                                    content: Text(l10n.blockUserConfirm),
                                     actions: [
                                       TextButton(
-                                        onPressed: () => Navigator.of(context).pop(false),
-                                        child: const Text('Cancel'),
+                                        onPressed: () => Navigator.of(dialogCtx).pop(false),
+                                        child: Text(l10n.cancel),
                                       ),
                                       ElevatedButton(
-                                        onPressed: () => Navigator.of(context).pop(true),
+                                        onPressed: () => Navigator.of(dialogCtx).pop(true),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.red,
                                         ),
-                                        child: const Text('Block'),
+                                        child: Text(l10n.block),
                                       ),
                                     ],
                                   ),
@@ -364,22 +450,12 @@ class UserProfileDetailScreen extends ConsumerWidget {
                                   try {
                                     await DatabaseService().blockUser(userId);
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('$displayName has been blocked'),
-                                          backgroundColor: Colors.green,
-                                        ),
-                                      );
+                                      AppSnackBar.success(context, l10n.userBlocked);
                                       context.pop();
                                     }
                                   } catch (e) {
                                     if (context.mounted) {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        SnackBar(
-                                          content: Text('Failed to block user: $e'),
-                                          backgroundColor: Colors.red,
-                                        ),
-                                      );
+                                      AppSnackBar.error(context, '${l10n.error}: $e');
                                     }
                                   }
                                 }
@@ -440,12 +516,7 @@ class UserProfileDetailScreen extends ConsumerWidget {
                                       matchId = newMatch.id;
                                     } catch (e) {
                                       if (context.mounted) {
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Failed to start conversation: $e'),
-                                            backgroundColor: Colors.red,
-                                          ),
-                                        );
+                                        AppSnackBar.error(context, '${l10n.error}: $e');
                                       }
                                       return;
                                     }
@@ -459,7 +530,7 @@ class UserProfileDetailScreen extends ConsumerWidget {
                                   }
                                 },
                                 icon: const Icon(Icons.message),
-                                label: const Text('Message'),
+                                label: Text(l10n.sendMessage),
                                 style: ElevatedButton.styleFrom(
                                   padding: const EdgeInsets.symmetric(vertical: 16),
                                   backgroundColor: AppTheme.primaryRose,

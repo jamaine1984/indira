@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'package:flutter_animate/flutter_animate.dart';
@@ -9,8 +10,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/services/logger_service.dart';
+import 'package:indira_love/core/services/engagement_tracking_service.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
+import 'package:indira_love/core/widgets/shimmer_loading.dart';
+import 'package:indira_love/core/widgets/animated_pressable.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'package:indira_love/core/services/location_service.dart';
 import 'package:indira_love/features/discover/presentation/widgets/swipe_card.dart';
 import 'package:indira_love/features/discover/presentation/providers/discover_provider.dart';
@@ -140,7 +146,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
       return false;
     }
 
+    // Track engagement: stop viewing current profile
+    EngagementTrackingService().stopViewingProfile();
+
     if (isMatch && mounted) {
+      HapticFeedback.heavyImpact();
       setState(() {
         _matchedUser = targetUser;
         _showMatchOverlay = true;
@@ -275,6 +285,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                                       if (index >= _profiles.length) {
                                         return const SizedBox();
                                       }
+                                      // Track engagement: start viewing this profile
+                                      if (index == 0) {
+                                        final uid = _profiles[index]['uid'] as String? ?? '';
+                                        final viewerId = currentUser?.uid ?? '';
+                                        if (uid.isNotEmpty && viewerId.isNotEmpty) {
+                                          EngagementTrackingService().startViewingProfile(viewerId, uid);
+                                        }
+                                      }
                                       // 3D perspective transform during swipe
                                       return Transform(
                                         alignment: Alignment.center,
@@ -285,8 +303,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                                                   0.006),
                                         child: ProfileCard(
                                           user: _profiles[index],
-                                          onTap: () => context.push(
-                                              '/user-profile/${_profiles[index]['uid']}'),
+                                          onTap: () {
+                                            // Track profile detail tap engagement
+                                            final uid = _profiles[index]['uid'] as String? ?? '';
+                                            final viewerId = currentUser?.uid ?? '';
+                                            if (uid.isNotEmpty && viewerId.isNotEmpty) {
+                                              EngagementTrackingService().recordProfileDetailTap(viewerId, uid);
+                                            }
+                                            context.push('/user-profile/$uid');
+                                          },
                                         ),
                                       );
                                     },
@@ -364,7 +389,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Indira Love',
+                AppLocalizations.of(context).appName,
                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: Colors.white,
                       fontWeight: FontWeight.bold,
@@ -421,26 +446,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
   // ─── Loading State ──────────────────────────────────────────
 
   Widget _buildLoadingState() {
-    return Container(
-      decoration: const BoxDecoration(
-        gradient: AppTheme.romanticGradient,
-      ),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const CircularProgressIndicator(color: Colors.white),
-            const SizedBox(height: 16),
-            Text(
-              'Finding your matches...',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 16,
-                color: Colors.white.withOpacity(0.8),
-              ),
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Column(
+        children: [
+          Expanded(child: ShimmerLoading.card(height: double.infinity)),
+          const SizedBox(height: 16),
+          Text(
+            'Finding your matches...',
+            style: TextStyle(
+              fontFamily: 'Inter',
+              fontSize: 16,
+              color: AppTheme.secondaryPlum.withOpacity(0.6),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 12),
+        ],
       ),
     );
   }
@@ -568,7 +589,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Menu',
+                      AppLocalizations.of(context).menu,
                       style:
                           Theme.of(context).textTheme.headlineLarge?.copyWith(
                                 color: Colors.white,
@@ -589,12 +610,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                   children: [
                     _buildMenuItem(
                       icon: Icons.explore,
-                      title: 'Discover',
+                      title: AppLocalizations.of(context).discover,
                       onTap: () => Navigator.pop(context),
                     ),
                     _buildMenuItem(
                       icon: Icons.thumb_up,
-                      title: 'Likes',
+                      title: AppLocalizations.of(context).likes,
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/likes');
@@ -602,7 +623,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     ),
                     _buildMenuItem(
                       icon: Icons.location_on,
-                      title: 'Location Settings',
+                      title: AppLocalizations.of(context).locationSettings,
                       onTap: () {
                         Navigator.pop(context);
                         _showLocationDialog(context);
@@ -614,7 +635,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                         final unreadCount = snapshot.data?.docs.length ?? 0;
                         return _buildMenuItem(
                           icon: Icons.chat_bubble,
-                          title: 'Messages',
+                          title: AppLocalizations.of(context).messages,
                           badgeCount: unreadCount,
                           onTap: () {
                             Navigator.pop(context);
@@ -625,15 +646,47 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     ),
                     _buildMenuItem(
                       icon: Icons.people,
-                      title: 'Social',
+                      title: AppLocalizations.of(context).social,
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/social');
                       },
                     ),
                     _buildMenuItem(
+                      icon: Icons.sports_esports,
+                      title: AppLocalizations.of(context).entertainment,
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/entertainment');
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.celebration,
+                      title: AppLocalizations.of(context).festivalEvents,
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/festivals');
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.auto_awesome,
+                      title: AppLocalizations.of(context).kundliMatch,
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/kundli');
+                      },
+                    ),
+                    _buildMenuItem(
+                      icon: Icons.shield,
+                      title: AppLocalizations.of(context).safetyCheckin,
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/safety-checkin');
+                      },
+                    ),
+                    _buildMenuItem(
                       icon: Icons.card_giftcard,
-                      title: 'Gifts',
+                      title: AppLocalizations.of(context).gifts,
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/gifts');
@@ -641,7 +694,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     ),
                     _buildMenuItem(
                       icon: Icons.person,
-                      title: 'Profile',
+                      title: AppLocalizations.of(context).profile,
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/profile');
@@ -649,7 +702,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     ),
                     _buildMenuItem(
                       icon: Icons.workspace_premium,
-                      title: 'Premium',
+                      title: AppLocalizations.of(context).premium,
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/subscription');
@@ -657,8 +710,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     ),
                     const Divider(color: Colors.white30, height: 32),
                     _buildMenuItem(
+                      icon: Icons.language,
+                      title: AppLocalizations.of(context).language,
+                      onTap: () {
+                        Navigator.pop(context);
+                        context.push('/language');
+                      },
+                    ),
+                    _buildMenuItem(
                       icon: Icons.settings,
-                      title: 'Settings',
+                      title: AppLocalizations.of(context).settings,
                       onTap: () {
                         Navigator.pop(context);
                         context.push('/profile');
@@ -666,7 +727,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     ),
                     _buildMenuItem(
                       icon: Icons.logout,
-                      title: 'Logout',
+                      title: AppLocalizations.of(context).logout,
                       onTap: () async {
                         await ref.read(authProvider.notifier).signOut();
                         if (context.mounted) {
@@ -783,20 +844,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                     if (!dialogContext.mounted) return;
                     Navigator.pop(dialogContext);
                     if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Location updated successfully!'),
-                          backgroundColor: Colors.green,
-                        ),
-                      );
+                      AppSnackBar.success(context, 'Location updated successfully!');
                     } else {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                              'Failed to get location. Please check your settings.'),
-                          backgroundColor: Colors.red,
-                        ),
-                      );
+                      AppSnackBar.error(context, 'Failed to get location. Please check your settings.');
                     }
                   },
                   style: ElevatedButton.styleFrom(
@@ -856,24 +906,24 @@ class _ActionButtonRow extends StatelessWidget {
           _ActionButton(
             icon: Icons.undo_rounded,
             color: AppTheme.accentGold,
-            size: 44,
-            iconSize: 22,
+            size: 56,
+            iconSize: 30,
             onTap: onUndo,
             tooltip: 'Rewind',
           ),
           _ActionButton(
             icon: Icons.close_rounded,
             color: AppTheme.primaryRose,
-            size: 56,
-            iconSize: 28,
+            size: 64,
+            iconSize: 34,
             onTap: onDislike,
             tooltip: 'Pass',
           ),
           _ActionButton(
             icon: Icons.favorite_rounded,
             color: const Color(0xFF22C55E),
-            size: 56,
-            iconSize: 28,
+            size: 64,
+            iconSize: 34,
             onTap: onLike,
             tooltip: 'Like',
           ),
@@ -904,7 +954,7 @@ class _ActionButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
-      child: GestureDetector(
+      child: AnimatedPressable(
         onTap: onTap,
         child: Container(
           width: size,
@@ -914,14 +964,14 @@ class _ActionButton extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(0.25),
-                blurRadius: 12,
+                color: color.withOpacity(0.3),
+                blurRadius: 16,
                 offset: const Offset(0, 4),
               ),
             ],
             border: Border.all(
-              color: color.withOpacity(0.3),
-              width: 2,
+              color: color.withOpacity(0.4),
+              width: 3,
             ),
           ),
           child: Icon(icon, color: color, size: iconSize),
@@ -1105,6 +1155,13 @@ class _MatchOverlay extends StatelessWidget {
                           ],
                         ),
                         shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppTheme.primaryRose.withOpacity(0.6),
+                            blurRadius: 20,
+                            spreadRadius: 4,
+                          ),
+                        ],
                       ),
                       child: const Icon(
                         Icons.favorite_rounded,
@@ -1112,6 +1169,13 @@ class _MatchOverlay extends StatelessWidget {
                         size: 24,
                       ),
                     )
+                        .animate(onPlay: (c) => c.repeat(reverse: true))
+                        .scale(
+                          begin: const Offset(1, 1),
+                          end: const Offset(1.15, 1.15),
+                          duration: 800.ms,
+                          curve: Curves.easeInOut,
+                        )
                         .animate()
                         .fadeIn(delay: 500.ms)
                         .scale(

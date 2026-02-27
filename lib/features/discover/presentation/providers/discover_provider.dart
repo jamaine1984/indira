@@ -8,6 +8,8 @@ import 'package:indira_love/core/services/matches_service.dart';
 import 'package:indira_love/core/services/matching_algorithm_service.dart';
 import 'package:indira_love/core/services/profile_cache_service.dart';
 import 'package:indira_love/core/services/rate_limiter_service.dart';
+import 'package:indira_love/core/services/preference_learning_service.dart';
+import 'package:indira_love/core/services/elo_ranking_service.dart';
 import 'package:indira_love/features/discover/presentation/widgets/swipe_card.dart';
 
 final discoverProvider = StateNotifierProvider<DiscoverNotifier, DiscoverState>((ref) {
@@ -75,6 +77,8 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
   final MatchingAlgorithmService _matchingService = MatchingAlgorithmService();
   final ProfileCacheService _cacheService = ProfileCacheService();
   final RateLimiterService _rateLimiter = RateLimiterService();
+  final PreferenceLearningService _preferenceLearning = PreferenceLearningService();
+  final EloRankingService _eloRanking = EloRankingService();
 
   // Pagination configuration for 1M+ users
   static const int _pageSize = 50; // Fetch 50 users at a time
@@ -223,14 +227,47 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         );
       }
 
-      // Calculate compatibility scores
+      // Calculate compatibility scores with AI layer
+      Map<String, dynamic> learnedWeights = {};
+      try {
+        learnedWeights = await _preferenceLearning.learnPreferenceWeights(user.uid);
+        logger.info('[Discovery] AI weights loaded: ${learnedWeights.keys.join(', ')}');
+      } catch (e) {
+        logger.warning('[Discovery] AI preference learning unavailable: $e');
+      }
+
       for (var match in newProfiles) {
         try {
-          final score = _matchingService.calculateCompatibilityScore(
+          // Step 1: Base compatibility score
+          final baseScore = _matchingService.calculateCompatibilityScore(
             currentUser: currentUserData,
             potentialMatch: match,
           );
-          match['compatibilityScore'] = score;
+
+          // Step 2: AI-adjusted score (blends base 60% + learned 40%)
+          double aiScore = baseScore;
+          if (learnedWeights.isNotEmpty && (learnedWeights['swipeCount'] as int? ?? 0) >= 10) {
+            aiScore = _preferenceLearning.getAIAdjustedScore(
+              baseScore: baseScore,
+              learnedWeights: learnedWeights,
+              candidateProfile: match,
+              currentUserProfile: currentUserData,
+            );
+          }
+
+          // Step 3: ELO multiplier (elo/1000 clamped 0.8-1.3)
+          final eloMultiplier = _eloRanking.getEloMultiplier(
+            match['eloScore'] as int?,
+          );
+
+          // Step 4: Cold start boost (first 48h = 1.2x, first week = 1.1x)
+          final coldStartMultiplier = _eloRanking.getColdStartMultiplier(
+            match['createdAt'],
+          );
+
+          // Final score
+          final finalScore = aiScore * eloMultiplier * coldStartMultiplier;
+          match['compatibilityScore'] = finalScore.clamp(0, 100);
         } catch (e) {
           logger.warning('[Discovery] Could not calculate score: $e');
           match['compatibilityScore'] = 50.0;
@@ -477,6 +514,10 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         'direction': dirStr,
         'targetUserId': targetUserId,
       });
+
+      // Update target's ELO score based on swipe direction
+      final isRightSwipe = direction == SwipeDirection.right || direction == SwipeDirection.up;
+      _eloRanking.updateElo(targetUserId, isRightSwipe);
 
       return isMatch;
     } catch (e) {

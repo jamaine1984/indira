@@ -6,6 +6,8 @@ import 'package:indira_love/core/models/subscription_tier.dart';
 import 'package:indira_love/core/models/gift_model.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/features/gifts/presentation/screens/gift_inventory_screen.dart';
 
 class GiftsScreen extends ConsumerStatefulWidget {
@@ -47,6 +49,7 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -69,7 +72,7 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Gift Store',
+                      l10n.giftShop,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -90,7 +93,7 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
                         Icons.inventory_2,
                         color: Colors.white,
                       ),
-                      tooltip: 'My Gifts',
+                      tooltip: l10n.myGifts,
                     ),
                     const SizedBox(width: 8),
                     // Tier badge
@@ -114,8 +117,8 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
                             _userTier == SubscriptionTier.gold
                                 ? 'Unlimited'
                                 : _userTier == SubscriptionTier.silver
-                                    ? 'Silver'
-                                    : 'Free',
+                                    ? l10n.silver
+                                    : l10n.free,
                             style: const TextStyle(
                               color: Colors.white,
                               fontWeight: FontWeight.bold,
@@ -237,7 +240,7 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
                   textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
                   backgroundColor: _getButtonColor(),
                 ),
-                child: Text(_getButtonText()),
+                child: Text(_getButtonText(context)),
               ),
             ),
           ),
@@ -257,9 +260,10 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
     }
   }
 
-  String _getButtonText() {
+  String _getButtonText(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_userTier == SubscriptionTier.gold) {
-      return 'Send Free';
+      return '${l10n.sendGift} (${l10n.free})';
     }
     return 'Watch Ad';
   }
@@ -296,21 +300,11 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
       });
 
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('${gift.emoji} ${gift.name} saved to inventory!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, '${gift.emoji} ${gift.name} saved to inventory!');
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to save gift: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Failed to save gift: $e');
       }
     }
   }

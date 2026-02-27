@@ -7,6 +7,8 @@ import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/services/data_export_service.dart';
 import 'package:indira_love/core/services/account_deletion_service.dart';
+import 'package:indira_love/core/widgets/shimmer_loading.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/features/auth/presentation/providers/auth_provider.dart';
 import 'package:indira_love/features/profile/presentation/screens/cultural_preferences_screen.dart';
 
@@ -46,12 +48,22 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     if (_isLoading) {
       return Scaffold(
         body: Container(
           decoration: const BoxDecoration(gradient: AppTheme.romanticGradient),
-          child: const Center(
-            child: CircularProgressIndicator(color: Colors.white),
+          child: SafeArea(
+            child: Column(
+              children: [
+                const SizedBox(height: 16),
+                ShimmerLoading.card(height: 200),
+                const SizedBox(height: 16),
+                ShimmerLoading.listTile(),
+                ShimmerLoading.listTile(),
+                ShimmerLoading.listTile(),
+              ],
+            ),
           ),
         ),
       );
@@ -86,7 +98,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                     ),
                     const SizedBox(width: 8),
                     Text(
-                      'Profile',
+                      l10n.profile,
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -168,6 +180,53 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                         ),
                       ],
 
+                      // Love Language Badge
+                      if (_userData?['loveLanguage'] != null) ...[
+                        const SizedBox(height: 12),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white.withOpacity(0.4)),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                (_userData!['loveLanguage'] as Map)['emoji']?.toString() ?? '',
+                                style: const TextStyle(fontSize: 18),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                (_userData!['loveLanguage'] as Map)['primaryLanguage']?.toString() ?? '',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ] else ...[
+                        const SizedBox(height: 12),
+                        OutlinedButton.icon(
+                          onPressed: () => context.push('/love-language-quiz'),
+                          icon: const Icon(Icons.favorite, color: Colors.white, size: 16),
+                          label: Text(
+                            l10n.takeLoveLanguageQuiz,
+                            style: const TextStyle(color: Colors.white, fontSize: 13),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            side: const BorderSide(color: Colors.white54),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          ),
+                        ),
+                      ],
+
                       const SizedBox(height: 32),
 
                       // My Photos Section
@@ -224,7 +283,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       // Profile Options
                       _buildProfileOption(
                         context,
-                        'Edit Profile',
+                        l10n.editProfile,
                         Icons.edit,
                         () {
                           context.push('/edit-profile');
@@ -233,7 +292,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       _buildProfileOption(
                         context,
-                        'Cultural & Lifestyle',
+                        l10n.culturalLifestyle,
                         Icons.temple_hindu,
                         () {
                           Navigator.push(
@@ -247,7 +306,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       _buildProfileOption(
                         context,
-                        'Subscription',
+                        l10n.subscription,
                         Icons.star,
                         () {
                           context.push('/subscription');
@@ -256,7 +315,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       _buildProfileOption(
                         context,
-                        'Safety & Security',
+                        l10n.safety,
                         Icons.security,
                         () {
                           context.push('/safety');
@@ -265,7 +324,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       _buildProfileOption(
                         context,
-                        'Privacy Policy',
+                        l10n.privacyPolicy,
                         Icons.privacy_tip,
                         () {
                           context.push('/privacy');
@@ -274,7 +333,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       _buildProfileOption(
                         context,
-                        'Help & Support',
+                        l10n.helpSupport,
                         Icons.help,
                         () {
                           _showHelpSupportDialog(context);
@@ -288,7 +347,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                       ),
 
                       Text(
-                        'Privacy & Data',
+                        l10n.privacy,
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.7),
                           fontSize: 14,
@@ -333,9 +392,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
                               borderRadius: BorderRadius.circular(12),
                             ),
                           ),
-                          child: const Text(
-                            'Sign Out',
-                            style: TextStyle(
+                          child: Text(
+                            l10n.logout,
+                            style: const TextStyle(
                               color: Colors.white,
                               fontSize: 16,
                               fontWeight: FontWeight.w600,

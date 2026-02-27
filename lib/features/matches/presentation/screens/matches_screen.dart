@@ -3,14 +3,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
+import 'package:indira_love/core/widgets/shimmer_loading.dart';
+import 'package:indira_love/core/widgets/empty_state_widget.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
 
 class MatchesScreen extends ConsumerWidget {
   const MatchesScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final currentUser = AuthService().currentUser;
     return Scaffold(
       body: Container(
@@ -20,21 +25,13 @@ class MatchesScreen extends ConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // Header
+              // Header (no back arrow - this is a tab)
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: [
-                    IconButton(
-                      onPressed: () => Navigator.pop(context),
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
                     Text(
-                      'Matches',
+                      l10n.matches,
                       style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -102,68 +99,55 @@ class MatchesScreen extends ConsumerWidget {
                       }
 
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
+                        return ShimmerLoading.profileGrid(count: 6);
                       }
 
                       final matches = snapshot.data?.docs ?? [];
 
                       if (matches.isEmpty) {
-                        return Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.favorite_border,
-                                size: 80,
-                                color: Colors.grey[400],
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No matches yet',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  color: Colors.grey[600],
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Start swiping to find matches!',
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Colors.grey[500],
-                                ),
-                              ),
-                            ],
-                          ),
+                        return EmptyStateWidget(
+                          icon: Icons.favorite_border,
+                          title: l10n.noMatches,
+                          subtitle: l10n.keepSwiping,
                         );
                       }
 
-                      return GridView.builder(
-                        padding: const EdgeInsets.all(16),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: 12,
-                          mainAxisSpacing: 12,
-                          childAspectRatio: 0.75,
-                        ),
-                        itemCount: matches.length,
-                        itemBuilder: (context, index) {
-                          final matchDoc = matches[index];
-                          final matchData = matchDoc.data() as Map<String, dynamic>;
-                          final users = List<String>.from(matchData['users'] ?? []);
-                          final otherUserId = users.firstWhere(
-                            (id) => id != currentUser?.uid,
-                            orElse: () => '',
-                          );
+                      return AnimationLimiter(
+                        child: GridView.builder(
+                          padding: const EdgeInsets.all(16),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            crossAxisSpacing: 12,
+                            mainAxisSpacing: 12,
+                            childAspectRatio: 0.75,
+                          ),
+                          itemCount: matches.length,
+                          itemBuilder: (context, index) {
+                            final matchDoc = matches[index];
+                            final matchData = matchDoc.data() as Map<String, dynamic>;
+                            final users = List<String>.from(matchData['users'] ?? []);
+                            final otherUserId = users.firstWhere(
+                              (id) => id != currentUser?.uid,
+                              orElse: () => '',
+                            );
 
-                          return _buildMatchCard(
-                            context,
-                            matchDoc.id,
-                            otherUserId,
-                            index,
-                          );
-                        },
+                            return AnimationConfiguration.staggeredGrid(
+                              position: index,
+                              columnCount: 2,
+                              duration: const Duration(milliseconds: 375),
+                              child: ScaleAnimation(
+                                child: FadeInAnimation(
+                                  child: _buildMatchCard(
+                                    context,
+                                    matchDoc.id,
+                                    otherUserId,
+                                    index,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                       );
                     },
                   ),
@@ -181,13 +165,7 @@ class MatchesScreen extends ConsumerWidget {
       future: FirebaseFirestore.instance.collection('users').doc(otherUserId).get(),
       builder: (context, userSnapshot) {
         if (!userSnapshot.hasData) {
-          return Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: AppTheme.primaryRose.withOpacity(0.1),
-            ),
-            child: const Center(child: CircularProgressIndicator()),
-          );
+          return ShimmerLoading.profileCard();
         }
 
         final userData = userSnapshot.data?.data() as Map<String, dynamic>?;
@@ -198,7 +176,6 @@ class MatchesScreen extends ConsumerWidget {
 
         return GestureDetector(
           onTap: () {
-            // Navigate to user profile instead of conversation
             context.push('/user-profile/$otherUserId');
           },
           child: Container(

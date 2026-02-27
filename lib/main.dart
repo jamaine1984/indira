@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:indira_love/firebase_options.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/routes/app_router.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
+import 'package:indira_love/core/l10n/locale_provider.dart';
 import 'package:indira_love/core/services/notification_service.dart';
 import 'package:indira_love/core/services/push_notification_service.dart';
 import 'package:indira_love/core/services/logger_service.dart';
@@ -13,6 +16,10 @@ import 'package:indira_love/core/services/analytics_service.dart';
 import 'package:indira_love/core/services/performance_monitoring_service.dart';
 import 'package:indira_love/core/services/remote_config_service.dart';
 import 'package:indira_love/core/services/app_check_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+import 'package:indira_love/features/video_call/presentation/screens/incoming_call_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -60,11 +67,67 @@ void main() async {
 
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 
-class IndiraLoveApp extends StatelessWidget {
+class IndiraLoveApp extends ConsumerStatefulWidget {
   const IndiraLoveApp({super.key});
 
   @override
+  ConsumerState<IndiraLoveApp> createState() => _IndiraLoveAppState();
+}
+
+class _IndiraLoveAppState extends ConsumerState<IndiraLoveApp> {
+  StreamSubscription? _callSub;
+
+  @override
+  void initState() {
+    super.initState();
+    _listenForIncomingCalls();
+    FirebaseAuth.instance.authStateChanges().listen((user) {
+      _callSub?.cancel();
+      if (user != null) _listenForIncomingCalls();
+    });
+  }
+
+  void _listenForIncomingCalls() {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    _callSub = FirebaseFirestore.instance
+        .collection('call_notifications')
+        .where('targetId', isEqualTo: user.uid)
+        .where('status', isEqualTo: 'ringing')
+        .snapshots()
+        .listen((snapshot) {
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final ctx = navigatorKey.currentContext;
+        if (ctx == null) continue;
+
+        Navigator.of(ctx).push(
+          MaterialPageRoute(
+            builder: (_) => IncomingCallScreen(
+              sessionId: data['sessionId'] ?? '',
+              callerId: data['callerId'] ?? '',
+              callerName: data['callerName'] ?? 'Unknown',
+              callType: data['callType'] ?? 'video',
+              callerPhoto: data['callerPhoto'] as String?,
+            ),
+          ),
+        );
+        doc.reference.update({'status': 'shown'});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _callSub?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+
     return MaterialApp.router(
       title: 'Indira Love',
       debugShowCheckedModeBanner: false,
@@ -72,6 +135,14 @@ class IndiraLoveApp extends StatelessWidget {
       darkTheme: AppTheme.darkTheme,
       themeMode: ThemeMode.light,
       routerConfig: AppRouter.router,
+      locale: locale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: const [
+        AppLocalizations.delegate,
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
     );
   }
 }

@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppTheme {
-  // Color Palette
-  static const Color primaryRose = Color(0xFFFFB6C1);
-  static const Color secondaryPlum = Color(0xFF8B4789);
-  static const Color accentGold = Color(0xFFF7E7CE);
-  static const Color neutralWhite = Color(0xFFFFF8F0);
-  static const Color textCharcoal = Color(0xFF2F2F2F);
-  static const Color shadowSoft = Color(0x108B4789);
+  // Color Palette — vibrant South Asian inspired
+  static const Color primaryRose = Color(0xFFE91E63);
+  static const Color secondaryPlum = Color(0xFF7B1FA2);
+  static const Color accentGold = Color(0xFFFFD700);
+  static const Color neutralWhite = Color(0xFFFFF8E1);
+  static const Color textCharcoal = Color(0xFF1A1A2E);
+  static const Color shadowSoft = Color(0x207B1FA2);
 
   static const LinearGradient romanticGradient = LinearGradient(
-    colors: [primaryRose, accentGold, secondaryPlum],
+    colors: [primaryRose, Color(0xFFFF6090), accentGold, secondaryPlum],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
@@ -34,55 +34,62 @@ class AppTheme {
         onSurfaceVariant: textCharcoal,
       ),
 
-      // Text Theme
+      // Text Theme — bolder weights throughout
       textTheme: const TextTheme(
         displayLarge: TextStyle(
           fontFamily: 'PlayfairDisplay',
           fontSize: 32,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w900,
           color: textCharcoal,
         ),
         displayMedium: TextStyle(
           fontFamily: 'PlayfairDisplay',
           fontSize: 28,
-          fontWeight: FontWeight.bold,
+          fontWeight: FontWeight.w800,
           color: textCharcoal,
         ),
         headlineLarge: TextStyle(
           fontFamily: 'PlayfairDisplay',
           fontSize: 24,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: textCharcoal,
         ),
         headlineMedium: TextStyle(
           fontFamily: 'PlayfairDisplay',
           fontSize: 20,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: textCharcoal,
         ),
         titleLarge: TextStyle(
           fontFamily: 'Inter',
           fontSize: 18,
-          fontWeight: FontWeight.w600,
+          fontWeight: FontWeight.w700,
           color: textCharcoal,
         ),
         bodyLarge: TextStyle(
           fontFamily: 'Inter',
           fontSize: 16,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w500,
           color: textCharcoal,
         ),
         bodyMedium: TextStyle(
           fontFamily: 'Inter',
           fontSize: 14,
-          fontWeight: FontWeight.normal,
+          fontWeight: FontWeight.w500,
           color: textCharcoal,
         ),
         labelLarge: TextStyle(
           fontFamily: 'DancingScript',
           fontSize: 16,
+          fontWeight: FontWeight.w700,
           color: secondaryPlum,
         ),
+      ),
+
+      // Icon Theme — bolder icons
+      iconTheme: const IconThemeData(
+        size: 26,
+        color: textCharcoal,
       ),
 
       // Input Decoration
@@ -121,7 +128,7 @@ class AppTheme {
           ),
           textStyle: const TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
@@ -136,13 +143,69 @@ class AppTheme {
           ),
           textStyle: const TextStyle(
             fontSize: 16,
-            fontWeight: FontWeight.w600,
+            fontWeight: FontWeight.w700,
           ),
         ),
       ),
 
       // Card Theme
-      cardTheme: const CardThemeData(),
+      cardTheme: CardThemeData(
+        elevation: 4,
+        shadowColor: shadowSoft,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
+        ),
+        color: Colors.white,
+        margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      ),
+
+      // SnackBar Theme
+      snackBarTheme: SnackBarThemeData(
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        contentTextStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          fontWeight: FontWeight.w500,
+        ),
+        elevation: 6,
+      ),
+
+      // Dialog Theme
+      dialogTheme: DialogThemeData(
+        backgroundColor: neutralWhite,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        titleTextStyle: const TextStyle(
+          fontFamily: 'PlayfairDisplay',
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: textCharcoal,
+        ),
+        contentTextStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 14,
+          color: textCharcoal,
+        ),
+      ),
+
+      // Chip Theme
+      chipTheme: ChipThemeData(
+        backgroundColor: accentGold,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        labelStyle: const TextStyle(
+          fontFamily: 'Inter',
+          fontSize: 13,
+          fontWeight: FontWeight.w500,
+          color: textCharcoal,
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      ),
 
       // AppBar Theme
       appBarTheme: const AppBarTheme(

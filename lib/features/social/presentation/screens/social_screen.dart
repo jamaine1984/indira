@@ -4,6 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/services/logger_service.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 class SocialScreen extends StatefulWidget {
@@ -52,6 +54,7 @@ class _SocialScreenState extends State<SocialScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -200,7 +203,7 @@ class _SocialScreenState extends State<SocialScreen> {
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
-                                  'No posts yet',
+                                  l10n.noResults,
                                   style: TextStyle(
                                     fontSize: 18,
                                     color: Colors.grey[600],
@@ -242,6 +245,7 @@ class _SocialScreenState extends State<SocialScreen> {
   }
 
   void _showCreatePostDialog(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     _postController.clear();
 
     showDialog(
@@ -260,7 +264,7 @@ class _SocialScreenState extends State<SocialScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Cancel'),
+            child: Text(l10n.cancel),
           ),
           ElevatedButton(
             onPressed: _isPosting ? null : () => _createPost(dialogContext),
@@ -289,9 +293,7 @@ class _SocialScreenState extends State<SocialScreen> {
 
     final content = _postController.text.trim();
     if (content.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please write something to post')),
-      );
+      AppSnackBar.info(context, AppLocalizations.of(context).fillAllFields);
       return;
     }
 
@@ -318,22 +320,12 @@ class _SocialScreenState extends State<SocialScreen> {
       }
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Post shared!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, AppLocalizations.of(context).success);
       }
     } catch (e) {
       logger.error('Failed to create post: $e');
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to create post: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, '${AppLocalizations.of(context).error}: $e');
       }
     } finally {
       if (mounted) {

@@ -4,8 +4,13 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
+import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
+import 'package:indira_love/core/widgets/shimmer_loading.dart';
+import 'package:indira_love/core/widgets/empty_state_widget.dart';
+import 'package:indira_love/core/widgets/app_snackbar.dart';
+import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/features/likes/providers/likes_provider.dart';
 import 'package:indira_love/features/likes/services/likes_service.dart';
 
@@ -33,6 +38,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context);
     final unrevealedCountAsync = ref.watch(unrevealedLikesCountProvider);
     final hasGoldAsync = ref.watch(hasGoldSubscriptionProvider);
 
@@ -50,7 +56,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
                 child: Row(
                   children: [
                     Text(
-                      'Likes',
+                      l10n.likes,
                       style: Theme.of(context).textTheme.displaySmall?.copyWith(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
@@ -102,9 +108,9 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                  tabs: const [
-                    Tab(text: 'Liked You'),
-                    Tab(text: 'Your Likes'),
+                  tabs: [
+                    Tab(text: l10n.peopleWhoLikedYou),
+                    Tab(text: l10n.sentLikes),
                   ],
                 ),
               ),
@@ -127,54 +133,48 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
   }
 
   Widget _buildLikedYouTab(AsyncValue<bool> hasGoldAsync) {
+    final l10n = AppLocalizations.of(context);
     final likesReceivedAsync = ref.watch(likesReceivedProvider);
 
     return likesReceivedAsync.when(
       data: (likes) {
         if (likes.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.favorite_border,
-                  size: 80,
-                  color: Colors.white.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No likes yet',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
+          return EmptyStateWidget(
+            icon: Icons.favorite_border,
+            title: l10n.noLikesYet,
+            subtitle: l10n.keepSwiping,
           );
         }
 
         final hasGold = hasGoldAsync.value ?? false;
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
+        return AnimationLimiter(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: likes.length,
+            itemBuilder: (context, index) {
+              final like = likes[index];
+              return AnimationConfiguration.staggeredGrid(
+                position: index,
+                columnCount: 2,
+                duration: const Duration(milliseconds: 375),
+                child: ScaleAnimation(
+                  child: FadeInAnimation(
+                    child: _buildLikedYouCard(like, hasGold),
+                  ),
+                ),
+              );
+            },
           ),
-          itemCount: likes.length,
-          itemBuilder: (context, index) {
-            final like = likes[index];
-            return _buildLikedYouCard(like, hasGold);
-          },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      ),
+      loading: () => ShimmerLoading.profileGrid(count: 4),
       error: (error, stack) => Center(
         child: Text(
           'Error loading likes: $error',
@@ -346,60 +346,46 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
   }
 
   Widget _buildYourLikesTab() {
+    final l10n = AppLocalizations.of(context);
     final likesSentAsync = ref.watch(likesSentProvider);
 
     return likesSentAsync.when(
       data: (likes) {
         if (likes.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.favorite_border,
-                  size: 80,
-                  color: Colors.white.withOpacity(0.5),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'No likes sent yet',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
-                    fontSize: 18,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Start swiping to like profiles!',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.6),
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
+          return EmptyStateWidget(
+            icon: Icons.favorite_border,
+            title: l10n.sentLikes,
+            subtitle: l10n.keepSwiping,
           );
         }
 
-        return GridView.builder(
-          padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.75,
+        return AnimationLimiter(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: likes.length,
+            itemBuilder: (context, index) {
+              final like = likes[index];
+              return AnimationConfiguration.staggeredGrid(
+                position: index,
+                columnCount: 2,
+                duration: const Duration(milliseconds: 375),
+                child: ScaleAnimation(
+                  child: FadeInAnimation(
+                    child: _buildYourLikeCard(like),
+                  ),
+                ),
+              );
+            },
           ),
-          itemCount: likes.length,
-          itemBuilder: (context, index) {
-            final like = likes[index];
-            return _buildYourLikeCard(like);
-          },
         );
       },
-      loading: () => const Center(
-        child: CircularProgressIndicator(color: Colors.white),
-      ),
+      loading: () => ShimmerLoading.profileGrid(count: 4),
       error: (error, stack) => Center(
         child: Text(
           'Error loading likes: $error',
@@ -575,24 +561,14 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
       await ref.read(likesServiceProvider).revealLike(likeId);
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Profile revealed!'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        AppSnackBar.success(context, 'Profile revealed!');
       }
 
       // Refresh the likes list
       ref.invalidate(likesReceivedProvider);
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to reveal: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        AppSnackBar.error(context, 'Failed to reveal: $e');
       }
     }
   }
