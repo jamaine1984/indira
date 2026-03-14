@@ -34,6 +34,8 @@ import 'package:indira_love/features/kundli/presentation/screens/kundli_screen.d
 import 'package:indira_love/features/safety/presentation/screens/safety_checkin_screen.dart';
 import 'package:indira_love/features/language/presentation/screens/language_screen.dart';
 import 'package:indira_love/features/profile/presentation/screens/cultural_preferences_screen.dart';
+import 'package:indira_love/features/likes/presentation/screens/likes_screen.dart';
+import 'package:indira_love/features/profile/presentation/screens/profile_screen.dart';
 
 // Navigator keys for each tab branch
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -165,6 +167,32 @@ class AppRouter {
             ],
           ),
         ],
+      ),
+
+      // ─── Likes & Profile (above bottom nav) ─────────────────
+      GoRoute(
+        path: '/likes',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideRight(
+          key: state.pageKey,
+          child: const LikesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/profile',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideRight(
+          key: state.pageKey,
+          child: const ProfileScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/settings',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideRight(
+          key: state.pageKey,
+          child: const ProfileScreen(),
+        ),
       ),
 
       // ─── Detail screens (slide right, above bottom nav) ───

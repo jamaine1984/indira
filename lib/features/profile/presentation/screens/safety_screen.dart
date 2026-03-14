@@ -119,9 +119,9 @@ class SafetyScreen extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.1),
+                          color: Colors.white.withOpacity(0.25),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.white.withOpacity(0.3)),
+                          border: Border.all(color: Colors.white.withOpacity(0.5)),
                         ),
                         child: Column(
                           children: [
@@ -214,8 +214,9 @@ class SafetyScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
+        color: Colors.white.withOpacity(0.25),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.4)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

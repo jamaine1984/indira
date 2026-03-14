@@ -217,8 +217,9 @@ exports.moderateUserImage = onObjectFinalized(async (event) => {
                          filePath.startsWith('user_photos/');
   const isVerificationImage = filePath.startsWith('verification_selfies/') ||
                               filePath.startsWith('verification/');
+  const isChatImage = filePath.startsWith('chat_images/');
 
-  if (!isProfileImage && !isVerificationImage) return null;
+  if (!isProfileImage && !isVerificationImage && !isChatImage) return null;
 
   console.log(`Moderating image: ${filePath}`);
 
@@ -237,13 +238,17 @@ exports.moderateUserImage = onObjectFinalized(async (event) => {
       isVerificationImage ? client.faceDetection(publicUrl) : Promise.resolve([null]),
     ]);
 
-    const safeSearch = safeSearchResult.safeSearchAnnotation;
+    const safeSearch = safeSearchResult[0]?.safeSearchAnnotation || safeSearchResult.safeSearchAnnotation;
     await file.makePrivate();
 
     // Extract userId from path
     const pathParts = filePath.split('/');
     let userId = null;
-    if (pathParts.length >= 2) {
+    if (isChatImage && pathParts.length >= 3) {
+      // chat_images/{matchId}/{timestamp}.jpg — extract sender from metadata or matchId
+      // We log the matchId for tracing
+      userId = pathParts[1]; // matchId as identifier
+    } else if (pathParts.length >= 2) {
       const fileName = pathParts[pathParts.length - 1];
       userId = fileName.split('_')[0];
     }
@@ -265,6 +270,7 @@ exports.moderateUserImage = onObjectFinalized(async (event) => {
           filePath, userId, safeSearch,
           action: 'deleted',
           reason: 'NSFW content detected',
+          imageType: isChatImage ? 'chat' : isVerificationImage ? 'verification' : 'profile',
           timestamp: admin.firestore.FieldValue.serverTimestamp(),
         });
 

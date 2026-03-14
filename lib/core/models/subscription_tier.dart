@@ -12,6 +12,7 @@ class SubscriptionLimits {
   final bool hasAds;
   final int adsToRefill;
   final int profileBoosts;  // -1 means unlimited
+  final int callMinutesPerMonth;  // 0 means no calls, -1 means unlimited
 
   const SubscriptionLimits({
     required this.dailyMessages,
@@ -21,6 +22,7 @@ class SubscriptionLimits {
     required this.hasAds,
     required this.adsToRefill,
     this.profileBoosts = 0,
+    this.callMinutesPerMonth = 0,
   });
 
   static const free = SubscriptionLimits(
@@ -30,7 +32,8 @@ class SubscriptionLimits {
     unlimitedGifts: false,
     hasAds: true,
     adsToRefill: 2,
-    profileBoosts: 0,
+    profileBoosts: 1,
+    callMinutesPerMonth: 0,
   );
 
   static const silver = SubscriptionLimits(
@@ -41,6 +44,7 @@ class SubscriptionLimits {
     hasAds: true,
     adsToRefill: 2,
     profileBoosts: 1,
+    callMinutesPerMonth: 45,
   );
 
   static const gold = SubscriptionLimits(
@@ -51,6 +55,7 @@ class SubscriptionLimits {
     hasAds: false,
     adsToRefill: 0,
     profileBoosts: -1,
+    callMinutesPerMonth: 600,
   );
 
   static SubscriptionLimits fromTier(SubscriptionTier tier) {
@@ -92,6 +97,7 @@ class SubscriptionPlan {
       '3 messages per day',
       '3 likes per day',
       '3 rewinds per day',
+      '1 free profile boost',
       'Watch 2 ads to refill',
       'Basic matching',
     ],
@@ -108,6 +114,7 @@ class SubscriptionPlan {
       '10 likes per day',
       '10 rewinds per day',
       '1 profile boost per day',
+      '45 minutes of call time per month',
       'Watch 2 ads to refill',
       'Priority matching',
       'See who liked you',
@@ -125,6 +132,7 @@ class SubscriptionPlan {
       'Unlimited likes',
       'Unlimited rewinds',
       'Unlimited profile boosts',
+      '600 minutes of call time per month',
       'No ads (except 1 for gifts)',
       'Priority matching',
       'See who liked you',

@@ -109,8 +109,8 @@ class VideoCallService {
       };
     } catch (e) {
       logger.error('Error checking call permission: $e');
-      // On error, allow the call rather than blocking (fail open for UX)
-      return {'allowed': true, 'reason': 'Permission check failed, allowing'};
+      // On error, block the call for security (fail closed)
+      return {'allowed': false, 'reason': 'Unable to verify call permission. Please try again.'};
     }
   }
 

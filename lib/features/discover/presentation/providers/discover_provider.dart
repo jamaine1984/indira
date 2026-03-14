@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:indira_love/core/services/logger_service.dart';
@@ -109,10 +110,11 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
     // Prevent duplicate loading
     if (state.isLoading) return;
 
-    // Don't load more if no more users available
+    // If no more users, reset pagination and start fresh with shuffle
     if (loadMore && !state.hasMoreUsers) {
-      logger.info('[Discovery] No more users to load');
-      return;
+      logger.info('[Discovery] No more users - resetting to start with shuffle');
+      state = state.copyWith(lastDocument: null, hasMoreUsers: true);
+      loadMore = false;
     }
 
     state = state.copyWith(isLoading: true, error: null);
@@ -196,14 +198,25 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
       logger.info('[Discovery] Fetched ${matchesQuery.docs.length} users from Firestore');
 
       if (matchesQuery.docs.isEmpty && !loadMore) {
-        logger.warning('[Discovery] No users found with current filters');
-        state = state.copyWith(
-          isLoading: false,
-          potentialMatches: [],
-          error: 'No users found nearby. Try expanding your search area.',
-          hasMoreUsers: false,
-        );
-        return;
+        // If we have location filters and found nothing, try without filters
+        if (filters.isNotEmpty) {
+          logger.info('[Discovery] No users with filters, retrying without location filters');
+          matchesQuery = await _databaseService.getPotentialMatchesPaginated(
+            currentUserId: user.uid,
+            limit: _pageSize,
+            filters: {},
+          );
+        }
+        if (matchesQuery.docs.isEmpty) {
+          logger.warning('[Discovery] No users found at all');
+          state = state.copyWith(
+            isLoading: false,
+            potentialMatches: [],
+            error: 'No users found nearby. Try expanding your search area.',
+            hasMoreUsers: false,
+          );
+          return;
+        }
       }
 
       // Convert to list
@@ -274,17 +287,16 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
         }
       }
 
-      // Sort by compatibility (boosted profiles first)
+      // Shuffle profiles to keep it fresh, then boost high-scoring ones to top
+      newProfiles.shuffle(Random());
+
+      // Move boosted profiles to the front
       newProfiles.sort((a, b) {
         final isBoostedA = (a['isBoosted'] ?? false) as bool;
         final isBoostedB = (b['isBoosted'] ?? false) as bool;
-
         if (isBoostedA && !isBoostedB) return -1;
         if (!isBoostedA && isBoostedB) return 1;
-
-        final scoreA = (a['compatibilityScore'] as num?)?.toDouble() ?? 0.0;
-        final scoreB = (b['compatibilityScore'] as num?)?.toDouble() ?? 0.0;
-        return scoreB.compareTo(scoreA);
+        return 0; // Keep shuffle order for non-boosted
       });
 
       // Update state

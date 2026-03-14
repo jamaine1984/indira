@@ -275,13 +275,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                                     ),
                                     onSwipe: _onSwipe,
                                     onEnd: () {
-                                      final state = ref.read(discoverProvider);
-                                      if (state.hasMoreUsers) {
-                                        ref
-                                            .read(discoverProvider.notifier)
-                                            .loadPotentialMatches(
-                                                loadMore: true);
-                                      }
+                                      // Always reload — loops back to start with shuffled users
+                                      ref
+                                          .read(discoverProvider.notifier)
+                                          .loadPotentialMatches(
+                                              loadMore: true);
                                     },
                                     cardBuilder: (context, index,
                                         horizontalOffsetPercentage,

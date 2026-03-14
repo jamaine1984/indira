@@ -21,7 +21,13 @@ class EntertainmentScreen extends StatelessWidget {
                 child: Row(
                   children: [
                     IconButton(
-                      onPressed: () => context.pop(),
+                      onPressed: () {
+                        if (Navigator.canPop(context)) {
+                          Navigator.pop(context);
+                        } else {
+                          context.go('/discover');
+                        }
+                      },
                       icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
                     ),
                     Expanded(

@@ -25,6 +25,7 @@ class AppLocalizations {
     Locale('pa'),
     Locale('or'),
     Locale('ne'),
+    Locale('si'),
   ];
 
   static const Map<String, String> languageNames = {
@@ -41,6 +42,7 @@ class AppLocalizations {
     'pa': 'ਪੰਜਾਬੀ (Punjabi)',
     'or': 'ଓଡ଼ିଆ (Odia)',
     'ne': 'नेपाली (Nepali)',
+    'si': 'සිංහල (Sinhala)',
   };
 
   static const Map<String, String> languageNativeNames = {
@@ -57,6 +59,7 @@ class AppLocalizations {
     'pa': 'ਪੰਜਾਬੀ',
     'or': 'ଓଡ଼ିଆ',
     'ne': 'नेपाली',
+    'si': 'සිංහල',
   };
 
   String get languageCode => locale.languageCode;
@@ -88,6 +91,8 @@ class AppLocalizations {
         return _orTranslations;
       case 'ne':
         return _neTranslations;
+      case 'si':
+        return _siTranslations;
       default:
         return _enTranslations;
     }
@@ -3249,6 +3254,111 @@ class AppLocalizations {
     'noResults': 'कुनै नतिजा फेला परेन',
     'seeAll': 'सबै हेर्नुहोस्',
   };
+
+  // ============================================================
+  // SINHALA (Sri Lanka)
+  // ============================================================
+  static const Map<String, String> _siTranslations = {
+    // Common
+    'ok': 'හරි',
+    'cancel': 'අවලංගු',
+    'save': 'සුරකින්න',
+    'delete': 'මකන්න',
+    'edit': 'සංස්කරණය',
+    'done': 'සම්පූර්ණයි',
+    'next': 'ඊළඟ',
+    'back': 'ආපසු',
+    'loading': 'පූරණය වෙමින්...',
+    'error': 'දෝෂයකි',
+
+    // App
+    'appName': 'ඉන්දිරා',
+    'welcomeSubtitle': 'ආදරය ඔබේ ග්‍රහලෝකයේ ලියා ඇත',
+    'createAccount': 'ගිණුමක් සාදන්න',
+    'alreadyHaveAccount': 'දැනටමත් ගිණුමක් තිබේද?',
+    'login': 'ඇතුල් වන්න',
+    'signUp': 'ලියාපදිංචි වන්න',
+    'email': 'ඊමේල්',
+    'password': 'මුරපදය',
+    'confirmPassword': 'මුරපදය තහවුරු කරන්න',
+    'forgotPassword': 'මුරපදය අමතකද?',
+    'logout': 'පිටවන්න',
+
+    // Navigation
+    'discover': 'සොයන්න',
+    'likes': 'කැමතියි',
+    'messages': 'පණිවිඩ',
+    'matches': 'ගැලපීම්',
+    'profile': 'පැතිකඩ',
+    'gifts': 'තෑගි',
+    'social': 'සමාජ',
+    'entertainment': 'විනෝදාස්වාදය',
+
+    // Discover
+    'discoverPeople': 'මිනිසුන් සොයන්න',
+    'noMoreProfiles': 'තවත් පැතිකඩ නැත',
+    'itsAMatch': 'එය ගැලපීමකි!',
+    'keepSwiping': 'ස්වයිප් කරන්න',
+    'like': 'කැමතියි',
+    'superlike': 'සුපිරි කැමතියි',
+    'pass': 'මඟහරින්න',
+    'boost': 'ඉහළ නංවන්න',
+
+    // Profile
+    'editProfile': 'පැතිකඩ සංස්කරණය',
+    'about': 'ගැන',
+    'interests': 'රුචිකත්වයන්',
+    'photos': 'ඡායාරූප',
+    'religion': 'ආගම',
+    'motherTongue': 'මව්බස',
+    'diet': 'ආහාර පුරුද්ද',
+    'education': 'අධ්‍යාපනය',
+    'profession': 'වෘත්තිය',
+    'verified': 'සත්‍යාපිතයි',
+    'verifyNow': 'දැන් සත්‍යාපනය කරන්න',
+
+    // Messaging
+    'noMessagesYet': 'තවමත් පණිවිඩ නැත',
+    'typeMessage': 'පණිවිඩයක් ටයිප් කරන්න...',
+    'conversations': 'සංවාද',
+    'online': 'ඔන්ලයින්',
+    'offline': 'ඔෆ්ලයින්',
+    'lastSeen': 'අවසන් වරට දුටු',
+
+    // Kundli
+    'kundliMatch': 'කුණ්ඩලි ගැලපීම',
+    'nakshatra': 'නක්ෂත්‍ර',
+    'rashi': 'රාශිය',
+    'compatibility': 'අනුකූලතාව',
+    'gunMilan': 'ගුන් මිලාන්',
+    'manglik': 'මාංගලික්',
+    'excellentMatch': 'විශිෂ්ට ගැලපීම',
+    'goodMatch': 'හොඳ ගැලපීම',
+    'averageMatch': 'සාමාන්‍ය ගැලපීම',
+    'belowAverage': 'සාමාන්‍යයට අඩු',
+
+    // Settings
+    'language': 'භාෂාව',
+    'selectLanguage': 'භාෂාවක් තෝරන්න',
+    'languageChanged': 'භාෂාව සාර්ථකව වෙනස් විය!',
+    'privacy': 'පෞද්ගලිකත්වය',
+    'safety': 'ආරක්ෂාව',
+    'notifications': 'දැනුම්දීම්',
+    'helpSupport': 'උදව් සහ සහාය',
+    'termsOfService': 'සේවා නියමයන්',
+    'privacyPolicy': 'පෞද්ගලිකත්ව ප්‍රතිපත්තිය',
+    'communityGuidelines': 'ප්‍රජා මාර්ගෝපදේශ',
+
+    // Misc
+    'fillAllFields': 'කරුණාකර සියලු ක්ෂේත්‍ර පුරවන්න',
+    'blockUser': 'පරිශීලකයා අවහිර කරන්න',
+    'blockUserConfirm': 'ඔබට ඇත්තටම මෙම පරිශීලකයා අවහිර කිරීමට අවශ්‍යද?',
+    'userBlocked': 'අවහිර කරන ලදී',
+    'reportUser': 'පරිශීලකයා වාර්තා කරන්න',
+    'remaining': 'ඉතිරි',
+    'noResults': 'ප්‍රතිඵල හමු නොවීය',
+    'seeAll': 'සියල්ල බලන්න',
+  };
 }
 
 class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> {
@@ -3256,7 +3366,7 @@ class _AppLocalizationsDelegate extends LocalizationsDelegate<AppLocalizations> 
 
   @override
   bool isSupported(Locale locale) {
-    return ['en', 'hi', 'bn', 'ta', 'ur', 'te', 'kn', 'ml', 'mr', 'gu', 'pa', 'or', 'ne'].contains(locale.languageCode);
+    return ['en', 'hi', 'bn', 'ta', 'ur', 'te', 'kn', 'ml', 'mr', 'gu', 'pa', 'or', 'ne', 'si'].contains(locale.languageCode);
   }
 
   @override
