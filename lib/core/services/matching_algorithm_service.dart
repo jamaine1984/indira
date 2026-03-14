@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:indira_love/core/services/logger_service.dart';
 import 'package:indira_love/core/services/location_service.dart';
+import 'package:indira_love/features/kundli/services/kundli_service.dart';
 
 class MatchingAlgorithmService {
   static final MatchingAlgorithmService _instance = MatchingAlgorithmService._internal();
@@ -153,6 +154,28 @@ class MatchingAlgorithmService {
 
       totalScore += culturalScore.clamp(0, 25);
       factors++;
+    }
+
+    // 5b. Vedic Kundli Gun Milan Score (15 points max)
+    if (myCultural != null && theirCultural != null) {
+      final myNakshatra = myCultural['nakshatra'] as String?;
+      final theirNakshatra = theirCultural['nakshatra'] as String?;
+      if (myNakshatra != null && myNakshatra.isNotEmpty &&
+          theirNakshatra != null && theirNakshatra.isNotEmpty) {
+        final kundli = KundliService();
+        final result = kundli.calculateCompatibility(
+          nakshatra1: myNakshatra,
+          nakshatra2: theirNakshatra,
+          rashi1: myCultural['rashi'] as String?,
+          rashi2: theirCultural['rashi'] as String?,
+          manglik1: myCultural['manglik'] as bool?,
+          manglik2: theirCultural['manglik'] as bool?,
+        );
+        final gunMilanPercent = (result['percentage'] as int?) ?? 0;
+        // Scale Gun Milan percentage (0-100) to 0-15 points
+        totalScore += (gunMilanPercent / 100 * 15).clamp(0, 15);
+        factors++;
+      }
     }
 
     // 6. Professional & Education Match (10 points max)

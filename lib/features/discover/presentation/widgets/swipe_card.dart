@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
+import 'package:indira_love/features/kundli/services/kundli_service.dart';
 
 enum SwipeDirection { left, right, up }
 
@@ -20,6 +21,22 @@ class ProfileCard extends StatelessWidget {
     if (score != null) return score.round();
     final uid = user['uid'] as String? ?? '';
     return 60 + Random(uid.hashCode).nextInt(40);
+  }
+
+  bool get _hasVedicData {
+    final cultural = user['culturalPreferences'] as Map<String, dynamic>?;
+    if (cultural == null) return false;
+    final nakshatra = cultural['nakshatra'] as String?;
+    return nakshatra != null && nakshatra.isNotEmpty;
+  }
+
+  String get _vedicLabel {
+    final cultural = user['culturalPreferences'] as Map<String, dynamic>?;
+    if (cultural == null) return '';
+    final nakshatra = cultural['nakshatra'] as String? ?? '';
+    final manglik = cultural['manglik'] as bool?;
+    if (manglik == true) return '$nakshatra · Manglik';
+    return nakshatra;
   }
 
   @override
@@ -101,8 +118,47 @@ class ProfileCard extends StatelessWidget {
                 ),
               ),
 
-              // Layer 4: Boosted Indicator (Top-Left)
-              if (user['isBoosted'] == true)
+              // Layer 4: Vedic Kundli Badge (Top-Left) - shows when user has astrology data
+              if (_hasVedicData)
+                Positioned(
+                  top: 16,
+                  left: 16,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFFFF6B35), Color(0xFFFF8E53)],
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF6B35).withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Text('🕉️', style: TextStyle(fontSize: 12)),
+                        const SizedBox(width: 4),
+                        Text(
+                          _vedicLabel,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+
+              // Layer 4b: Boosted Indicator
+              if (user['isBoosted'] == true && !_hasVedicData)
                 Positioned(
                   top: 16,
                   left: 16,
@@ -293,7 +349,19 @@ class ProfileCard extends StatelessWidget {
                   icon: Icons.location_on_outlined,
                   label: locationText,
                 ),
-              ...interests.take(2).map((interest) => _InfoChip(
+              // Vedic astrology info chips
+              if (_hasVedicData) ...[
+                _InfoChip(
+                  icon: Icons.auto_awesome,
+                  label: '☾ ${(user['culturalPreferences'] as Map?)?['nakshatra'] ?? ''}',
+                ),
+                if ((user['culturalPreferences'] as Map?)?['rashi'] != null)
+                  _InfoChip(
+                    icon: Icons.auto_awesome,
+                    label: '♈ ${(user['culturalPreferences'] as Map)['rashi']}',
+                  ),
+              ],
+              ...interests.take(_hasVedicData ? 1 : 2).map((interest) => _InfoChip(
                     icon: Icons.auto_awesome,
                     label: interest.toString(),
                   )),

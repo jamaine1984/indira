@@ -130,32 +130,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
         swipeDir = SwipeDirection.left;
     }
 
-    // Process swipe via provider (doesn't modify the list)
-    final isMatch = await ref
-        .read(discoverProvider.notifier)
-        .processSwipe(swipeDir, targetUserId);
-
-    // If the like limit was reached, keep the card in place
+    // Check limits before allowing swipe (fast, local check)
     final currentState = ref.read(discoverProvider);
-    if (currentState.showLimitDialog) {
-      return false;
-    }
-
-    // If rate limited, keep the card in place
-    if (currentState.error != null && currentState.error!.contains('Slow down')) {
+    if (swipeDir == SwipeDirection.right && currentState.showLimitDialog) {
       return false;
     }
 
     // Track engagement: stop viewing current profile
     EngagementTrackingService().stopViewingProfile();
 
-    if (isMatch && mounted) {
-      HapticFeedback.heavyImpact();
-      setState(() {
-        _matchedUser = targetUser;
-        _showMatchOverlay = true;
-      });
-    }
+    // Fire-and-forget: process swipe in background for instant card dismissal
+    _processSwipeAsync(swipeDir, targetUserId, targetUser);
 
     // Prefetch more profiles when running low
     if (currentIndex != null && _profiles.length - currentIndex < 10) {
@@ -165,6 +150,25 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
     }
 
     return true;
+  }
+
+  /// Process swipe in background so card dismisses instantly
+  Future<void> _processSwipeAsync(
+    SwipeDirection swipeDir,
+    String targetUserId,
+    Map<String, dynamic> targetUser,
+  ) async {
+    final isMatch = await ref
+        .read(discoverProvider.notifier)
+        .processSwipe(swipeDir, targetUserId);
+
+    if (isMatch && mounted) {
+      HapticFeedback.heavyImpact();
+      setState(() {
+        _matchedUser = targetUser;
+        _showMatchOverlay = true;
+      });
+    }
   }
 
   Future<void> _onTapUndo() async {

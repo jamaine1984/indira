@@ -9,6 +9,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:indira_love/core/services/auth_service.dart';
 import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/core/widgets/app_snackbar.dart';
+import 'package:indira_love/features/kundli/services/kundli_service.dart';
 import 'dart:io';
 
 class OnboardingScreen extends ConsumerStatefulWidget {
@@ -36,6 +37,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   String? _motherTongue = 'English';
   String? _marriageTimeline;
   String? _state = 'Delhi';
+
+  // Vedic Astrology (Kundli) - Centerpiece Feature
+  DateTime? _birthDate;
+  TimeOfDay? _birthTime;
+  String? _nakshatra;
+  String? _rashi;
+  bool _isManglik = false;
+  bool _knowsVedicDetails = true;
 
   // Popular countries list
   final List<String> _countries = [
@@ -122,7 +131,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
   }
 
   void _nextPage() {
-    if (_currentPage < 5) {
+    if (_currentPage < 6) {
       // Validate current page
       if (_currentPage == 0 && !_validateBasicInfo()) return;
       if (_currentPage == 1 && _mainImage == null) {
@@ -132,7 +141,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       if (_currentPage == 2) {
         // Cultural preferences are optional, just proceed
       }
-      if (_currentPage == 3 && _interests.length < 3) {
+      if (_currentPage == 3) {
+        // Vedic astrology - encourage but don't force
+      }
+      if (_currentPage == 4 && _interests.length < 3) {
         AppSnackBar.info(context, 'Please select at least 3 interests');
         return;
       }
@@ -227,6 +239,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
           'marriageTimeline': _marriageTimeline,
           'state': _state,
           'currentCity': _selectedCountry,
+          'birthDate': _birthDate?.toIso8601String(),
+          'birthTime': _birthTime != null ? '${_birthTime!.hour}:${_birthTime!.minute.toString().padLeft(2, '0')}' : null,
+          'nakshatra': _nakshatra,
+          'rashi': _rashi,
+          'manglik': _isManglik,
         },
       });
 
@@ -260,7 +277,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 padding: const EdgeInsets.all(16.0),
                 child: Row(
                   children: List.generate(
-                    6,
+                    7,
                     (index) => Expanded(
                       child: Container(
                         height: 4,
@@ -289,6 +306,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     _buildBasicInfoPage(),
                     _buildPhotoUploadPage(),
                     _buildCulturalPreferencesPage(),
+                    _buildVedicAstrologyPage(),
                     _buildInterestsPage(),
                     _buildBioPage(),
                     _buildReviewPage(),
@@ -339,7 +357,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                 child: CircularProgressIndicator(strokeWidth: 2),
                               )
                             : Text(
-                                _currentPage == 5 ? l10n.done : l10n.next,
+                                _currentPage == 6 ? l10n.done : l10n.next,
                                 style: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -802,6 +820,391 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
+  Widget _buildVedicAstrologyPage() {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with Om symbol
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFFFF6B35), Color(0xFFFF8E53)],
+                  ),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Text('🕉️', style: TextStyle(fontSize: 28)),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Vedic Kundli Profile',
+                      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      'Find your cosmic match with Gun Milan',
+                      style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Unique feature callout
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFFFF6B35).withOpacity(0.2),
+                  const Color(0xFFFF8E53).withOpacity(0.1),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFFF8E53).withOpacity(0.4)),
+            ),
+            child: Row(
+              children: [
+                const Text('✨', style: TextStyle(fontSize: 20)),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'Indira uses the ancient 36-point Gun Milan system to find your most compatible matches based on Vedic astrology.',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.95),
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 24),
+
+          // Toggle: Do you know your Vedic details?
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'I know my Nakshatra & Rashi',
+                    style: const TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w600),
+                  ),
+                ),
+                Switch(
+                  value: _knowsVedicDetails,
+                  onChanged: (val) => setState(() => _knowsVedicDetails = val),
+                  activeColor: const Color(0xFFFF6B35),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Birth Date
+          const Text(
+            'Date of Birth',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () async {
+              final picked = await showDatePicker(
+                context: context,
+                initialDate: _birthDate ?? DateTime(1995, 1, 1),
+                firstDate: DateTime(1950),
+                lastDate: DateTime.now().subtract(const Duration(days: 6570)), // 18 years
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.dark(
+                        primary: Color(0xFFFF6B35),
+                        surface: Color(0xFF2D1B4E),
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) setState(() => _birthDate = picked);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.calendar_today, color: Color(0xFFFF6B35)),
+                  const SizedBox(width: 12),
+                  Text(
+                    _birthDate != null
+                        ? '${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year}'
+                        : 'Select your birth date',
+                    style: TextStyle(
+                      color: _birthDate != null ? AppTheme.textCharcoal : AppTheme.textCharcoal.withOpacity(0.5),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Birth Time
+          const Text(
+            'Time of Birth (for accurate Kundli)',
+            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 8),
+          GestureDetector(
+            onTap: () async {
+              final picked = await showTimePicker(
+                context: context,
+                initialTime: _birthTime ?? const TimeOfDay(hour: 6, minute: 0),
+                builder: (context, child) {
+                  return Theme(
+                    data: Theme.of(context).copyWith(
+                      colorScheme: const ColorScheme.dark(
+                        primary: Color(0xFFFF6B35),
+                        surface: Color(0xFF2D1B4E),
+                      ),
+                    ),
+                    child: child!,
+                  );
+                },
+              );
+              if (picked != null) setState(() => _birthTime = picked);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.access_time, color: Color(0xFFFF6B35)),
+                  const SizedBox(width: 12),
+                  Text(
+                    _birthTime != null
+                        ? _birthTime!.format(context)
+                        : 'Select your birth time',
+                    style: TextStyle(
+                      color: _birthTime != null ? AppTheme.textCharcoal : AppTheme.textCharcoal.withOpacity(0.5),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          if (_knowsVedicDetails) ...[
+            // Nakshatra Dropdown
+            const Text(
+              'Nakshatra (Birth Star) ☾',
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonFormField<String>(
+                value: _nakshatra,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.auto_awesome, color: Color(0xFFFF6B35)),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                hint: Text(
+                  'Select your Nakshatra',
+                  style: TextStyle(color: AppTheme.textCharcoal.withOpacity(0.5)),
+                ),
+                items: CulturalOptions.nakshatras.map((n) {
+                  return DropdownMenuItem(value: n, child: Text(n));
+                }).toList(),
+                onChanged: (value) => setState(() => _nakshatra = value),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Rashi Dropdown
+            const Text(
+              'Rashi (Moon Sign) ♈',
+              style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: DropdownButtonFormField<String>(
+                value: _rashi,
+                isExpanded: true,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.auto_awesome, color: Color(0xFFFF6B35)),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                ),
+                hint: Text(
+                  'Select your Rashi',
+                  style: TextStyle(color: AppTheme.textCharcoal.withOpacity(0.5)),
+                ),
+                items: CulturalOptions.zodiacSigns.map((r) {
+                  return DropdownMenuItem(value: r, child: Text(r));
+                }).toList(),
+                onChanged: (value) => setState(() => _rashi = value),
+              ),
+            ),
+            const SizedBox(height: 16),
+
+            // Manglik Toggle
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.brightness_5, color: Color(0xFFFF6B35)),
+                  const SizedBox(width: 12),
+                  const Expanded(
+                    child: Text(
+                      'Are you Manglik?',
+                      style: TextStyle(
+                        color: AppTheme.textCharcoal,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                  Switch(
+                    value: _isManglik,
+                    onChanged: (val) => setState(() => _isManglik = val),
+                    activeColor: const Color(0xFFFF6B35),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          if (!_knowsVedicDetails) ...[
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  const Icon(Icons.info_outline, color: Colors.white, size: 32),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No worries! Enter your birth date and time above, and you can update your Nakshatra and Rashi later from your profile settings.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 14,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+
+          const SizedBox(height: 16),
+
+          // 8 Factors preview
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Gun Milan: 8 Factors of Compatibility',
+                  style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 6,
+                  children: [
+                    _buildFactorChip('Varna', '1pt'),
+                    _buildFactorChip('Vashya', '2pt'),
+                    _buildFactorChip('Tara', '3pt'),
+                    _buildFactorChip('Yoni', '4pt'),
+                    _buildFactorChip('Graha Maitri', '5pt'),
+                    _buildFactorChip('Gana', '6pt'),
+                    _buildFactorChip('Bhakut', '7pt'),
+                    _buildFactorChip('Nadi', '8pt'),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Total: 36 points — 18+ is a good match!',
+                  style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFactorChip(String name, String points) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            const Color(0xFFFF6B35).withOpacity(0.3),
+            const Color(0xFFFF8E53).withOpacity(0.2),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFF8E53).withOpacity(0.4)),
+      ),
+      child: Text(
+        '$name ($points)',
+        style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w600),
+      ),
+    );
+  }
+
   Widget _buildInterestsPage() {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(24.0),
@@ -930,6 +1333,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 _buildReviewItem('Gender', _gender),
                 _buildReviewItem('Looking For', _lookingFor),
                 _buildReviewItem('Country', _selectedCountry),
+                if (_nakshatra != null) _buildReviewItem('Nakshatra', _nakshatra!),
+                if (_rashi != null) _buildReviewItem('Rashi', _rashi!),
+                if (_birthDate != null) _buildReviewItem('Birth Date', '${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year}'),
+                _buildReviewItem('Manglik', _isManglik ? 'Yes' : 'No'),
                 _buildReviewItem('Interests', _interests.join(', ')),
                 _buildReviewItem('Bio', _bioController.text),
                 _buildReviewItem('Photos', '${_mainImage != null ? 1 : 0} main + ${_additionalImages.length} additional'),
