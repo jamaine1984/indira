@@ -9,6 +9,7 @@ import 'package:indira_love/core/widgets/watch_ads_dialog.dart';
 import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/features/gifts/presentation/screens/gift_inventory_screen.dart';
+import 'package:indira_love/features/video_call/presentation/screens/video_minutes_screen.dart';
 
 class GiftsScreen extends ConsumerStatefulWidget {
   const GiftsScreen({super.key});
@@ -79,6 +80,22 @@ class _GiftsScreenState extends ConsumerState<GiftsScreen> {
                       ),
                     ),
                     const Spacer(),
+                    // Video Minutes button
+                    IconButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const VideoMinutesScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.videocam,
+                        color: Colors.white,
+                      ),
+                      tooltip: 'Video Minutes',
+                    ),
                     // Inventory button
                     IconButton(
                       onPressed: () {

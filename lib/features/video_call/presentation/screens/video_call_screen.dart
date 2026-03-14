@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:indira_love/features/video_call/services/video_call_service.dart';
+import 'package:indira_love/core/services/usage_service.dart';
 
 class VideoCallScreen extends StatefulWidget {
   final String sessionId;
@@ -46,6 +47,13 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   Future<void> _endCall() async {
     _durationTimer?.cancel();
     await _videoCallService.endCall(widget.sessionId, _callDurationSeconds);
+
+    // Deduct video minutes from user's balance
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && _callDurationSeconds > 0) {
+      await UsageService().deductCallMinutes(user.uid, _callDurationSeconds);
+    }
+
     if (mounted) {
       Navigator.of(context).pop();
     }

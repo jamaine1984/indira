@@ -100,6 +100,19 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
   Future<void> _initiateCall({required bool audioOnly}) async {
     try {
+      // Check video minute balance first
+      final currentUser = AuthService().currentUser;
+      if (currentUser == null) return;
+
+      final usageService = UsageService();
+      final hasMinutes = await usageService.canMakeCall(currentUser.uid);
+      if (!mounted) return;
+
+      if (!hasMinutes) {
+        AppSnackBar.info(context, 'No video minutes available. Watch ads or upgrade to earn minutes!');
+        return;
+      }
+
       // Check if user is allowed to call (mutual match or messaging history required)
       final permission = await VideoCallService().canCall(widget.otherUserId);
       if (!mounted) return;

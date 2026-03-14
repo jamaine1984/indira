@@ -35,6 +35,7 @@ import 'package:indira_love/features/safety/presentation/screens/safety_checkin_
 import 'package:indira_love/features/language/presentation/screens/language_screen.dart';
 import 'package:indira_love/features/profile/presentation/screens/cultural_preferences_screen.dart';
 import 'package:indira_love/features/likes/presentation/screens/likes_screen.dart';
+import 'package:indira_love/features/video_call/presentation/screens/video_minutes_screen.dart';
 import 'package:indira_love/features/profile/presentation/screens/profile_screen.dart';
 
 // Navigator keys for each tab branch
@@ -412,6 +413,14 @@ class AppRouter {
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const SafetyCheckinScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/video-minutes',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideRight(
+          key: state.pageKey,
+          child: const VideoMinutesScreen(),
         ),
       ),
     ],

@@ -112,6 +112,11 @@ class AuthService {
       'languages': <String>[],
       'photos': <String>[],
       'isOnline': true,
+      'consumableVideoMinutes': 0,
+      'subscriptionVideoMinutes': 0,
+      'ads5Minutes': 0,
+      'ads15Minutes': 0,
+      'ads30Minutes': 0,
       'settings': {
         'notifications': true,
         'locationSharing': true,

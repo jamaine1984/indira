@@ -162,6 +162,90 @@ class UsageService {
     return remaining < 0 ? 0 : remaining;
   }
 
+  // ===== VIDEO CALL MINUTES =====
+
+  // Get total available video minutes (in seconds) - subscription + consumable
+  Future<Map<String, int>> getVideoMinuteBalance(String userId) async {
+    final data = await _getUserData(userId);
+    return {
+      'consumableVideoMinutes': (data['consumableVideoMinutes'] as int?) ?? 0,
+      'subscriptionVideoMinutes': (data['subscriptionVideoMinutes'] as int?) ?? 0,
+    };
+  }
+
+  // Check if user has enough minutes for a call
+  Future<bool> canMakeCall(String userId) async {
+    final balance = await getVideoMinuteBalance(userId);
+    final total = (balance['consumableVideoMinutes'] ?? 0) +
+        (balance['subscriptionVideoMinutes'] ?? 0);
+    return total > 0;
+  }
+
+  // Deduct video minutes after a call ends (subscription minutes first, then consumable)
+  Future<void> deductCallMinutes(String userId, int durationSeconds) async {
+    if (durationSeconds <= 0) return;
+
+    final balance = await getVideoMinuteBalance(userId);
+    int subMinutes = balance['subscriptionVideoMinutes'] ?? 0;
+    int conMinutes = balance['consumableVideoMinutes'] ?? 0;
+
+    int remaining = durationSeconds;
+
+    // Deduct from subscription first
+    if (subMinutes > 0) {
+      final deductFromSub = remaining > subMinutes ? subMinutes : remaining;
+      subMinutes -= deductFromSub;
+      remaining -= deductFromSub;
+    }
+
+    // Then deduct from consumable
+    if (remaining > 0 && conMinutes > 0) {
+      final deductFromCon = remaining > conMinutes ? conMinutes : remaining;
+      conMinutes -= deductFromCon;
+      remaining -= deductFromCon;
+    }
+
+    await _firestore.collection('users').doc(userId).update({
+      'subscriptionVideoMinutes': subMinutes,
+      'consumableVideoMinutes': conMinutes,
+    });
+
+    // Also track monthly usage
+    await incrementCallMinutesUsed(userId, durationSeconds);
+  }
+
+  // Get monthly call minutes used (for display purposes)
+  Future<int> getMonthlyCallMinutesUsed(String userId) async {
+    final now = DateTime.now();
+    final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+    final doc = await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('usage')
+        .doc('callMinutes_$monthKey')
+        .get();
+
+    if (!doc.exists) return 0;
+    return (doc.data()?['totalSeconds'] as int?) ?? 0;
+  }
+
+  // Increment monthly call minutes tracking
+  Future<void> incrementCallMinutesUsed(String userId, int seconds) async {
+    final now = DateTime.now();
+    final monthKey = '${now.year}-${now.month.toString().padLeft(2, '0')}';
+
+    await _firestore
+        .collection('users')
+        .doc(userId)
+        .collection('usage')
+        .doc('callMinutes_$monthKey')
+        .set({
+      'totalSeconds': FieldValue.increment(seconds),
+      'lastUpdated': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+  }
+
   // Private helper methods
   Future<Map<String, int>> _getTodayUsage(String userId) async {
     final today = _getTodayKey();
