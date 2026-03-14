@@ -5,6 +5,8 @@ import 'package:indira_love/features/video_call/presentation/screens/video_call_
 import 'package:indira_love/features/video_call/services/video_call_service.dart';
 import 'package:indira_love/features/video_call/services/ringtone_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:indira_love/core/services/usage_service.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final String sessionId;
@@ -95,6 +97,28 @@ class _IncomingCallScreenState extends State<IncomingCallScreen>
     _isHandled = true;
 
     await _ringtone.stopRinging();
+
+    // Check if the answering user has video minutes
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final hasMinutes = await UsageService().canMakeCall(user.uid);
+      if (!hasMinutes) {
+        // No minutes - reject the call and show message
+        await _videoCallService.rejectCall(widget.sessionId);
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No available minutes. Watch ads or upgrade to earn minutes!'),
+              backgroundColor: Colors.red,
+              duration: Duration(seconds: 4),
+            ),
+          );
+        }
+        return;
+      }
+    }
+
     await _videoCallService.answerCall(widget.sessionId);
 
     if (!mounted) return;

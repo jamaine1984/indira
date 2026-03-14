@@ -26,9 +26,9 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
   bool _isLoading = true;
 
   // Ad progress tracking
-  int _ads5Minutes = 0;   // progress toward 5 minutes (watch 5 ads)
-  int _ads15Minutes = 0;  // progress toward 15 minutes (watch 15 ads)
-  int _ads30Minutes = 0;  // progress toward 30 minutes (watch 30 ads)
+  int _ads1Minute = 0;   // progress toward 1 minute (watch 10 ads)
+  int _ads5Minutes = 0;  // progress toward 5 minutes (watch 50 ads)
+  int _ads10Minutes = 0; // progress toward 10 minutes (watch 90 ads)
 
   bool _isWatchingAd = false;
   RewardedAd? _rewardedAd;
@@ -64,9 +64,9 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
           _minutesUsedThisMonth = monthlyUsage;
           _callMinutesPerMonth = limits.callMinutesPerMonth;
           _tier = tier;
+          _ads1Minute = (data['ads1Minute'] as int?) ?? 0;
           _ads5Minutes = (data['ads5Minutes'] as int?) ?? 0;
-          _ads15Minutes = (data['ads15Minutes'] as int?) ?? 0;
-          _ads30Minutes = (data['ads30Minutes'] as int?) ?? 0;
+          _ads10Minutes = (data['ads10Minutes'] as int?) ?? 0;
           _isLoading = false;
         });
       }
@@ -315,24 +315,27 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
         ),
         const SizedBox(height: 16),
         _buildAdPackage(
+          minutes: 1,
+          adsRequired: 10,
+          adsWatched: _ads1Minute,
+          icon: '\u{1F3AC}',
+          field: 'ads1Minute',
+        ),
+        const SizedBox(height: 12),
+        _buildAdPackage(
           minutes: 5,
-          adsRequired: 5,
+          adsRequired: 50,
           adsWatched: _ads5Minutes,
-          icon: '🎬',
+          icon: '\u{1F3A5}',
+          field: 'ads5Minutes',
         ),
         const SizedBox(height: 12),
         _buildAdPackage(
-          minutes: 15,
-          adsRequired: 15,
-          adsWatched: _ads15Minutes,
-          icon: '🎥',
-        ),
-        const SizedBox(height: 12),
-        _buildAdPackage(
-          minutes: 30,
-          adsRequired: 30,
-          adsWatched: _ads30Minutes,
-          icon: '🏆',
+          minutes: 10,
+          adsRequired: 90,
+          adsWatched: _ads10Minutes,
+          icon: '\u{1F3C6}',
+          field: 'ads10Minutes',
         ),
       ],
     );
@@ -343,6 +346,7 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
     required int adsRequired,
     required int adsWatched,
     required String icon,
+    required String field,
   }) {
     final progress = adsWatched / adsRequired;
     final isComplete = adsWatched >= adsRequired;
@@ -367,7 +371,7 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '$minutes Minutes',
+                      '$minutes ${minutes == 1 ? 'Minute' : 'Minutes'}',
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
@@ -384,7 +388,7 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
                 ),
               ),
               ElevatedButton(
-                onPressed: _isWatchingAd ? null : () => _watchAdForMinutes(minutes),
+                onPressed: _isWatchingAd ? null : () => _watchAdForMinutes(minutes, field),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppTheme.primaryRose,
                   padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -419,7 +423,7 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
     );
   }
 
-  Future<void> _watchAdForMinutes(int minutes) async {
+  Future<void> _watchAdForMinutes(int minutes, String field) async {
     setState(() => _isWatchingAd = true);
 
     await RewardedAd.load(
@@ -428,7 +432,7 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
       rewardedAdLoadCallback: RewardedAdLoadCallback(
         onAdLoaded: (ad) {
           _rewardedAd = ad;
-          _showAd(minutes);
+          _showAd(minutes, field);
         },
         onAdFailedToLoad: (error) {
           logger.error('Failed to load rewarded ad: $error');
@@ -446,7 +450,7 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
     );
   }
 
-  void _showAd(int minutes) {
+  void _showAd(int minutes, String field) {
     if (_rewardedAd == null) return;
 
     _rewardedAd!.fullScreenContentCallback = FullScreenContentCallback(
@@ -472,38 +476,36 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
 
     _rewardedAd!.show(
       onUserEarnedReward: (ad, reward) {
-        _incrementAdProgress(minutes);
+        _incrementAdProgress(minutes, field);
       },
     );
   }
 
-  Future<void> _incrementAdProgress(int minutes) async {
+  Future<void> _incrementAdProgress(int minutes, String field) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return;
 
-    int newCount;
+    int currentCount;
     int adsRequired;
-    String field;
 
     switch (minutes) {
+      case 1:
+        currentCount = _ads1Minute;
+        adsRequired = 10;
+        break;
       case 5:
-        newCount = _ads5Minutes + 1;
-        adsRequired = 5;
-        field = 'ads5Minutes';
+        currentCount = _ads5Minutes;
+        adsRequired = 50;
         break;
-      case 15:
-        newCount = _ads15Minutes + 1;
-        adsRequired = 15;
-        field = 'ads15Minutes';
-        break;
-      case 30:
-        newCount = _ads30Minutes + 1;
-        adsRequired = 30;
-        field = 'ads30Minutes';
+      case 10:
+        currentCount = _ads10Minutes;
+        adsRequired = 90;
         break;
       default:
         return;
     }
+
+    final newCount = currentCount + 1;
 
     if (newCount >= adsRequired) {
       // Tier complete - award minutes and reset
@@ -517,20 +519,20 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
         setState(() {
           _consumableMinutes += secondsToAdd;
           switch (minutes) {
+            case 1:
+              _ads1Minute = 0;
+              break;
             case 5:
               _ads5Minutes = 0;
               break;
-            case 15:
-              _ads15Minutes = 0;
-              break;
-            case 30:
-              _ads30Minutes = 0;
+            case 10:
+              _ads10Minutes = 0;
               break;
           }
         });
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('$minutes minutes added! Total: $_totalAvailableMinutes minutes'),
+            content: Text('$minutes ${minutes == 1 ? 'minute' : 'minutes'} added! Total: $_totalAvailableMinutes minutes'),
             backgroundColor: Colors.green,
           ),
         );
@@ -544,14 +546,14 @@ class _VideoMinutesScreenState extends State<VideoMinutesScreen> {
       if (mounted) {
         setState(() {
           switch (minutes) {
+            case 1:
+              _ads1Minute = newCount;
+              break;
             case 5:
               _ads5Minutes = newCount;
               break;
-            case 15:
-              _ads15Minutes = newCount;
-              break;
-            case 30:
-              _ads30Minutes = newCount;
+            case 10:
+              _ads10Minutes = newCount;
               break;
           }
         });

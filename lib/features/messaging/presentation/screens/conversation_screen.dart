@@ -134,17 +134,95 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         return;
       }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => VideoCallScreen(
-            sessionId: result['sessionId'] as String,
-            targetUserId: widget.otherUserId,
-            targetUserName: widget.otherUserName,
-            isAudio: audioOnly,
-          ),
-        ),
-      );
+      final sessionId = result['sessionId'] as String;
+
+      // Show "Calling..." dialog and listen for session status changes
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (dialogContext) {
+            return StreamBuilder<DocumentSnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('video_sessions')
+                  .doc(sessionId)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                final sessionData = snapshot.data?.data() as Map<String, dynamic>?;
+                final status = sessionData?['status'] ?? 'ringing';
+
+                // Handle accepted - navigate to VideoCallScreen
+                if (status == 'active') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (Navigator.canPop(dialogContext)) {
+                      Navigator.pop(dialogContext);
+                    }
+                    Navigator.push(
+                      this.context,
+                      MaterialPageRoute(
+                        builder: (context) => VideoCallScreen(
+                          sessionId: sessionId,
+                          targetUserId: widget.otherUserId,
+                          targetUserName: widget.otherUserName,
+                          isAudio: audioOnly,
+                        ),
+                      ),
+                    );
+                  });
+                }
+
+                // Handle rejected
+                if (status == 'rejected') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (Navigator.canPop(dialogContext)) {
+                      Navigator.pop(dialogContext);
+                    }
+                    AppSnackBar.info(this.context, '${widget.otherUserName} declined the call');
+                  });
+                }
+
+                // Handle cancelled by callee or timeout
+                if (status == 'cancelled' || status == 'ended') {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
+                    if (Navigator.canPop(dialogContext)) {
+                      Navigator.pop(dialogContext);
+                    }
+                  });
+                }
+
+                return AlertDialog(
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const CircularProgressIndicator(color: AppTheme.primaryRose),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Calling ${widget.otherUserName}...',
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Waiting for ${widget.otherUserName} to answer...',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        // Cancel the call
+                        VideoCallService().cancelCall(sessionId);
+                        Navigator.pop(dialogContext);
+                      },
+                      child: const Text('Cancel', style: TextStyle(color: Colors.red)),
+                    ),
+                  ],
+                );
+              },
+            );
+          },
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       AppSnackBar.error(context, 'Could not start call: $e');

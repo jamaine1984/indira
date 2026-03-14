@@ -114,9 +114,9 @@ class AuthService {
       'isOnline': true,
       'consumableVideoMinutes': 0,
       'subscriptionVideoMinutes': 0,
+      'ads1Minute': 0,
       'ads5Minutes': 0,
-      'ads15Minutes': 0,
-      'ads30Minutes': 0,
+      'ads10Minutes': 0,
       'settings': {
         'notifications': true,
         'locationSharing': true,
