@@ -86,9 +86,13 @@ class _ReportDialogState extends State<ReportDialog> {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Container(
-        constraints: const BoxConstraints(maxWidth: 400),
+        constraints: BoxConstraints(
+          maxWidth: 400,
+          maxHeight: MediaQuery.of(context).size.height * 0.85,
+        ),
         padding: const EdgeInsets.all(24),
-        child: Column(
+        child: SingleChildScrollView(
+          child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -273,6 +277,7 @@ class _ReportDialogState extends State<ReportDialog> {
               ],
             ),
           ],
+        ),
         ),
       ),
     );

@@ -10,6 +10,7 @@ import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'package:indira_love/features/profile/presentation/widgets/report_dialog.dart';
 import 'package:indira_love/core/services/database_service.dart';
+import 'package:indira_love/features/likes/providers/likes_provider.dart';
 import 'package:indira_love/features/endorsements/presentation/widgets/endorsement_section.dart';
 import 'package:indira_love/features/family/services/family_sharing_service.dart';
 import 'package:indira_love/core/services/profile_view_service.dart';
@@ -496,6 +497,8 @@ class UserProfileDetailScreen extends ConsumerWidget {
                                 if (confirm == true && context.mounted) {
                                   try {
                                     await DatabaseService().blockUser(userId);
+                                    // Invalidate blocked user cache so likes/messages filter immediately
+                                    ref.invalidate(blockedUserIdsProvider);
                                     if (context.mounted) {
                                       AppSnackBar.success(context, l10n.userBlocked);
                                       context.pop();

@@ -31,20 +31,16 @@ class ReportService {
       throw Exception('User must be logged in to report');
     }
 
-    // Check if user has already reported this person
-    final existingReport = await _firestore
-        .collection('reports')
-        .where('reporterId', isEqualTo: currentUser.uid)
-        .where('reportedUserId', isEqualTo: reportedUserId)
-        .where('status', isEqualTo: 'pending')
-        .get();
+    // Use deterministic doc ID to prevent duplicate reports
+    final reportDocId = '${currentUser.uid}_${reportedUserId}_user';
+    final existingReport = await _firestore.collection('reports').doc(reportDocId).get();
 
-    if (existingReport.docs.isNotEmpty) {
+    if (existingReport.exists && existingReport.data()?['status'] == 'pending') {
       throw Exception('You have already reported this user');
     }
 
     // Create the report
-    await _firestore.collection('reports').add({
+    await _firestore.collection('reports').doc(reportDocId).set({
       'reporterId': currentUser.uid,
       'reportedUserId': reportedUserId,
       'reason': reason.toString().split('.').last,

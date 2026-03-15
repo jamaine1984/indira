@@ -4,16 +4,49 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_staggered_animations/flutter_staggered_animations.dart';
 import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/services/auth_service.dart';
+import 'package:indira_love/core/services/database_service.dart';
 import 'package:indira_love/core/widgets/shimmer_loading.dart';
 import 'package:indira_love/core/widgets/empty_state_widget.dart';
 import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/features/messaging/presentation/screens/conversation_screen.dart';
 
-class MessagesScreen extends ConsumerWidget {
+class MessagesScreen extends ConsumerStatefulWidget {
   const MessagesScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MessagesScreen> createState() => _MessagesScreenState();
+}
+
+class _MessagesScreenState extends ConsumerState<MessagesScreen> {
+  Set<String> _blockedUserIds = {};
+  bool _blockedIdsLoaded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBlockedUsers();
+  }
+
+  Future<void> _loadBlockedUsers() async {
+    try {
+      final blockedIds = await DatabaseService().getAllBlockedUserIds();
+      if (mounted) {
+        setState(() {
+          _blockedUserIds = blockedIds;
+          _blockedIdsLoaded = true;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _blockedIdsLoaded = true;
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
     return Scaffold(
       body: Container(
@@ -50,7 +83,9 @@ class MessagesScreen extends ConsumerWidget {
                       topRight: Radius.circular(20),
                     ),
                   ),
-                  child: StreamBuilder<QuerySnapshot>(
+                  child: !_blockedIdsLoaded
+                      ? ShimmerLoading.listLoading(count: 8)
+                      : StreamBuilder<QuerySnapshot>(
                     stream: _getMatchesStream(),
                     builder: (context, snapshot) {
                       if (snapshot.hasError) {
@@ -61,7 +96,23 @@ class MessagesScreen extends ConsumerWidget {
                         return ShimmerLoading.listLoading(count: 8);
                       }
 
-                      final matches = snapshot.data?.docs ?? [];
+                      final allMatches = snapshot.data?.docs ?? [];
+
+                      // Filter out matches that contain blocked users
+                      final matches = allMatches.where((doc) {
+                        final match = doc.data() as Map<String, dynamic>;
+                        final users = (match['users'] as List<dynamic>?) ?? [];
+                        final currentUser = AuthService().currentUser;
+                        if (currentUser == null) return false;
+
+                        final otherUserId = users.firstWhere(
+                          (id) => id != currentUser.uid,
+                          orElse: () => '',
+                        );
+
+                        return otherUserId.toString().isNotEmpty &&
+                            !_blockedUserIds.contains(otherUserId.toString());
+                      }).toList();
 
                       if (matches.isEmpty) {
                         return EmptyStateWidget(

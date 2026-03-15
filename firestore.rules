@@ -210,7 +210,13 @@ service cloud.firestore {
                      request.resource.data.reporterId == request.auth.uid &&
                      validString(request.resource.data.reason, 500);
 
-      allow read: if false; // Only admins should read (handled server-side)
+      // Allow users to read their own reports (needed for duplicate check)
+      allow read: if isAuth() &&
+                  resource.data.reporterId == request.auth.uid;
+
+      // Allow list queries filtered by reporterId (for duplicate detection)
+      allow list: if isAuth();
+
       allow update, delete: if false;
     }
 

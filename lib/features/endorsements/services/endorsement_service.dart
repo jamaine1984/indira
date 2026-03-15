@@ -22,41 +22,48 @@ class EndorsementService {
     {'id': 'ambitious', 'label': 'Ambitious & Driven', 'emoji': '\u{1F680}'},
   ];
 
-  /// Submit an endorsement for a user
+  /// Submit multiple endorsements for a user at once
+  Future<void> submitEndorsements({
+    required String toUserId,
+    required List<String> categoryIds,
+  }) async {
+    final user = _auth.currentUser;
+    if (user == null) throw Exception('Not logged in');
+    if (user.uid == toUserId) throw Exception('Cannot endorse yourself');
+    if (categoryIds.isEmpty) throw Exception('No endorsements selected');
+
+    final batch = _firestore.batch();
+    int addedCount = 0;
+
+    for (final categoryId in categoryIds) {
+      // Use deterministic doc ID to prevent duplicates without compound query
+      final docId = '${user.uid}_${toUserId}_$categoryId';
+      final existingDoc = await _firestore.collection('endorsements').doc(docId).get();
+
+      if (!existingDoc.exists) {
+        batch.set(_firestore.collection('endorsements').doc(docId), {
+          'fromUserId': user.uid,
+          'toUserId': toUserId,
+          'categoryId': categoryId,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        addedCount++;
+      }
+    }
+
+    if (addedCount > 0) {
+      await batch.commit();
+    }
+    logger.info('Endorsements submitted for $toUserId: $categoryIds ($addedCount new)');
+  }
+
+  /// Submit a single endorsement for a user
   Future<void> submitEndorsement({
     required String toUserId,
     required String categoryId,
     String? comment,
   }) async {
-    final user = _auth.currentUser;
-    if (user == null) throw Exception('Not logged in');
-    if (user.uid == toUserId) throw Exception('Cannot endorse yourself');
-
-    // Check for duplicate
-    final existing = await _firestore
-        .collection('endorsements')
-        .where('fromUserId', isEqualTo: user.uid)
-        .where('toUserId', isEqualTo: toUserId)
-        .where('categoryId', isEqualTo: categoryId)
-        .limit(1)
-        .get();
-
-    if (existing.docs.isNotEmpty) {
-      throw Exception('You already endorsed this person for this category');
-    }
-
-    await _firestore.collection('endorsements').add({
-      'fromUserId': user.uid,
-      'toUserId': toUserId,
-      'categoryId': categoryId,
-      'comment': comment,
-      'createdAt': FieldValue.serverTimestamp(),
-    });
-
-    // Update the user's endorsement count on their profile
-    await _updateEndorsementCounts(toUserId);
-
-    logger.info('Endorsement submitted for $toUserId: $categoryId');
+    await submitEndorsements(toUserId: toUserId, categoryIds: [categoryId]);
   }
 
   /// Get endorsements for a specific user
@@ -87,18 +94,36 @@ class EndorsementService {
     return counts;
   }
 
-  /// Update endorsement summary on user document
-  Future<void> _updateEndorsementCounts(String userId) async {
-    final counts = await getEndorsementCounts(userId);
-    final total = counts.values.fold<int>(0, (a, b) => a + b);
+  /// Get the set of category IDs that have been endorsed by ANY user
+  /// for the given profile. Used to grey out / blur already-taken endorsements.
+  Future<Set<String>> getEndorsedCategoryIds(String toUserId) async {
+    final endorsements = await getEndorsements(toUserId);
+    return endorsements
+        .map((e) => e['categoryId'] as String? ?? '')
+        .where((c) => c.isNotEmpty)
+        .toSet();
+  }
 
-    await _firestore.collection('users').doc(userId).update({
-      'endorsements': {
-        'counts': counts,
-        'total': total,
-        'updatedAt': FieldValue.serverTimestamp(),
-      },
-    });
+  /// Get the set of category IDs that the CURRENT user has already endorsed
+  /// for the given profile. Uses deterministic doc IDs for efficient lookup.
+  Future<Set<String>> getMyEndorsedCategoryIds(String toUserId) async {
+    final user = _auth.currentUser;
+    if (user == null) return {};
+
+    final myEndorsed = <String>{};
+    try {
+      for (final cat in categories) {
+        final docId = '${user.uid}_${toUserId}_${cat['id']}';
+        final doc = await _firestore.collection('endorsements').doc(docId).get();
+        if (doc.exists) {
+          myEndorsed.add(cat['id']!);
+        }
+      }
+      return myEndorsed;
+    } catch (e) {
+      logger.error('Error getting my endorsements: $e');
+      return {};
+    }
   }
 
   /// Check if current user has already endorsed a specific category
@@ -106,14 +131,9 @@ class EndorsementService {
     final user = _auth.currentUser;
     if (user == null) return false;
 
-    final snap = await _firestore
-        .collection('endorsements')
-        .where('fromUserId', isEqualTo: user.uid)
-        .where('toUserId', isEqualTo: toUserId)
-        .where('categoryId', isEqualTo: categoryId)
-        .limit(1)
-        .get();
-
-    return snap.docs.isNotEmpty;
+    final docId = '${user.uid}_${toUserId}_$categoryId';
+    final doc = await _firestore.collection('endorsements').doc(docId).get();
+    return doc.exists;
   }
+
 }
