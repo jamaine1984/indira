@@ -56,10 +56,6 @@ class ValidationService {
       // Common profanity (add more as needed)
       'fuck', 'shit', 'bitch', 'asshole', 'bastard', 'damn', 'hell',
       'cunt', 'dick', 'pussy', 'cock', 'slut', 'whore', 'fag', 'nigger',
-      // Scam-related terms
-      'sugar daddy', 'sugar mommy', 'bitcoin', 'crypto', 'investment',
-      'wire transfer', 'send money', 'cash app', 'venmo', 'paypal',
-      'onlyfans', 'premium snap', 'tribute',
       // Explicit sexual content
       'nude', 'nudes', 'naked', 'sex tape', 'porn', 'xxx',
     };
@@ -110,11 +106,6 @@ class ValidationService {
     // Check for profanity
     if (containsProfanity(sanitized)) {
       return ValidationResult(false, 'Bio contains inappropriate content');
-    }
-
-    // Check for potential scam content
-    if (containsScamKeywords(sanitized)) {
-      return ValidationResult(false, 'Bio contains prohibited content');
     }
 
     // Check for URLs (not allowed in bio)

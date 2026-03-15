@@ -8,6 +8,7 @@ class SubscriptionLimits {
   final int dailyMessages;
   final int dailyLikes;
   final int dailyRewinds;  // -1 means unlimited
+  final int dailyVoiceNotes;  // -1 means unlimited
   final bool unlimitedGifts;
   final bool hasAds;
   final int adsToRefill;
@@ -18,6 +19,7 @@ class SubscriptionLimits {
     required this.dailyMessages,
     required this.dailyLikes,
     required this.dailyRewinds,
+    required this.dailyVoiceNotes,
     required this.unlimitedGifts,
     required this.hasAds,
     required this.adsToRefill,
@@ -29,6 +31,7 @@ class SubscriptionLimits {
     dailyMessages: 3,
     dailyLikes: 3,
     dailyRewinds: 3,
+    dailyVoiceNotes: 3,
     unlimitedGifts: false,
     hasAds: true,
     adsToRefill: 2,
@@ -40,6 +43,7 @@ class SubscriptionLimits {
     dailyMessages: 25,
     dailyLikes: 10,
     dailyRewinds: 10,
+    dailyVoiceNotes: 10,
     unlimitedGifts: false,
     hasAds: true,
     adsToRefill: 2,
@@ -51,6 +55,7 @@ class SubscriptionLimits {
     dailyMessages: -1,
     dailyLikes: -1,
     dailyRewinds: -1,
+    dailyVoiceNotes: -1,
     unlimitedGifts: true,
     hasAds: false,
     adsToRefill: 0,
@@ -97,6 +102,7 @@ class SubscriptionPlan {
       '3 messages per day',
       '3 likes per day',
       '3 rewinds per day',
+      '3 voice notes per day',
       '1 free profile boost',
       'Watch 2 ads to refill',
       'Basic matching',
@@ -113,6 +119,7 @@ class SubscriptionPlan {
       '25 messages per day',
       '10 likes per day',
       '10 rewinds per day',
+      '10 voice notes per day',
       '1 profile boost per day',
       '45 minutes of call time per month',
       'Watch 2 ads to refill',
@@ -131,6 +138,7 @@ class SubscriptionPlan {
       'Unlimited messages',
       'Unlimited likes',
       'Unlimited rewinds',
+      'Unlimited voice notes',
       'Unlimited profile boosts',
       '600 minutes of call time per month',
       'No ads (except 1 for gifts)',

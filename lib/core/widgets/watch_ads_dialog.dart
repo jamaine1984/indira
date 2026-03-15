@@ -53,6 +53,16 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
         icon = Icons.undo;
         message = 'You\'ve used all your $typeName for today!';
         break;
+      case 'voice_notes':
+        typeName = 'Voice Notes';
+        icon = Icons.mic;
+        message = 'You\'ve used all your $typeName for today!';
+        break;
+      case 'video_minutes':
+        typeName = 'Video Minutes';
+        icon = Icons.videocam;
+        message = 'You\'ve run out of video minutes!';
+        break;
       case 'gift':
         typeName = 'Gift';
         icon = Icons.card_giftcard;
@@ -225,6 +235,12 @@ class _WatchAdsDialogState extends State<WatchAdsDialog> {
                 break;
               case 'rewinds':
                 message = 'Rewinds refilled!';
+                break;
+              case 'voice_notes':
+                message = 'Voice notes refilled!';
+                break;
+              case 'video_minutes':
+                message = 'Video minutes added!';
                 break;
               case 'gift':
                 message = 'Gift added to inventory!';

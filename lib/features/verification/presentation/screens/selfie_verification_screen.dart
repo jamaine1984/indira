@@ -22,6 +22,7 @@ class _SelfieVerificationScreenState
   File? _selfieImage;
   bool _isProcessing = false;
   String? _verificationStatus;
+  bool _verificationComplete = false;
 
   @override
   void initState() {
@@ -112,17 +113,14 @@ class _SelfieVerificationScreenState
 
     if (mounted) {
       if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Verification submitted! We\'ll review it soon.'),
-            backgroundColor: Colors.green,
-          ),
-        );
-        context.pop();
+        setState(() {
+          _verificationComplete = true;
+          _verificationStatus = 'approved';
+        });
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Failed to submit verification'),
+            content: Text('Failed to submit verification. Please try again.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -163,7 +161,9 @@ class _SelfieVerificationScreenState
               Expanded(
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
-                  child: Column(
+                  child: _verificationComplete
+                      ? _buildSuccessView()
+                      : Column(
                     children: [
                       // Status Card
                       if (_verificationStatus != null &&
@@ -335,6 +335,71 @@ class _SelfieVerificationScreenState
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSuccessView() {
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const SizedBox(height: 48),
+        Container(
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.green.withOpacity(0.3),
+                blurRadius: 20,
+                spreadRadius: 5,
+              ),
+            ],
+          ),
+          child: const Icon(
+            Icons.verified,
+            size: 72,
+            color: Colors.blue,
+          ),
+        ),
+        const SizedBox(height: 32),
+        const Text(
+          'You\'re Verified!',
+          style: TextStyle(
+            fontSize: 28,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          'Your photo verification is complete.\nA blue badge will now appear on your profile.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 16,
+            color: Colors.white70,
+            height: 1.5,
+          ),
+        ),
+        const SizedBox(height: 40),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.pop(),
+            icon: const Icon(Icons.check_circle),
+            label: const Text('Done'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.white,
+              foregroundColor: AppTheme.primaryRose,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

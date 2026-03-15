@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -13,6 +14,16 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   // You can show a notification here if needed
 }
 
+/// Default notification preferences for new users
+const Map<String, dynamic> defaultNotificationPreferences = {
+  'likesEnabled': true,
+  'matchesEnabled': true,
+  'messagesEnabled': true,
+  'promotionsEnabled': false,
+  'quietHoursStart': 23, // 11 PM
+  'quietHoursEnd': 7, // 7 AM
+};
+
 class PushNotificationService {
   static final PushNotificationService _instance = PushNotificationService._internal();
   factory PushNotificationService() => _instance;
@@ -25,6 +36,15 @@ class PushNotificationService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   bool _initialized = false;
+
+  /// Cached notification preferences
+  Map<String, dynamic> _cachedPreferences = {...defaultNotificationPreferences};
+
+  /// Pending like notifications for batching (keyed by recipientUserId)
+  final Map<String, List<Map<String, dynamic>>> _pendingLikeBatch = {};
+
+  /// Queue of notifications held during quiet hours
+  final List<Map<String, dynamic>> _quietHoursQueue = [];
 
   /// Initialize push notifications
   Future<void> initialize() async {
@@ -60,6 +80,12 @@ class PushNotificationService {
     if (initialMessage != null) {
       _handleMessageOpenedApp(initialMessage);
     }
+
+    // Load notification preferences from Firestore
+    await _loadNotificationPreferences();
+
+    // Schedule quiet hours queue flush
+    _scheduleQuietHoursFlush();
 
     _initialized = true;
     logger.info('Push notifications initialized successfully', tag: 'PushNotifications');
@@ -106,27 +132,49 @@ class PushNotificationService {
     final fcmToken = token ?? await _firebaseMessaging.getToken();
     if (fcmToken == null) return;
 
-    await _firestore.collection('users').doc(user.uid).update({
+    await _firestore.collection('users').doc(user.uid).set({
       'fcmToken': fcmToken,
       'platform': Platform.isIOS ? 'ios' : 'android',
       'fcmTokenUpdatedAt': FieldValue.serverTimestamp(),
-    });
+    }, SetOptions(merge: true));
 
     logger.logSecurityEvent('FCM Token updated', details: {'platform': Platform.isIOS ? 'ios' : 'android'});
   }
 
-  /// Handle foreground messages
+  /// Handle foreground messages with preference checks and quiet hours
   void _handleForegroundMessage(RemoteMessage message) {
     logger.debug('Received foreground message: ${message.messageId}', tag: 'PushNotifications');
 
     final notification = message.notification;
-    final android = message.notification?.android;
+    final type = message.data['type'] as String?;
+
+    // Check if this notification type is enabled
+    if (!_isNotificationTypeEnabled(type)) {
+      logger.debug('Notification type "$type" is disabled by user preferences', tag: 'PushNotifications');
+      return;
+    }
 
     if (notification != null) {
+      final title = notification.title ?? 'Indira Love';
+      final body = notification.body ?? '';
+      final payload = message.data.toString();
+
+      // Check quiet hours - queue if in quiet period
+      if (_isInQuietHours()) {
+        logger.debug('In quiet hours, queuing notification', tag: 'PushNotifications');
+        _quietHoursQueue.add({
+          'title': title,
+          'body': body,
+          'payload': payload,
+          'type': type,
+        });
+        return;
+      }
+
       _showLocalNotification(
-        title: notification.title ?? 'Indira Love',
-        body: notification.body ?? '',
-        payload: message.data.toString(),
+        title: title,
+        body: body,
+        payload: payload,
       );
     }
   }
@@ -274,14 +322,55 @@ class PushNotificationService {
     );
   }
 
-  /// Send like notification
+  /// Send like notification with smart batching
+  ///
+  /// Instead of sending individual notifications for each like, this method
+  /// batches likes and sends a single summary notification after a short delay.
+  /// e.g., "You have 5 new likes!" instead of 5 separate notifications.
   Future<void> sendLikeNotification(String likedUserId, String userName) async {
+    // Add to pending batch
+    _pendingLikeBatch.putIfAbsent(likedUserId, () => []);
+    _pendingLikeBatch[likedUserId]!.add({
+      'userName': userName,
+      'likerId': _auth.currentUser?.uid ?? '',
+      'timestamp': DateTime.now().toIso8601String(),
+    });
+
+    // If this is the first like in the batch, schedule the batch send
+    if (_pendingLikeBatch[likedUserId]!.length == 1) {
+      // Wait 30 seconds to collect more likes before sending
+      Future.delayed(const Duration(seconds: 30), () async {
+        await _flushLikeBatch(likedUserId);
+      });
+    }
+  }
+
+  /// Flush pending like notifications as a batched summary
+  Future<void> _flushLikeBatch(String recipientUserId) async {
+    final pending = _pendingLikeBatch.remove(recipientUserId);
+    if (pending == null || pending.isEmpty) return;
+
+    final String title;
+    final String body;
+
+    if (pending.length == 1) {
+      title = 'Someone likes you!';
+      body = '${pending.first['userName']} liked your profile';
+    } else {
+      title = 'You have ${pending.length} new likes!';
+      final firstName = pending.first['userName'] as String;
+      body = '$firstName and ${pending.length - 1} others liked your profile';
+    }
+
     await sendNotification(
-      recipientUserId: likedUserId,
-      title: 'Someone likes you!',
-      body: '$userName liked your profile',
+      recipientUserId: recipientUserId,
+      title: title,
+      body: body,
       type: 'like',
-      data: {'likerId': _auth.currentUser?.uid ?? ''},
+      data: {
+        'likerId': pending.last['likerId'] ?? '',
+        'batchCount': pending.length,
+      },
     );
   }
 
@@ -340,5 +429,131 @@ class PushNotificationService {
     await _firestore.collection('users').doc(user.uid).update({
       'fcmToken': FieldValue.delete(),
     });
+  }
+
+  // ---------------------------------------------------------------------------
+  // Notification Preferences
+  // ---------------------------------------------------------------------------
+
+  /// Load notification preferences from Firestore into cache
+  Future<void> _loadNotificationPreferences() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await _firestore.collection('users').doc(user.uid).get();
+      final data = doc.data();
+      if (data != null && data.containsKey('notificationPreferences')) {
+        final prefs = Map<String, dynamic>.from(data['notificationPreferences'] as Map);
+        _cachedPreferences = {...defaultNotificationPreferences, ...prefs};
+      } else {
+        // Initialize default preferences in Firestore
+        _cachedPreferences = {...defaultNotificationPreferences};
+        await _firestore.collection('users').doc(user.uid).set({
+          'notificationPreferences': defaultNotificationPreferences,
+        }, SetOptions(merge: true));
+      }
+      logger.debug('Loaded notification preferences: $_cachedPreferences', tag: 'PushNotifications');
+    } catch (e) {
+      logger.warning('Failed to load notification preferences: $e', tag: 'PushNotifications');
+    }
+  }
+
+  /// Get current notification preferences
+  Map<String, dynamic> getNotificationPreferences() {
+    return Map.unmodifiable(_cachedPreferences);
+  }
+
+  /// Update notification preferences and persist to Firestore
+  ///
+  /// Accepts a partial map of preferences to update. Valid keys:
+  /// - `likesEnabled` (bool)
+  /// - `matchesEnabled` (bool)
+  /// - `messagesEnabled` (bool)
+  /// - `promotionsEnabled` (bool)
+  /// - `quietHoursStart` (int, 0-23 hour)
+  /// - `quietHoursEnd` (int, 0-23 hour)
+  Future<void> updateNotificationPreferences(Map<String, dynamic> updates) async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    // Merge updates into cache
+    _cachedPreferences = {..._cachedPreferences, ...updates};
+
+    // Persist to Firestore under notificationPreferences map
+    final firestoreUpdate = <String, dynamic>{};
+    for (final entry in updates.entries) {
+      firestoreUpdate['notificationPreferences.${entry.key}'] = entry.value;
+    }
+
+    await _firestore.collection('users').doc(user.uid).update(firestoreUpdate);
+    logger.info('Updated notification preferences: $updates', tag: 'PushNotifications');
+  }
+
+  /// Check if a notification type is enabled in user preferences
+  bool _isNotificationTypeEnabled(String? type) {
+    switch (type) {
+      case 'like':
+        return _cachedPreferences['likesEnabled'] == true;
+      case 'match':
+        return _cachedPreferences['matchesEnabled'] == true;
+      case 'message':
+        return _cachedPreferences['messagesEnabled'] == true;
+      case 'promotion':
+        return _cachedPreferences['promotionsEnabled'] == true;
+      default:
+        // Unknown types are allowed through by default
+        return true;
+    }
+  }
+
+  // ---------------------------------------------------------------------------
+  // Quiet Hours
+  // ---------------------------------------------------------------------------
+
+  /// Check if the current time falls within quiet hours
+  bool _isInQuietHours() {
+    final now = DateTime.now();
+    final currentHour = now.hour;
+    final start = _cachedPreferences['quietHoursStart'] as int? ?? 23;
+    final end = _cachedPreferences['quietHoursEnd'] as int? ?? 7;
+
+    if (start <= end) {
+      // e.g., start=1, end=5 means quiet from 1am-5am
+      return currentHour >= start && currentHour < end;
+    } else {
+      // e.g., start=23, end=7 means quiet from 11pm-7am (wraps midnight)
+      return currentHour >= start || currentHour < end;
+    }
+  }
+
+  /// Schedule a periodic timer that flushes the quiet hours queue
+  /// when quiet hours end
+  void _scheduleQuietHoursFlush() {
+    // Check every 5 minutes whether quiet hours have ended
+    Timer.periodic(const Duration(minutes: 5), (timer) {
+      if (!_isInQuietHours() && _quietHoursQueue.isNotEmpty) {
+        _deliverQueuedNotifications();
+      }
+    });
+  }
+
+  /// Deliver all notifications that were queued during quiet hours
+  Future<void> _deliverQueuedNotifications() async {
+    logger.info(
+      'Delivering ${_quietHoursQueue.length} queued notifications after quiet hours',
+      tag: 'PushNotifications',
+    );
+
+    final queued = List<Map<String, dynamic>>.from(_quietHoursQueue);
+    _quietHoursQueue.clear();
+
+    for (final notification in queued) {
+      await _showLocalNotification(
+        title: notification['title'] as String,
+        body: notification['body'] as String,
+        payload: notification['payload'] as String?,
+      );
+    }
   }
 }

@@ -20,6 +20,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _ageController = TextEditingController();
   final TextEditingController _bioController = TextEditingController();
+  final TextEditingController _instagramController = TextEditingController();
 
   List<String> _photos = [];
   List<File> _newPhotos = [];
@@ -41,6 +42,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
     _nameController.dispose();
     _ageController.dispose();
     _bioController.dispose();
+    _instagramController.dispose();
     super.dispose();
   }
 
@@ -58,6 +60,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           _nameController.text = data['displayName'] ?? '';
           _ageController.text = (data['age'] ?? '').toString();
           _bioController.text = data['bio'] ?? '';
+          _instagramController.text = data['instagramHandle'] ?? '';
           _selectedGender = data['gender'] ?? 'Male';
           _height = (data['height'] as num?)?.toDouble() ?? 170.0;
           _selectedEducation = data['education'] ?? 'Bachelor\'s';
@@ -135,6 +138,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
         'age': age,
         'gender': _selectedGender,
         'bio': _bioController.text.trim(),
+        'instagramHandle': _instagramController.text.trim(),
         'height': _height,
         'education': _selectedEducation,
         'religion': _selectedReligion,
@@ -563,6 +567,15 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
                         label: 'Bio',
                         hint: 'Tell us about yourself...',
                         maxLines: 4,
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // Instagram Handle
+                      _buildTextField(
+                        controller: _instagramController,
+                        label: 'Instagram',
+                        hint: '@yourusername (optional)',
                       ),
 
                       const SizedBox(height: 32),

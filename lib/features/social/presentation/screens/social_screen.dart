@@ -7,6 +7,7 @@ import 'package:indira_love/core/services/logger_service.dart';
 import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/core/widgets/app_snackbar.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:go_router/go_router.dart';
 
 class SocialScreen extends StatefulWidget {
   const SocialScreen({super.key});
@@ -85,6 +86,14 @@ class _SocialScreenState extends State<SocialScreen> {
                           fontSize: 22,
                         ),
                         overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: () => context.push('/success-stories'),
+                      icon: const Icon(
+                        Icons.auto_stories,
+                        color: Colors.white,
+                        size: 28,
                       ),
                     ),
                     IconButton(

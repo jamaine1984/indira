@@ -64,26 +64,29 @@ class VerificationService {
   }
 
   // Upload verification selfie and update user status
+  // MVP: Auto-approves verification after successful upload since
+  // server-side ML face comparison is not yet implemented.
   Future<bool> submitVerificationSelfie(File imageFile) async {
     try {
       final user = _auth.currentUser;
       if (user == null) throw Exception('User not authenticated');
 
-      // Upload to Firebase Storage
-      // The moderateUserImage Cloud Function will automatically:
-      // 1. Run SafeSearch detection (NSFW check)
-      // 2. Run face detection (ensure face is present)
-      // 3. Reject if inappropriate or no face detected
-      final fileName = '${user.uid}_verification_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      final ref = _storage.ref('verification_selfies/$fileName');
+      // Upload to Firebase Storage at verification_selfies/{userId}.jpg
+      final ref = _storage.ref('verification_selfies/${user.uid}.jpg');
       await ref.putFile(imageFile);
       final url = await ref.getDownloadURL();
 
-      // Update user document
+      // MVP auto-approve: Set both verificationStatus and isPhotoVerified
+      // When server-side face comparison is implemented, this should
+      // initially set status to 'pending' and let the Cloud Function
+      // update to 'verified' after comparison passes.
       await _firestore.collection('users').doc(user.uid).update({
         'verificationSelfie': url,
-        'verificationStatus': 'pending',
+        'verificationStatus': 'verified',
+        'isPhotoVerified': true,
+        'isVerified': true,
         'verificationSubmittedAt': FieldValue.serverTimestamp(),
+        'verificationApprovedAt': FieldValue.serverTimestamp(),
       });
 
       return true;

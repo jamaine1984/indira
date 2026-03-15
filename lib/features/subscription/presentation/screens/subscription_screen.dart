@@ -4,13 +4,26 @@ import 'package:indira_love/core/theme/app_theme.dart';
 import 'package:indira_love/core/models/subscription_tier.dart';
 import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/core/widgets/app_snackbar.dart';
+import 'package:indira_love/core/providers/revenuecat_provider.dart';
+import 'package:indira_love/core/services/revenuecat_service.dart';
+import 'package:indira_love/features/subscription/presentation/screens/customer_center_screen.dart';
 
-class SubscriptionScreen extends ConsumerWidget {
+class SubscriptionScreen extends ConsumerStatefulWidget {
   const SubscriptionScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<SubscriptionScreen> createState() => _SubscriptionScreenState();
+}
+
+class _SubscriptionScreenState extends ConsumerState<SubscriptionScreen> {
+  bool _purchasing = false;
+
+  @override
+  Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context);
+    final subscriptionState = ref.watch(subscriptionStateProvider);
+    final offeringsAsync = ref.watch(offeringsProvider);
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -39,6 +52,22 @@ class SubscriptionScreen extends ConsumerWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    const Spacer(),
+                    // Manage subscription button (Customer Center)
+                    subscriptionState.maybeWhen(
+                      data: (tier) => tier != SubscriptionTier.free
+                          ? IconButton(
+                              onPressed: () =>
+                                  CustomerCenterScreen.show(context),
+                              icon: const Icon(
+                                Icons.settings,
+                                color: Colors.white,
+                              ),
+                              tooltip: 'Manage Subscription',
+                            )
+                          : const SizedBox.shrink(),
+                      orElse: () => const SizedBox.shrink(),
+                    ),
                   ],
                 ),
               ),
@@ -49,6 +78,14 @@ class SubscriptionScreen extends ConsumerWidget {
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     children: [
+                      // Active subscription banner
+                      subscriptionState.maybeWhen(
+                        data: (tier) => tier != SubscriptionTier.free
+                            ? _buildActiveBanner(context, tier)
+                            : const SizedBox.shrink(),
+                        orElse: () => const SizedBox.shrink(),
+                      ),
+
                       // Header Text
                       Text(
                         l10n.upgradeToPremium,
@@ -75,6 +112,8 @@ class SubscriptionScreen extends ConsumerWidget {
                         context,
                         SubscriptionPlan.freePlan,
                         false,
+                        offeringsAsync,
+                        subscriptionState,
                       ),
                       const SizedBox(height: 16),
 
@@ -83,6 +122,8 @@ class SubscriptionScreen extends ConsumerWidget {
                         context,
                         SubscriptionPlan.silverPlan,
                         false,
+                        offeringsAsync,
+                        subscriptionState,
                       ),
                       const SizedBox(height: 16),
 
@@ -91,6 +132,8 @@ class SubscriptionScreen extends ConsumerWidget {
                         context,
                         SubscriptionPlan.goldPlan,
                         true,
+                        offeringsAsync,
+                        subscriptionState,
                       ),
                       const SizedBox(height: 32),
 
@@ -119,12 +162,28 @@ class SubscriptionScreen extends ConsumerWidget {
                             _buildComparisonRow('Call Minutes', 'None', '45/mo', '600/mo'),
                             _buildComparisonRow('Gifts', 'Limited', 'Limited', 'Unlimited'),
                             _buildComparisonRow('Ads', '3 to refill', '3 to refill', 'No ads'),
-                            _buildComparisonRow('See Who Liked You', '✗', '✓', '✓'),
-                            _buildComparisonRow('Priority Matching', '✗', '✓', '✓'),
-                            _buildComparisonRow('Advanced Filters', '✗', '✗', '✓'),
+                            _buildComparisonRow('See Who Liked You', '\u2717', '\u2713', '\u2713'),
+                            _buildComparisonRow('Priority Matching', '\u2717', '\u2713', '\u2713'),
+                            _buildComparisonRow('Advanced Filters', '\u2717', '\u2717', '\u2713'),
                           ],
                         ),
                       ),
+
+                      const SizedBox(height: 16),
+
+                      // Restore purchases
+                      TextButton(
+                        onPressed: _purchasing ? null : _restorePurchases,
+                        child: const Text(
+                          'Restore Purchases',
+                          style: TextStyle(
+                            color: Colors.white70,
+                            fontSize: 14,
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
                     ],
                   ),
                 ),
@@ -136,7 +195,64 @@ class SubscriptionScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildPlanCard(BuildContext context, SubscriptionPlan plan, bool isPopular) {
+  Widget _buildActiveBanner(BuildContext context, SubscriptionTier tier) {
+    final tierName = tier == SubscriptionTier.gold ? 'Gold' : 'Silver';
+    final bannerColor = tier == SubscriptionTier.gold
+        ? AppTheme.accentGold
+        : Colors.grey.shade400;
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: bannerColor.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: bannerColor, width: 2),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.workspace_premium, color: bannerColor, size: 32),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Indira $tierName Active',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'You have access to $tierName features',
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => CustomerCenterScreen.show(context),
+            child: Text(
+              'Manage',
+              style: TextStyle(color: bannerColor),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlanCard(
+    BuildContext context,
+    SubscriptionPlan plan,
+    bool isPopular,
+    AsyncValue<dynamic> offeringsAsync,
+    AsyncValue<SubscriptionTier> subscriptionState,
+  ) {
     Color cardColor;
     Color accentColor;
 
@@ -154,6 +270,10 @@ class SubscriptionScreen extends ConsumerWidget {
         accentColor = Colors.amber.shade700;
         break;
     }
+
+    // Determine if this is the user's current plan
+    final currentTier = subscriptionState.valueOrNull ?? SubscriptionTier.free;
+    final isCurrentPlan = currentTier == plan.tier;
 
     return Container(
       decoration: BoxDecoration(
@@ -183,7 +303,7 @@ class SubscriptionScreen extends ConsumerWidget {
                 ),
               ),
               child: const Text(
-                '⭐ MOST POPULAR',
+                'MOST POPULAR',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.white,
@@ -268,16 +388,11 @@ class SubscriptionScreen extends ConsumerWidget {
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
-                    onPressed: () {
-                      final l10n = AppLocalizations.of(context);
-                      if (plan.tier == SubscriptionTier.free) {
-                        AppSnackBar.info(context, l10n.currentPlan);
-                      } else {
-                        _showSubscribeDialog(context, plan);
-                      }
-                    },
+                    onPressed: (_purchasing || isCurrentPlan)
+                        ? null
+                        : () => _handleSubscribe(plan.tier, offeringsAsync),
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: plan.tier == SubscriptionTier.free
+                      backgroundColor: isCurrentPlan
                           ? Colors.grey
                           : accentColor,
                       foregroundColor: Colors.white,
@@ -286,15 +401,26 @@ class SubscriptionScreen extends ConsumerWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(
-                      plan.tier == SubscriptionTier.free
-                          ? AppLocalizations.of(context).currentPlan
-                          : AppLocalizations.of(context).subscription,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    child: _purchasing
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            isCurrentPlan
+                                ? AppLocalizations.of(context).currentPlan
+                                : plan.tier == SubscriptionTier.free
+                                    ? 'Downgrade'
+                                    : 'Subscribe',
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
                 ),
               ],
@@ -357,29 +483,82 @@ class SubscriptionScreen extends ConsumerWidget {
     );
   }
 
-  void _showSubscribeDialog(BuildContext context, SubscriptionPlan plan) {
-    final l10n = AppLocalizations.of(context);
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: Text('Subscribe to ${plan.name}?'),
-        content: Text(
-          'You will be charged ${plan.priceDisplay}/month.\n\nYour subscription will be managed through your app store account and can be cancelled anytime.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text(l10n.cancel),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              AppSnackBar.success(context, '${plan.name} ${l10n.subscription.toLowerCase()} activated!');
-            },
-            child: Text(l10n.subscription),
-          ),
-        ],
-      ),
+  void _handleSubscribe(SubscriptionTier tier, AsyncValue<dynamic> offeringsAsync) {
+    if (tier == SubscriptionTier.free) {
+      // Free = manage/cancel via Customer Center
+      CustomerCenterScreen.show(context);
+      return;
+    }
+
+    final offerings = offeringsAsync.valueOrNull;
+    if (offerings == null || offerings.current == null) {
+      AppSnackBar.error(context, 'Unable to load plans. Please try again.');
+      return;
+    }
+
+    // Find the matching package by identifier
+    final targetId = tier == SubscriptionTier.silver
+        ? RevenueCatService.silverMonthlyId
+        : RevenueCatService.goldMonthlyId;
+
+    final packages = offerings.current!.availablePackages;
+    final package = packages.cast<dynamic>().firstWhere(
+      (pkg) => pkg.storeProduct.identifier == targetId,
+      orElse: () => null,
     );
+
+    if (package != null) {
+      _purchasePackage(package);
+    } else {
+      // Fallback: if exact ID not found, try matching by identifier substring
+      final fallback = packages.cast<dynamic>().firstWhere(
+        (pkg) => pkg.storeProduct.identifier.toString().contains(
+          tier == SubscriptionTier.silver ? 'silver' : 'gold',
+        ),
+        orElse: () => null,
+      );
+
+      if (fallback != null) {
+        _purchasePackage(fallback);
+      } else {
+        AppSnackBar.error(context, 'Plan not available. Please try again later.');
+      }
+    }
+  }
+
+  Future<void> _purchasePackage(dynamic package) async {
+    setState(() => _purchasing = true);
+
+    try {
+      final tier = await revenueCatService.purchasePackage(package);
+      if (mounted) {
+        if (tier != SubscriptionTier.free) {
+          ref.invalidate(subscriptionStateProvider);
+          final tierName = tier == SubscriptionTier.gold ? 'Gold' : 'Silver';
+          AppSnackBar.success(context, 'Welcome to Indira $tierName!');
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _purchasing = false);
+    }
+  }
+
+  Future<void> _restorePurchases() async {
+    setState(() => _purchasing = true);
+
+    try {
+      final tier = await revenueCatService.restorePurchases();
+      if (mounted) {
+        if (tier != SubscriptionTier.free) {
+          ref.invalidate(subscriptionStateProvider);
+          final tierName = tier == SubscriptionTier.gold ? 'Gold' : 'Silver';
+          AppSnackBar.success(context, 'Restored! Welcome back to Indira $tierName.');
+        } else {
+          AppSnackBar.info(context, 'No previous purchases found.');
+        }
+      }
+    } finally {
+      if (mounted) setState(() => _purchasing = false);
+    }
   }
 }

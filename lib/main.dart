@@ -16,6 +16,8 @@ import 'package:indira_love/core/services/analytics_service.dart';
 import 'package:indira_love/core/services/performance_monitoring_service.dart';
 import 'package:indira_love/core/services/remote_config_service.dart';
 import 'package:indira_love/core/services/app_check_service.dart';
+import 'package:indira_love/core/services/revenuecat_service.dart';
+import 'package:indira_love/core/services/review_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
@@ -48,6 +50,9 @@ void main() async {
 
     // Initialize Google Mobile Ads SDK
     MobileAds.instance.initialize();
+
+    // Initialize RevenueCat
+    await revenueCatService.initialize();
 
     // Initialize notification service (non-blocking)
     NotificationService().initialize().catchError((e) {
@@ -83,7 +88,11 @@ class _IndiraLoveAppState extends ConsumerState<IndiraLoveApp> {
     _listenForIncomingCalls();
     FirebaseAuth.instance.authStateChanges().listen((user) {
       _callSub?.cancel();
-      if (user != null) _listenForIncomingCalls();
+      if (user != null) {
+        _listenForIncomingCalls();
+        // Check if it's time to show Google Play review (1 day after signup)
+        reviewService.checkAndRequestReview();
+      }
     });
   }
 

@@ -460,6 +460,33 @@ service cloud.firestore {
     }
 
     // ============================================================
+    // PROFILE VIEWS (Who Viewed You)
+    // ============================================================
+
+    match /profile_views/{viewId} {
+      allow read: if isAuth() &&
+                  (resource.data.viewerId == request.auth.uid ||
+                   resource.data.viewedUserId == request.auth.uid);
+      allow list: if isAuth();
+      allow create: if isAuth() &&
+                     request.resource.data.viewerId == request.auth.uid;
+      allow update: if isAuth() &&
+                    resource.data.viewedUserId == request.auth.uid;
+      allow delete: if false;
+    }
+
+    // ============================================================
+    // SUCCESS STORIES (Public Read)
+    // ============================================================
+
+    match /success_stories/{storyId} {
+      allow read: if isAuth();
+      allow list: if isAuth();
+      allow create: if false; // Admin only
+      allow update, delete: if false;
+    }
+
+    // ============================================================
     // ENGAGEMENT SIGNALS (AI matching)
     // ============================================================
 
@@ -481,6 +508,45 @@ service cloud.firestore {
     match /users/{userId}/aiPreferences/{docId} {
       allow read: if isOwner(userId);
       allow write: if isOwner(userId);
+    }
+
+    // ============================================================
+    // SUBSCRIPTION EVENTS (RevenueCat webhook audit log)
+    // ============================================================
+
+    match /subscription_events/{eventId} {
+      // Only server (Cloud Functions) writes; users can read their own
+      allow read: if isAuth();
+      allow list: if isAuth() && request.query.limit <= 50;
+      allow create: if false; // Only Cloud Functions write
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // VERIFIED PURCHASES
+    // ============================================================
+
+    match /verified_purchases/{purchaseId} {
+      allow read: if isAuth() &&
+                  resource.data.userId == request.auth.uid;
+      allow list: if isAuth() && request.query.limit <= 50;
+      allow create: if false; // Only Cloud Functions write
+      allow update, delete: if false;
+    }
+
+    // ============================================================
+    // NOTIFICATION QUEUE — SMART BATCHING
+    // ============================================================
+
+    match /notification_queue/{notifId} {
+      allow read: if isAuth() &&
+                  resource.data.userId == request.auth.uid;
+      allow list: if isAuth();
+      allow create: if isAuth() &&
+                     request.resource.data.userId == request.auth.uid;
+      allow update: if isAuth() &&
+                    resource.data.userId == request.auth.uid;
+      allow delete: if false;
     }
 
     // ============================================================

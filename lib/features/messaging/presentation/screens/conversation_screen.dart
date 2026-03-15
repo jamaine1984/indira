@@ -19,6 +19,9 @@ import 'package:indira_love/features/video_call/presentation/screens/video_call_
 import 'package:indira_love/features/icebreakers/services/icebreaker_service.dart';
 import 'package:indira_love/core/l10n/app_localizations.dart';
 import 'package:indira_love/core/widgets/app_snackbar.dart';
+import 'package:indira_love/features/messaging/services/voice_message_service.dart';
+import 'package:indira_love/features/messaging/presentation/widgets/voice_recorder_widget.dart';
+import 'package:indira_love/features/messaging/presentation/widgets/voice_message_widget.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
   final String matchId;
@@ -47,6 +50,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   SubscriptionTier _userTier = SubscriptionTier.free;
   bool _showGiftPicker = false;
   bool _isUploading = false;
+  bool _isRecording = false;
+  final VoiceMessageService _voiceService = VoiceMessageService();
 
   @override
   void initState() {
@@ -578,6 +583,41 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
           ),
         ],
       );
+    } else if (messageType == 'voice') {
+      final duration = message['duration'] as int? ?? 0;
+      messageContent = Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.mic,
+            color: isMe ? Colors.white : AppTheme.primaryRose,
+            size: 20,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '\u{1F3A4} ${_voiceService.formatDuration(duration)}',
+            style: TextStyle(
+              color: isMe ? Colors.white : AppTheme.textCharcoal,
+              fontSize: 14,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(width: 8),
+          GestureDetector(
+            onTap: () {
+              final voiceUrl = message['voiceUrl'] as String?;
+              if (voiceUrl != null) {
+                _voiceService.playVoiceMessage('msg_${message.hashCode}', voiceUrl);
+              }
+            },
+            child: Icon(
+              Icons.play_circle_fill,
+              color: isMe ? Colors.white : AppTheme.primaryRose,
+              size: 28,
+            ),
+          ),
+        ],
+      );
     } else {
       // Get the message text directly - skip encryption for now
       final displayText = message['text'] ?? message['content'] ?? '';
@@ -770,6 +810,22 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               });
             },
           ),
+          // Voice Note Button
+          IconButton(
+            icon: Icon(
+              _isRecording ? Icons.stop_circle : Icons.mic,
+              color: _isRecording ? Colors.red : AppTheme.primaryRose,
+            ),
+            onPressed: _isUploading
+                ? null
+                : () {
+                    if (_isRecording) {
+                      _stopAndSendVoiceNote();
+                    } else {
+                      _startVoiceRecording();
+                    }
+                  },
+          ),
           // Message Input Field
           Expanded(
             child: Container(
@@ -821,6 +877,101 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _startVoiceRecording() async {
+    final currentUser = AuthService().currentUser;
+    if (currentUser == null) return;
+
+    // Check microphone permission first
+    final hasPermission = await _voiceService.hasPermission();
+    if (!hasPermission) {
+      if (mounted) {
+        AppSnackBar.error(context, 'Microphone permission is required for voice notes');
+      }
+      return;
+    }
+
+    // Check daily voice note limit
+    final usageService = UsageService();
+    final canSend = await usageService.canSendVoiceNote(currentUser.uid);
+    if (!canSend) {
+      if (mounted) {
+        showWatchAdsDialog(
+          context,
+          type: 'voice_notes',
+          adsRequired: 2,
+          onComplete: () async {
+            await usageService.refillVoiceNotes(currentUser.uid, 2);
+            _startVoiceRecording(); // Retry
+          },
+        );
+      }
+      return;
+    }
+
+    final started = await _voiceService.startRecording();
+    if (started && mounted) {
+      setState(() => _isRecording = true);
+      AppSnackBar.info(context, 'Recording... Tap stop to send');
+    } else if (mounted) {
+      AppSnackBar.error(context, 'Failed to start recording. Please try again.');
+    }
+  }
+
+  Future<void> _stopAndSendVoiceNote() async {
+    final currentUser = AuthService().currentUser;
+    if (currentUser == null) return;
+
+    setState(() => _isRecording = false);
+
+    final filePath = await _voiceService.stopRecording();
+    if (filePath == null) return;
+
+    setState(() => _isUploading = true);
+
+    try {
+      final duration = await _voiceService.getAudioDuration(filePath);
+      final result = await _voiceService.uploadVoiceMessage(filePath, duration);
+
+      if (result != null) {
+        await FirebaseFirestore.instance
+            .collection('matches')
+            .doc(widget.matchId)
+            .collection('messages')
+            .add({
+          'senderId': currentUser.uid,
+          'receiverId': widget.otherUserId,
+          'type': 'voice',
+          'voiceUrl': result['url'],
+          'duration': result['duration'],
+          'timestamp': FieldValue.serverTimestamp(),
+          'read': false,
+        });
+
+        await FirebaseFirestore.instance
+            .collection('matches')
+            .doc(widget.matchId)
+            .update({
+          'lastMessage': '\u{1F3A4} Voice message',
+          'lastMessageTime': FieldValue.serverTimestamp(),
+        });
+
+        // Increment voice note usage
+        await UsageService().incrementVoiceNoteCount(currentUser.uid);
+      }
+    } catch (e) {
+      if (mounted) {
+        AppSnackBar.error(context, 'Failed to send voice note: $e');
+      }
+    } finally {
+      if (mounted) setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _cancelVoiceRecording() async {
+    await _voiceService.cancelRecording();
+    if (mounted) setState(() => _isRecording = false);
   }
 
   Future<void> _sendTextMessage() async {

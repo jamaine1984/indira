@@ -1,10 +1,24 @@
 const {onDocumentCreated} = require('firebase-functions/v2/firestore');
 const {onObjectFinalized} = require('firebase-functions/v2/storage');
-const {onCall, HttpsError} = require('firebase-functions/v2/https');
+const {onCall, onRequest, HttpsError} = require('firebase-functions/v2/https');
 const {onSchedule} = require('firebase-functions/v2/scheduler');
 const admin = require('firebase-admin');
 
 admin.initializeApp();
+
+// ========== NOTIFICATION BATCHING (imported) ==========
+const notificationBatching = require('./notificationBatching');
+exports.queueNotification = notificationBatching.queueNotification;
+exports.processBatchedNotifications = notificationBatching.processBatchedNotifications;
+exports.cleanupProcessedNotifications = notificationBatching.cleanupProcessedNotifications;
+exports.sendImmediateNotification = notificationBatching.sendImmediateNotification;
+
+// ========== MATCHING OPTIMIZATION (imported) ==========
+const matchingOptimized = require('./matchingOptimized');
+exports.calculateMatchScore = matchingOptimized.calculateMatchScore;
+exports.batchCalculateMatches = matchingOptimized.batchCalculateMatches;
+exports.dailyMatchScoreUpdate = matchingOptimized.dailyMatchScoreUpdate;
+exports.cleanupExpiredScores = matchingOptimized.cleanupExpiredScores;
 
 // ========== LIKE CREATED - Match Detection ==========
 exports.onLikeCreated = onDocumentCreated('likes/{likeId}', async (event) => {
@@ -446,4 +460,158 @@ exports.dailyEngagementTasks = onSchedule('every 24 hours', async (event) => {
     console.error('Daily engagement error:', error);
     return null;
   }
+});
+
+// ========== REVENUECAT WEBHOOK ==========
+// Set this URL in RevenueCat Dashboard → Integrations → Webhooks
+// URL: https://<region>-<project-id>.cloudfunctions.net/revenueCatWebhook
+exports.revenueCatWebhook = onRequest(async (req, res) => {
+  if (req.method !== 'POST') {
+    res.status(405).send('Method Not Allowed');
+    return;
+  }
+
+  const event = req.body;
+  if (!event || !event.event) {
+    res.status(400).send('Invalid payload');
+    return;
+  }
+
+  const eventType = event.event.type;
+  const appUserId = event.event.app_user_id;
+
+  console.log(`RevenueCat webhook: ${eventType} for user ${appUserId}`);
+
+  try {
+    const db = admin.firestore();
+
+    // Map RevenueCat entitlements to subscription tier
+    const entitlements = event.event.entitlement_ids || [];
+    let tier = 'free';
+    let isActive = false;
+
+    if (entitlements.includes('indira_gold')) {
+      tier = 'gold';
+      isActive = true;
+    } else if (entitlements.includes('indira_silver')) {
+      tier = 'silver';
+      isActive = true;
+    }
+
+    // Determine tier from product_id as fallback
+    const productId = event.event.product_id || '';
+    if (tier === 'free' && productId) {
+      if (productId.includes('gold')) {
+        tier = 'gold';
+        isActive = true;
+      } else if (productId.includes('silver')) {
+        tier = 'silver';
+        isActive = true;
+      }
+    }
+
+    switch (eventType) {
+      case 'INITIAL_PURCHASE':
+      case 'RENEWAL':
+      case 'PRODUCT_CHANGE':
+      case 'UNCANCELLATION': {
+        const expiresAt = event.event.expiration_at_ms
+          ? new Date(event.event.expiration_at_ms)
+          : null;
+
+        await db.collection('users').doc(appUserId).update({
+          subscriptionTier: tier,
+          subscriptionActive: isActive,
+          subscriptionProductId: productId,
+          subscriptionExpiryDate: expiresAt
+            ? admin.firestore.Timestamp.fromDate(expiresAt)
+            : null,
+          lastSubscriptionSync: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        console.log(`Subscription activated: ${tier} for ${appUserId}`);
+        break;
+      }
+
+      case 'CANCELLATION':
+      case 'EXPIRATION': {
+        await db.collection('users').doc(appUserId).update({
+          subscriptionTier: 'free',
+          subscriptionActive: false,
+          lastSubscriptionSync: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        console.log(`Subscription ended for ${appUserId}`);
+        break;
+      }
+
+      case 'BILLING_ISSUE': {
+        await db.collection('users').doc(appUserId).update({
+          subscriptionBillingIssue: true,
+          lastSubscriptionSync: admin.firestore.FieldValue.serverTimestamp(),
+        });
+
+        // Notify user about billing issue
+        const userDoc = await db.collection('users').doc(appUserId).get();
+        const fcmToken = userDoc.data()?.fcmToken;
+        if (fcmToken) {
+          await admin.messaging().send({
+            token: fcmToken,
+            notification: {
+              title: 'Billing Issue',
+              body: 'There was a problem with your subscription payment. Please update your payment method.',
+            },
+            data: { type: 'billing_issue' },
+          });
+        }
+        break;
+      }
+
+      default:
+        console.log(`Unhandled RevenueCat event: ${eventType}`);
+    }
+
+    // Log webhook event for audit
+    await db.collection('subscription_events').add({
+      userId: appUserId,
+      eventType,
+      productId,
+      tier,
+      entitlements,
+      timestamp: admin.firestore.FieldValue.serverTimestamp(),
+      rawEvent: event.event,
+    });
+
+    res.status(200).send('OK');
+  } catch (error) {
+    console.error('RevenueCat webhook error:', error);
+    res.status(500).send('Internal error');
+  }
+});
+
+// ========== CHECK EXPIRED SUBSCRIPTIONS (RevenueCat fallback) ==========
+exports.checkExpiredSubscriptions = onSchedule('every 24 hours', async (event) => {
+  const db = admin.firestore();
+  const now = admin.firestore.Timestamp.now();
+
+  const expiredUsers = await db.collection('users')
+    .where('subscriptionActive', '==', true)
+    .where('subscriptionExpiryDate', '<=', now)
+    .get();
+
+  const batch = db.batch();
+  let count = 0;
+
+  expiredUsers.docs.forEach(doc => {
+    batch.update(doc.ref, {
+      subscriptionTier: 'free',
+      subscriptionActive: false,
+      subscriptionExpiredAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
+    count++;
+  });
+
+  if (count > 0) await batch.commit();
+  console.log(`Expired ${count} subscriptions`);
+  return null;
 });

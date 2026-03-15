@@ -29,6 +29,9 @@
 # In-App Purchase
 -keep class com.android.vending.billing.** { *; }
 
+# RevenueCat
+-keep class com.revenuecat.purchases.** { *; }
+
 # Google Play Core (deferred components)
 -dontwarn com.google.android.play.core.splitcompat.**
 -dontwarn com.google.android.play.core.splitinstall.**

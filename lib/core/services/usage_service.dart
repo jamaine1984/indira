@@ -68,6 +68,56 @@ class UsageService {
     }, SetOptions(merge: true));
   }
 
+  // Check if user can send a voice note
+  Future<bool> canSendVoiceNote(String userId) async {
+    final usage = await _getTodayUsage(userId);
+    final user = await _getUserData(userId);
+    final tier = _getUserTier(user);
+    final limits = SubscriptionLimits.fromTier(tier);
+
+    if (limits.dailyVoiceNotes == -1) return true; // Unlimited
+
+    return (usage['voiceNotesSent'] as int? ?? 0) < limits.dailyVoiceNotes;
+  }
+
+  // Increment voice note count
+  Future<void> incrementVoiceNoteCount(String userId) async {
+    final today = _getTodayKey();
+    await _firestore.collection('users').doc(userId).collection('usage').doc(today).set({
+      'voiceNotesSent': FieldValue.increment(1),
+      'date': DateTime.now(),
+    }, SetOptions(merge: true));
+  }
+
+  // Refill voice notes by watching ads
+  Future<void> refillVoiceNotes(String userId, int adsWatched) async {
+    final user = await _getUserData(userId);
+    final tier = _getUserTier(user);
+    final limits = SubscriptionLimits.fromTier(tier);
+
+    if (adsWatched >= limits.adsToRefill) {
+      final today = _getTodayKey();
+      await _firestore.collection('users').doc(userId).collection('usage').doc(today).set({
+        'voiceNotesSent': 0,
+        'lastVoiceNoteRefill': DateTime.now(),
+      }, SetOptions(merge: true));
+    }
+  }
+
+  // Get remaining voice notes for today
+  Future<int> getRemainingVoiceNotes(String userId) async {
+    final usage = await _getTodayUsage(userId);
+    final user = await _getUserData(userId);
+    final tier = _getUserTier(user);
+    final limits = SubscriptionLimits.fromTier(tier);
+
+    if (limits.dailyVoiceNotes == -1) return -1; // Unlimited
+
+    final voiceNotesSent = usage['voiceNotesSent'] as int? ?? 0;
+    final remaining = limits.dailyVoiceNotes - voiceNotesSent;
+    return remaining < 0 ? 0 : remaining;
+  }
+
   // Refill messages by watching ads
   Future<void> refillMessages(String userId, int adsWatched) async {
     final user = await _getUserData(userId);
@@ -257,7 +307,7 @@ class UsageService {
         .get();
 
     if (!doc.exists) {
-      return {'messagesSent': 0, 'likesSent': 0, 'rewindsUsed': 0};
+      return {'messagesSent': 0, 'likesSent': 0, 'rewindsUsed': 0, 'voiceNotesSent': 0};
     }
 
     final data = doc.data()!;
@@ -265,6 +315,7 @@ class UsageService {
       'messagesSent': data['messagesSent'] ?? 0,
       'likesSent': data['likesSent'] ?? 0,
       'rewindsUsed': data['rewindsUsed'] ?? 0,
+      'voiceNotesSent': data['voiceNotesSent'] ?? 0,
     };
   }
 

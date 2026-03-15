@@ -315,6 +315,15 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen> {
 
                       _buildProfileOption(
                         context,
+                        'Video Minutes',
+                        Icons.videocam,
+                        () {
+                          context.push('/video-minutes');
+                        },
+                      ),
+
+                      _buildProfileOption(
+                        context,
                         l10n.safety,
                         Icons.security,
                         () {

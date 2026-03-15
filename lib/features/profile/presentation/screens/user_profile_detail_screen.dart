@@ -12,6 +12,7 @@ import 'package:indira_love/features/profile/presentation/widgets/report_dialog.
 import 'package:indira_love/core/services/database_service.dart';
 import 'package:indira_love/features/endorsements/presentation/widgets/endorsement_section.dart';
 import 'package:indira_love/features/family/services/family_sharing_service.dart';
+import 'package:indira_love/core/services/profile_view_service.dart';
 
 class UserProfileDetailScreen extends ConsumerWidget {
   final String userId;
@@ -90,6 +91,10 @@ class UserProfileDetailScreen extends ConsumerWidget {
           }
 
           final userData = snapshot.data!.data() as Map<String, dynamic>;
+
+          // Record profile view
+          ProfileViewService().recordProfileView(userId);
+
           final photos = userData['photos'] as List<dynamic>? ?? [];
           final displayName = userData['displayName'] ?? 'Unknown';
           final age = userData['age'] ?? 0;
@@ -163,15 +168,27 @@ class UserProfileDetailScreen extends ConsumerWidget {
                         // Name and Age
                         Row(
                           children: [
-                            Text(
-                              '$displayName, $age',
-                              style: const TextStyle(
-                                fontSize: 32,
-                                fontWeight: FontWeight.bold,
+                            Flexible(
+                              child: Text(
+                                '$displayName, $age',
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 8),
-                            if (userData['isVerified'] == true)
+                            if (userData['isPhotoVerified'] == true)
+                              const Tooltip(
+                                message: 'Photo Verified',
+                                child: Icon(
+                                  Icons.verified,
+                                  color: Colors.blue,
+                                  size: 28,
+                                ),
+                              )
+                            else if (userData['isVerified'] == true)
                               const Icon(
                                 Icons.verified,
                                 color: AppTheme.primaryRose,
@@ -232,6 +249,36 @@ class UserProfileDetailScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
+
+                        // Instagram Badge
+                        if (userData['instagramHandle'] != null &&
+                            (userData['instagramHandle'] as String).isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFF58529), Color(0xFFDD2A7B), Color(0xFF8134AF)],
+                              ),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.camera_alt, size: 14, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(
+                                  userData['instagramHandle'],
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
 
                         const SizedBox(height: 24),
 

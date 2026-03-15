@@ -16,6 +16,7 @@ import 'package:indira_love/features/profile/presentation/screens/edit_profile_s
 import 'package:indira_love/features/profile/presentation/screens/safety_screen.dart';
 import 'package:indira_love/features/profile/presentation/screens/privacy_screen.dart';
 import 'package:indira_love/features/subscription/presentation/screens/subscription_screen.dart';
+import 'package:indira_love/features/subscription/presentation/screens/indira_paywall_screen.dart';
 import 'package:indira_love/features/admin/presentation/screens/admin_dashboard_screen.dart';
 import 'package:indira_love/features/verification/presentation/screens/selfie_verification_screen.dart';
 import 'package:indira_love/features/verification/presentation/screens/id_verification_screen.dart';
@@ -37,6 +38,7 @@ import 'package:indira_love/features/profile/presentation/screens/cultural_prefe
 import 'package:indira_love/features/likes/presentation/screens/likes_screen.dart';
 import 'package:indira_love/features/video_call/presentation/screens/video_minutes_screen.dart';
 import 'package:indira_love/features/profile/presentation/screens/profile_screen.dart';
+import 'package:indira_love/features/social/presentation/screens/success_stories_screen.dart';
 
 // Navigator keys for each tab branch
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -254,6 +256,14 @@ class AppRouter {
         ),
       ),
       GoRoute(
+        path: '/indira-paywall',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideUp(
+          key: state.pageKey,
+          child: const IndiraPaywallScreen(),
+        ),
+      ),
+      GoRoute(
         path: '/safety',
         parentNavigatorKey: _rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideUp(
@@ -421,6 +431,14 @@ class AppRouter {
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const VideoMinutesScreen(),
+        ),
+      ),
+      GoRoute(
+        path: '/success-stories',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.slideRight(
+          key: state.pageKey,
+          child: const SuccessStoriesScreen(),
         ),
       ),
     ],
