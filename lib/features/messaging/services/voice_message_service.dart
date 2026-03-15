@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:record/record.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 class VoiceMessageService {
   // Connect to the nam5 database instance where all users are stored
@@ -19,26 +20,55 @@ class VoiceMessageService {
   bool _isPlaying = false;
   String? _currentlyPlayingId;
 
+  // Request microphone permission using permission_handler (required for Android 13+)
+  Future<bool> requestMicrophonePermission() async {
+    try {
+      final status = await Permission.microphone.status;
+      if (status.isGranted) return true;
+
+      // Request the permission - this shows the system dialog
+      final result = await Permission.microphone.request();
+      if (result.isGranted) return true;
+
+      // If permanently denied, user needs to go to settings
+      if (result.isPermanentlyDenied) {
+        logger.warning('Microphone permission permanently denied - user must enable in settings');
+        await openAppSettings();
+        return false;
+      }
+
+      return false;
+    } catch (e) {
+      logger.error('Error requesting microphone permission: $e');
+      return false;
+    }
+  }
+
   // Start recording
   Future<bool> startRecording() async {
     try {
-      if (await _recorder.hasPermission()) {
-        final tempDir = await getTemporaryDirectory();
-        final filePath = '${tempDir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
-
-        await _recorder.start(
-          const RecordConfig(
-            encoder: AudioEncoder.aacLc,
-            bitRate: 128000,
-            sampleRate: 44100,
-          ),
-          path: filePath,
-        );
-
-        _isRecording = true;
-        return true;
+      // Use permission_handler for reliable permission request on Android 13+
+      final hasPermission = await requestMicrophonePermission();
+      if (!hasPermission) {
+        logger.warning('Microphone permission not granted');
+        return false;
       }
-      return false;
+
+      final tempDir = await getTemporaryDirectory();
+      final filePath = '${tempDir.path}/voice_${DateTime.now().millisecondsSinceEpoch}.m4a';
+
+      await _recorder.start(
+        const RecordConfig(
+          encoder: AudioEncoder.aacLc,
+          bitRate: 128000,
+          sampleRate: 44100,
+        ),
+        path: filePath,
+      );
+
+      _isRecording = true;
+      logger.info('Voice recording started at: $filePath');
+      return true;
     } catch (e) {
       logger.error('Error starting recording: $e');
       return false;
@@ -229,8 +259,9 @@ class VoiceMessageService {
     await _player.dispose();
   }
 
-  // Check permission
+  // Check permission using permission_handler (reliable on Android 13+)
   Future<bool> hasPermission() async {
-    return await _recorder.hasPermission();
+    final status = await Permission.microphone.status;
+    return status.isGranted;
   }
 }

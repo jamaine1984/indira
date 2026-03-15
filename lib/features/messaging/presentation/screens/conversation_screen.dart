@@ -883,11 +883,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) return;
 
-    // Check microphone permission first
-    final hasPermission = await _voiceService.hasPermission();
+    // Request microphone permission via permission_handler (shows system dialog on Android 13+)
+    final hasPermission = await _voiceService.requestMicrophonePermission();
     if (!hasPermission) {
       if (mounted) {
-        AppSnackBar.error(context, 'Microphone permission is required for voice notes');
+        AppSnackBar.error(context, 'Microphone permission is required for voice notes. Please enable it in Settings.');
       }
       return;
     }
