@@ -42,7 +42,7 @@ import 'package:indira_love/features/social/presentation/screens/success_stories
 import 'package:indira_love/features/splash/presentation/screens/video_splash_screen.dart';
 
 // Navigator keys for each tab branch
-final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final rootNavigatorKey = GlobalKey<NavigatorState>();
 final _discoverNavKey = GlobalKey<NavigatorState>(debugLabel: 'discover');
 final _giftsNavKey = GlobalKey<NavigatorState>(debugLabel: 'gifts');
 final _messagesNavKey = GlobalKey<NavigatorState>(debugLabel: 'messages');
@@ -51,13 +51,13 @@ final _entertainmentNavKey = GlobalKey<NavigatorState>(debugLabel: 'entertainmen
 
 class AppRouter {
   static final GoRouter router = GoRouter(
-    navigatorKey: _rootNavigatorKey,
+    navigatorKey: rootNavigatorKey,
     initialLocation: '/splash',
     routes: [
       // ─── Splash Screen ─────────────────────────────────────
       GoRoute(
         path: '/splash',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.fadeIn(
           key: state.pageKey,
           child: const VideoSplashScreen(),
@@ -66,7 +66,7 @@ class AppRouter {
       // ─── Authentication (no bottom nav) ───────────────────
       GoRoute(
         path: '/welcome',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.fadeIn(
           key: state.pageKey,
           child: const WelcomeScreen(),
@@ -74,7 +74,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/login',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const LoginScreen(),
@@ -82,7 +82,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/signup',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const SignupScreen(),
@@ -90,7 +90,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/onboarding',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const OnboardingScreen(),
@@ -185,7 +185,7 @@ class AppRouter {
       // ─── Likes & Profile (above bottom nav) ─────────────────
       GoRoute(
         path: '/likes',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const LikesScreen(),
@@ -193,7 +193,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/profile',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const ProfileScreen(),
@@ -201,7 +201,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/settings',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const ProfileScreen(),
@@ -211,7 +211,7 @@ class AppRouter {
       // ─── Detail screens (slide right, above bottom nav) ───
       GoRoute(
         path: '/user-profile/:userId',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final userId = state.pathParameters['userId']!;
           return AppPageTransitions.slideRight(
@@ -222,7 +222,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/conversation/:matchId/:otherUserId/:otherUserName',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final matchId = state.pathParameters['matchId']!;
           final otherUserId = state.pathParameters['otherUserId']!;
@@ -241,7 +241,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/edit-profile',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const EditProfileScreen(),
@@ -249,7 +249,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/cultural-preferences',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const CulturalPreferencesScreen(),
@@ -259,7 +259,7 @@ class AppRouter {
       // ─── Modal screens (slide up, above bottom nav) ───────
       GoRoute(
         path: '/subscription',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideUp(
           key: state.pageKey,
           child: const SubscriptionScreen(),
@@ -267,7 +267,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/indira-paywall',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideUp(
           key: state.pageKey,
           child: const IndiraPaywallScreen(),
@@ -275,7 +275,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/safety',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideUp(
           key: state.pageKey,
           child: const SafetyScreen(),
@@ -283,7 +283,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/privacy',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideUp(
           key: state.pageKey,
           child: const PrivacyScreen(),
@@ -291,7 +291,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/language',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideUp(
           key: state.pageKey,
           child: const LanguageScreen(),
@@ -301,7 +301,7 @@ class AppRouter {
       // ─── Other full-screen routes ─────────────────────────
       GoRoute(
         path: '/activity',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const ActivityScreen(),
@@ -309,7 +309,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/admin',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const AdminDashboardScreen(),
@@ -317,7 +317,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/verification',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const SelfieVerificationScreen(),
@@ -325,7 +325,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/id-verification',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const IdVerificationScreen(),
@@ -333,7 +333,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/developer-settings',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const DeveloperSettingsScreen(),
@@ -343,7 +343,7 @@ class AppRouter {
       // ─── Entertainment & Games ────────────────────────────
       GoRoute(
         path: '/love-language-quiz',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const LoveLanguageQuizScreen(),
@@ -351,7 +351,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/love-language-result',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const LoveLanguageResultScreen(),
@@ -359,7 +359,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/trivia',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const TriviaScreen(),
@@ -367,7 +367,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/this-or-that',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const ThisOrThatScreen(),
@@ -375,7 +375,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/multiplayer-hub',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final game = state.uri.queryParameters['game'] ?? 'would_you_rather';
           return AppPageTransitions.slideRight(
@@ -386,7 +386,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/would-you-rather/:sessionId',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final sessionId = state.pathParameters['sessionId']!;
           return AppPageTransitions.slideRight(
@@ -397,7 +397,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/compatibility/:sessionId',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final sessionId = state.pathParameters['sessionId']!;
           return AppPageTransitions.slideRight(
@@ -410,7 +410,7 @@ class AppRouter {
       // ─── Special Features ─────────────────────────────────
       GoRoute(
         path: '/festivals',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const FestivalScreen(),
@@ -418,7 +418,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/kundli',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) {
           final otherUserId = state.uri.queryParameters['userId'];
           return AppPageTransitions.slideRight(
@@ -429,7 +429,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/safety-checkin',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const SafetyCheckinScreen(),
@@ -437,7 +437,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/video-minutes',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const VideoMinutesScreen(),
@@ -445,7 +445,7 @@ class AppRouter {
       ),
       GoRoute(
         path: '/success-stories',
-        parentNavigatorKey: _rootNavigatorKey,
+        parentNavigatorKey: rootNavigatorKey,
         pageBuilder: (context, state) => AppPageTransitions.slideRight(
           key: state.pageKey,
           child: const SuccessStoriesScreen(),

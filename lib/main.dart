@@ -22,6 +22,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:async';
 import 'package:indira_love/features/video_call/presentation/screens/incoming_call_screen.dart';
+import 'package:indira_love/core/routes/app_router.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -70,8 +71,6 @@ void main() async {
   runApp(const ProviderScope(child: IndiraLoveApp()));
 }
 
-final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
-
 class IndiraLoveApp extends ConsumerStatefulWidget {
   const IndiraLoveApp({super.key});
 
@@ -108,7 +107,7 @@ class _IndiraLoveAppState extends ConsumerState<IndiraLoveApp> {
         .listen((snapshot) {
       for (var doc in snapshot.docs) {
         final data = doc.data();
-        final ctx = navigatorKey.currentContext;
+        final ctx = rootNavigatorKey.currentContext;
         if (ctx == null) continue;
 
         Navigator.of(ctx).push(

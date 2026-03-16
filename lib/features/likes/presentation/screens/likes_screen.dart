@@ -110,10 +110,10 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
                   ),
-                  tabs: [
-                    Tab(text: l10n.peopleWhoLikedYou),
-                    Tab(text: l10n.sentLikes),
-                    const Tab(text: 'Viewed You'),
+                  tabs: const [
+                    Tab(text: 'Matches'),
+                    Tab(text: 'Sent Likes'),
+                    Tab(text: 'Viewed You'),
                   ],
                 ),
               ),
@@ -123,7 +123,7 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
                 child: TabBarView(
                   controller: _tabController,
                   children: [
-                    _buildLikedYouTab(hasGoldAsync),
+                    _buildMatchesTab(),
                     _buildYourLikesTab(),
                     _buildViewedYouTab(hasGoldAsync),
                   ],
@@ -133,6 +133,192 @@ class _LikesScreenState extends ConsumerState<LikesScreen> with SingleTickerProv
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMatchesTab() {
+    final currentUser = AuthService().currentUser;
+    if (currentUser == null) {
+      return const Center(child: Text('Please log in', style: TextStyle(color: Colors.white)));
+    }
+
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('matches')
+          .where('users', arrayContains: currentUser.uid)
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return ShimmerLoading.profileGrid(count: 4);
+        }
+
+        final matches = snapshot.data?.docs ?? [];
+
+        if (matches.isEmpty) {
+          return const EmptyStateWidget(
+            icon: Icons.favorite,
+            title: 'No Matches Yet',
+            subtitle: 'When you and someone both like each other, they\'ll appear here!',
+          );
+        }
+
+        return AnimationLimiter(
+          child: GridView.builder(
+            padding: const EdgeInsets.all(16),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 2,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 0.75,
+            ),
+            itemCount: matches.length,
+            itemBuilder: (context, index) {
+              final matchData = matches[index].data() as Map<String, dynamic>;
+              final users = (matchData['users'] as List<dynamic>?) ?? [];
+              final otherUserId = users.firstWhere(
+                (id) => id != currentUser.uid,
+                orElse: () => '',
+              ) as String;
+
+              if (otherUserId.isEmpty) return const SizedBox();
+
+              return AnimationConfiguration.staggeredGrid(
+                position: index,
+                columnCount: 2,
+                duration: const Duration(milliseconds: 375),
+                child: ScaleAnimation(
+                  child: FadeInAnimation(
+                    child: _buildMatchCard(otherUserId),
+                  ),
+                ),
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMatchCard(String userId) {
+    return FutureBuilder<DocumentSnapshot>(
+      future: FirebaseFirestore.instance.collection('users').doc(userId).get(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return Container(
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Center(
+              child: CircularProgressIndicator(color: Colors.white),
+            ),
+          );
+        }
+
+        final userData = snapshot.data!.data() as Map<String, dynamic>?;
+        if (userData == null) return const SizedBox();
+
+        final photos = (userData['photos'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [];
+        final photoUrl = photos.isNotEmpty ? photos[0] : null;
+        final displayName = userData['displayName'] ?? 'User';
+        final age = userData['age'] ?? 0;
+
+        return GestureDetector(
+          onTap: () => context.push('/user-profile/$userId'),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 8,
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (photoUrl != null)
+                    CachedNetworkImage(
+                      imageUrl: photoUrl,
+                      fit: BoxFit.cover,
+                      placeholder: (context, url) => Container(
+                        color: AppTheme.secondaryPlum.withOpacity(0.3),
+                        child: const Center(
+                          child: CircularProgressIndicator(color: Colors.white),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        color: AppTheme.secondaryPlum.withOpacity(0.3),
+                        child: const Icon(Icons.person, color: Colors.white, size: 50),
+                      ),
+                    )
+                  else
+                    Container(
+                      color: AppTheme.secondaryPlum.withOpacity(0.3),
+                      child: const Icon(Icons.person, color: Colors.white, size: 50),
+                    ),
+
+                  // Gradient overlay
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                        colors: [
+                          Colors.transparent,
+                          Colors.black.withOpacity(0.7),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Info
+                  Positioned(
+                    bottom: 8,
+                    left: 8,
+                    right: 8,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '$displayName, $age',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.favorite, color: Colors.pinkAccent, size: 16),
+                            const SizedBox(width: 4),
+                            Text(
+                              'Matched!',
+                              style: TextStyle(
+                                color: Colors.pinkAccent.shade100,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

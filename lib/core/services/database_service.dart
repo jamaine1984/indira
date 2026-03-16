@@ -185,10 +185,16 @@ class DatabaseService {
       batch.update(likeRef, {'isMutualMatch': true});
       batch.update(mutualLikeRef, {'isMutualMatch': true});
 
-      // Create match
-      final matchRef = _firestore.collection('matches').doc();
+      // Create match with deterministic ID
+      final sortedIds = [likerId, likedId]..sort();
+      final matchId = '${sortedIds[0]}_${sortedIds[1]}';
+      final matchRef = _firestore.collection('matches').doc(matchId);
       batch.set(matchRef, {
         'users': [likerId, likedId],
+        'user1Id': sortedIds[0],
+        'user2Id': sortedIds[1],
+        'createdAt': FieldValue.serverTimestamp(),
+        'lastMessageAt': null,
         'timestamp': FieldValue.serverTimestamp(),
         'lastMessageTime': FieldValue.serverTimestamp(),
         'isActive': true,
