@@ -39,6 +39,7 @@ import 'package:indira_love/features/likes/presentation/screens/likes_screen.dar
 import 'package:indira_love/features/video_call/presentation/screens/video_minutes_screen.dart';
 import 'package:indira_love/features/profile/presentation/screens/profile_screen.dart';
 import 'package:indira_love/features/social/presentation/screens/success_stories_screen.dart';
+import 'package:indira_love/features/splash/presentation/screens/video_splash_screen.dart';
 
 // Navigator keys for each tab branch
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
@@ -51,8 +52,17 @@ final _entertainmentNavKey = GlobalKey<NavigatorState>(debugLabel: 'entertainmen
 class AppRouter {
   static final GoRouter router = GoRouter(
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/welcome',
+    initialLocation: '/splash',
     routes: [
+      // ─── Splash Screen ─────────────────────────────────────
+      GoRoute(
+        path: '/splash',
+        parentNavigatorKey: _rootNavigatorKey,
+        pageBuilder: (context, state) => AppPageTransitions.fadeIn(
+          key: state.pageKey,
+          child: const VideoSplashScreen(),
+        ),
+      ),
       // ─── Authentication (no bottom nav) ───────────────────
       GoRoute(
         path: '/welcome',
