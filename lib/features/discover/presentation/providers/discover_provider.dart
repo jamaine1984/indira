@@ -538,6 +538,18 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
     }
   }
 
+  /// Reset pagination and reload all users with fresh shuffle
+  /// Called when the user swipes through all cards
+  Future<void> resetAndReload() async {
+    state = state.copyWith(
+      potentialMatches: [],
+      lastDocument: null,
+      hasMoreUsers: true,
+      error: null,
+    );
+    await loadPotentialMatches();
+  }
+
   /// Apply new filters and reload users
   Future<void> applyFilters(Map<String, dynamic> filters) async {
     state = state.copyWith(

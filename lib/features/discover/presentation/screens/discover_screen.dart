@@ -275,11 +275,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen>
                                     ),
                                     onSwipe: _onSwipe,
                                     onEnd: () {
-                                      // Always reload — loops back to start with shuffled users
+                                      // Reset local state so a fresh CardSwiper is built when new profiles arrive
+                                      setState(() {
+                                        _profiles = [];
+                                        _profilesKey = null;
+                                      });
+                                      // Reload from scratch with shuffle
                                       ref
                                           .read(discoverProvider.notifier)
-                                          .loadPotentialMatches(
-                                              loadMore: true);
+                                          .resetAndReload();
                                     },
                                     cardBuilder: (context, index,
                                         horizontalOffsetPercentage,
