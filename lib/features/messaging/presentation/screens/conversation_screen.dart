@@ -913,7 +913,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final started = await _voiceService.startRecording();
     if (started && mounted) {
       setState(() => _isRecording = true);
-      AppSnackBar.info(context, 'Recording... Tap stop to send');
+      AppSnackBar.info(context, 'Recording... 15s max. Tap stop to send');
+      // Auto-stop after 15 seconds
+      Future.delayed(const Duration(seconds: 15), () {
+        if (mounted && _isRecording) {
+          _stopAndSendVoiceNote();
+        }
+      });
     } else if (mounted) {
       AppSnackBar.error(context, 'Failed to start recording. Please try again.');
     }

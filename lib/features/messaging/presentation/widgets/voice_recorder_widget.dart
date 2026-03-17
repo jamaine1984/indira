@@ -37,12 +37,13 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
   }
 
   Future<void> _startRecording() async {
-    final hasPermission = await _voiceService.hasPermission();
+    // Request permission (shows system dialog on Android 13+)
+    final hasPermission = await _voiceService.requestMicrophonePermission();
     if (!hasPermission) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Microphone permission required'),
+            content: Text('Microphone permission required. Please enable it in Settings.'),
             backgroundColor: Colors.red,
           ),
         );
@@ -65,8 +66,8 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
           });
         }
 
-        // Auto-stop at 60 seconds
-        if (_recordingSeconds >= 60) {
+        // Auto-stop at 15 seconds
+        if (_recordingSeconds >= 15) {
           _stopRecording();
         }
       });
@@ -157,10 +158,10 @@ class _VoiceRecorderWidgetState extends State<VoiceRecorderWidget>
           const SizedBox(height: 8),
 
           Text(
-            'Recording voice message...',
+            'Recording... ${15 - _recordingSeconds}s remaining',
             style: TextStyle(
               fontSize: 14,
-              color: Colors.grey[600],
+              color: _recordingSeconds >= 12 ? Colors.red : Colors.grey[600],
             ),
           ),
 
