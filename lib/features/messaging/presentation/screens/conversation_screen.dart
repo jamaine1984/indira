@@ -51,6 +51,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   bool _showGiftPicker = false;
   bool _isUploading = false;
   bool _isRecording = false;
+  DateTime? _recordingStartTime;
   final VoiceMessageService _voiceService = VoiceMessageService();
 
   @override
@@ -912,7 +913,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
     final started = await _voiceService.startRecording();
     if (started && mounted) {
-      setState(() => _isRecording = true);
+      setState(() {
+        _isRecording = true;
+        _recordingStartTime = DateTime.now();
+      });
       AppSnackBar.info(context, 'Recording... 15s max. Tap stop to send');
       // Auto-stop after 15 seconds
       Future.delayed(const Duration(seconds: 15), () {
@@ -929,44 +933,64 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
     final currentUser = AuthService().currentUser;
     if (currentUser == null) return;
 
-    setState(() => _isRecording = false);
+    // Calculate duration from elapsed time (more reliable than reading file)
+    final duration = _recordingStartTime != null
+        ? DateTime.now().difference(_recordingStartTime!).inSeconds.clamp(1, 15)
+        : 1;
+
+    setState(() {
+      _isRecording = false;
+      _recordingStartTime = null;
+    });
 
     final filePath = await _voiceService.stopRecording();
-    if (filePath == null) return;
+    if (filePath == null) {
+      logger.error('[VoiceNote] stopRecording returned null path');
+      if (mounted) AppSnackBar.error(context, 'Recording failed. Please try again.');
+      return;
+    }
 
+    logger.info('[VoiceNote] Recording stopped. Path: $filePath, Duration: ${duration}s');
     setState(() => _isUploading = true);
 
     try {
-      final duration = await _voiceService.getAudioDuration(filePath);
-      final result = await _voiceService.uploadVoiceMessage(filePath, duration);
+      final result = await _voiceService.uploadVoiceMessage(filePath, duration, matchId: widget.matchId);
 
-      if (result != null) {
-        await FirebaseFirestore.instance
-            .collection('matches')
-            .doc(widget.matchId)
-            .collection('messages')
-            .add({
-          'senderId': currentUser.uid,
-          'receiverId': widget.otherUserId,
-          'type': 'voice',
-          'voiceUrl': result['url'],
-          'duration': result['duration'],
-          'timestamp': FieldValue.serverTimestamp(),
-          'read': false,
-        });
-
-        await FirebaseFirestore.instance
-            .collection('matches')
-            .doc(widget.matchId)
-            .update({
-          'lastMessage': '\u{1F3A4} Voice message',
-          'lastMessageTime': FieldValue.serverTimestamp(),
-        });
-
-        // Increment voice note usage
-        await UsageService().incrementVoiceNoteCount(currentUser.uid);
+      if (result == null) {
+        logger.error('[VoiceNote] Upload returned null');
+        if (mounted) AppSnackBar.error(context, 'Failed to upload voice note. Please try again.');
+        return;
       }
+
+      logger.info('[VoiceNote] Upload successful. URL: ${result['url']}');
+
+      await FirebaseFirestore.instance
+          .collection('matches')
+          .doc(widget.matchId)
+          .collection('messages')
+          .add({
+        'senderId': currentUser.uid,
+        'receiverId': widget.otherUserId,
+        'type': 'voice',
+        'voiceUrl': result['url'],
+        'duration': result['duration'],
+        'timestamp': FieldValue.serverTimestamp(),
+        'read': false,
+      });
+
+      await FirebaseFirestore.instance
+          .collection('matches')
+          .doc(widget.matchId)
+          .update({
+        'lastMessage': '\u{1F3A4} Voice message',
+        'lastMessageTime': FieldValue.serverTimestamp(),
+      });
+
+      // Increment voice note usage
+      await UsageService().incrementVoiceNoteCount(currentUser.uid);
+      logger.info('[VoiceNote] Voice message sent successfully');
     } catch (e) {
+      logger.error('[VoiceNote] Error sending voice note: $e');
       if (mounted) {
         AppSnackBar.error(context, 'Failed to send voice note: $e');
       }

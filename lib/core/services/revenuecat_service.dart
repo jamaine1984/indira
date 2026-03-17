@@ -211,6 +211,13 @@ class RevenueCatService {
               ? customerInfo.entitlements.active[silverEntitlementId]
               : null;
 
+      // Get the user's current tier to detect upgrades/downgrades
+      final userDoc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      final previousTier = userDoc.data()?['subscriptionTier'] as String? ?? 'free';
+
       final Map<String, dynamic> updateData = {
         'subscriptionTier': tier,
         'subscriptionActive': isGold || isSilver,
@@ -224,6 +231,23 @@ class RevenueCatService {
           );
         }
         updateData['subscriptionProductId'] = activeEntitlement.productIdentifier;
+      }
+
+      // Grant subscription benefits when tier changes
+      if (tier != previousTier) {
+        final subscriptionTier = isGold
+            ? SubscriptionTier.gold
+            : isSilver
+                ? SubscriptionTier.silver
+                : SubscriptionTier.free;
+        final limits = SubscriptionLimits.fromTier(subscriptionTier);
+
+        // Set call minutes based on plan
+        updateData['subscriptionVideoMinutes'] = limits.callMinutesPerMonth > 0
+            ? limits.callMinutesPerMonth
+            : 0;
+
+        logger.info('Tier changed $previousTier -> $tier, granting ${limits.callMinutesPerMonth} call minutes');
       }
 
       await FirebaseFirestore.instance

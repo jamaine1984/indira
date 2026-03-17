@@ -78,11 +78,17 @@ class VoiceMessageService {
   // Stop recording and return file path
   Future<String?> stopRecording() async {
     try {
+      if (!_isRecording) {
+        logger.warning('[VoiceRecord] stopRecording called but not recording');
+        return null;
+      }
       final path = await _recorder.stop();
       _isRecording = false;
+      logger.info('[VoiceRecord] Recording stopped, path: $path');
       return path;
     } catch (e) {
-      logger.error('Error stopping recording: $e');
+      logger.error('[VoiceRecord] Error stopping recording: $e');
+      _isRecording = false;
       return null;
     }
   }
@@ -111,20 +117,40 @@ class VoiceMessageService {
   }
 
   // Upload voice message to Firebase Storage
+  // matchId is required to match storage rules: voice_messages/{matchId}/{fileName}
   Future<Map<String, dynamic>?> uploadVoiceMessage(
     String filePath,
-    int duration,
-  ) async {
+    int duration, {
+    String? matchId,
+  }) async {
     try {
       final user = _auth.currentUser;
-      if (user == null) return null;
+      if (user == null) {
+        logger.error('[VoiceUpload] No authenticated user');
+        return null;
+      }
 
       final file = File(filePath);
-      final fileName = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.m4a';
-      final ref = _storage.ref('voice_messages/$fileName');
+      if (!await file.exists()) {
+        logger.error('[VoiceUpload] File does not exist at path: $filePath');
+        return null;
+      }
 
-      await ref.putFile(file);
+      final fileSize = await file.length();
+      logger.info('[VoiceUpload] File exists, size: $fileSize bytes');
+
+      final fileName = '${user.uid}_${DateTime.now().millisecondsSinceEpoch}.m4a';
+      // Storage rules require: voice_messages/{matchId}/{fileName}
+      final storagePath = matchId != null
+          ? 'voice_messages/$matchId/$fileName'
+          : 'voice_messages/${user.uid}/$fileName';
+      final ref = _storage.ref(storagePath);
+
+      logger.info('[VoiceUpload] Uploading to $storagePath');
+      // Must set content type explicitly - putFile doesn't detect m4a as audio
+      await ref.putFile(file, SettableMetadata(contentType: 'audio/mp4'));
       final url = await ref.getDownloadURL();
+      logger.info('[VoiceUpload] Upload complete, URL obtained');
 
       return {
         'url': url,
@@ -132,7 +158,7 @@ class VoiceMessageService {
         'fileName': fileName,
       };
     } catch (e) {
-      logger.error('Error uploading voice message: $e');
+      logger.error('[VoiceUpload] Error uploading voice message: $e');
       return null;
     }
   }
