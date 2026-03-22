@@ -17,8 +17,10 @@ class ProfileCard extends StatelessWidget {
   final VoidCallback? onTap;
 
   int get _compatibilityPercent {
-    final score = user['compatibilityScore'] as double?;
-    if (score != null) return score.round();
+    final score = user['compatibilityScore'];
+    if (score is int) return score;
+    if (score is double) return score.round();
+    if (score is num) return score.toInt();
     final uid = user['uid'] as String? ?? '';
     return 60 + Random(uid.hashCode).nextInt(40);
   }

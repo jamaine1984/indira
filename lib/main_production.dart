@@ -19,6 +19,7 @@ import 'package:indira_love/core/services/encryption_service.dart';
 import 'package:indira_love/core/services/rate_limiter_service.dart';
 import 'package:indira_love/core/services/notification_service.dart';
 import 'package:indira_love/core/services/push_notification_service.dart';
+import 'package:indira_love/core/services/in_app_update_service.dart';
 
 // Global instances
 late LoggerService logger;
@@ -214,6 +215,13 @@ class _IndiraLoveAppState extends State<IndiraLoveApp> with WidgetsBindingObserv
     // Log app start
     analytics.logAppOpen();
     logger.info('App started');
+
+    // Check for Play Store update & review prompt after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final updateService = InAppUpdateService();
+      updateService.checkForUpdate();
+      updateService.requestReviewIfEligible();
+    });
   }
 
   @override
@@ -229,6 +237,7 @@ class _IndiraLoveAppState extends State<IndiraLoveApp> with WidgetsBindingObserv
       case AppLifecycleState.resumed:
         analytics.logEvent('app_resumed');
         logger.info('App resumed');
+        InAppUpdateService().checkForUpdate();
         break;
       case AppLifecycleState.paused:
         analytics.logEvent('app_paused');
@@ -241,7 +250,8 @@ class _IndiraLoveAppState extends State<IndiraLoveApp> with WidgetsBindingObserv
       case AppLifecycleState.inactive:
         analytics.logEvent('app_inactive');
         break;
-      default:
+      case AppLifecycleState.hidden:
+        logger.info('App hidden');
         break;
     }
   }
