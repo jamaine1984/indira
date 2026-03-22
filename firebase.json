@@ -19,11 +19,26 @@
     }
   ],
   "hosting": {
+    "site": "indira-love",
     "public": "public",
     "ignore": [
       "firebase.json",
       "**/.*",
       "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "/api/generateText",
+        "function": "generateText"
+      },
+      {
+        "source": "/api/generateImage",
+        "function": "generateImage"
+      },
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
     ]
   }
 }

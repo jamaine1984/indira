@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Content Studio - Indira & Night Shift Dating</title>
+    <link rel="icon" type="image/png" href="/images/icon_512.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* ---- THEME VARS ---- */
+        [data-theme="dark"] {
+            --bg: #0F0F14; --surface: #1A1A24; --surface2: #22222F; --border: #2D2D3D;
+            --text: #E8E8F0; --text-muted: #8888A0;
+        }
+        [data-theme="light"] {
+            --bg: #F5F5F8; --surface: #FFFFFF; --surface2: #EEEEF2; --border: #D4D4DC;
+            --text: #1A1A24; --text-muted: #6B6B80;
+        }
+        :root {
+            --indira-primary: #D4A847; --indira-secondary: #6B1D2A;
+            --nightshift-primary: #6C63FF; --nightshift-secondary: #1A1A3E;
+            --accent: var(--indira-primary); --success: #34D399; --error: #F87171; --purple: #8B5CF6;
+        }
+
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; transition: background 0.3s, color 0.3s; }
+        h1, h2, h3 { color: var(--text); }
+
+        /* ---- HEADER ---- */
+        header { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0.75rem 2rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 50; flex-wrap: wrap; gap: 0.75rem; }
+        .header-left { display: flex; align-items: center; gap: 1rem; }
+        .header-left h1 { font-size: 1.2rem; font-weight: 600; }
+        .header-left span { color: var(--text-muted); font-size: 0.8rem; }
+        .header-right { display: flex; align-items: center; gap: 0.75rem; }
+
+        /* ---- THEME TOGGLE ---- */
+        .theme-toggle { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem 0.7rem; cursor: pointer; font-size: 1rem; color: var(--text); transition: 0.2s; }
+        .theme-toggle:hover { border-color: var(--accent); }
+
+        /* ---- APP SWITCHER ---- */
+        .app-switcher { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; gap: 3px; }
+        .app-btn { padding: 0.5rem 1rem; border: none; border-radius: 8px; font-size: 0.85rem; font-weight: 500; cursor: pointer; transition: 0.2s; background: transparent; color: var(--text-muted); }
+        .app-btn.active { color: #fff; font-weight: 600; }
+        .app-btn[data-app="indira"].active { background: linear-gradient(135deg, var(--indira-secondary), #8B2035); }
+        .app-btn[data-app="nightshift"].active { background: linear-gradient(135deg, var(--nightshift-secondary), #2D2D6E); }
+
+        /* ---- LAYOUT ---- */
+        .main { max-width: 1400px; margin: 0 auto; padding: 1.5rem 2rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; }
+        .full-width { max-width: 1400px; margin: 0 auto; padding: 0 2rem 1.5rem; }
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
+        .panel-header { padding: 1rem 1.25rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+        .panel-header h2 { font-size: 1rem; font-weight: 600; }
+        .panel-body { padding: 1.25rem; }
+
+        /* ---- FORMS ---- */
+        label { display: block; font-size: 0.8rem; font-weight: 500; color: var(--text-muted); margin-bottom: 0.4rem; }
+        select, textarea, input[type="text"], input[type="date"] { width: 100%; background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; color: var(--text); padding: 0.6rem 0.85rem; font-family: inherit; font-size: 0.9rem; resize: vertical; transition: border-color 0.2s; }
+        select:focus, textarea:focus, input:focus { outline: none; border-color: var(--accent); }
+        textarea { min-height: 80px; }
+        .form-group { margin-bottom: 1rem; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+        .form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
+
+        /* ---- CHAR COUNTER ---- */
+        .char-counter { text-align: right; font-size: 0.75rem; margin-top: 0.25rem; color: var(--text-muted); }
+        .char-counter.over { color: var(--error); font-weight: 600; }
+
+        /* ---- BUTTONS ---- */
+        .btn { display: inline-flex; align-items: center; justify-content: center; gap: 0.4rem; padding: 0.6rem 1.2rem; border: none; border-radius: 8px; font-family: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: 0.2s; width: 100%; }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        .btn-generate { background: linear-gradient(135deg, var(--accent), color-mix(in srgb, var(--accent) 80%, white)); color: #000; }
+        .btn-generate:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(212,168,71,0.3); }
+        .btn-sm { width: auto; padding: 0.4rem 0.85rem; font-size: 0.8rem; }
+        .btn-copy { background: var(--surface2); color: var(--text); border: 1px solid var(--border); width: auto; }
+        .btn-copy:hover { background: var(--border); }
+        .btn-copy.copied { background: var(--success); color: #000; border-color: var(--success); }
+        .btn-download { background: var(--success); color: #000; width: auto; }
+        .btn-download:hover { opacity: 0.9; }
+        .btn-purple { background: linear-gradient(135deg, #8B5CF6, #A78BFA); color: #fff; }
+        .btn-fav { background: none; border: 1px solid var(--border); color: var(--text-muted); width: auto; padding: 0.4rem 0.6rem; font-size: 0.9rem; }
+        .btn-fav.active { color: #FFD700; border-color: #FFD700; }
+
+        /* ---- PRESETS ---- */
+        .presets { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 1rem; }
+        .preset { padding: 0.35rem 0.75rem; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; color: var(--text-muted); font-size: 0.75rem; cursor: pointer; transition: 0.2s; }
+        .preset:hover { border-color: var(--accent); color: var(--text); }
+
+        /* ---- OUTPUT ---- */
+        .output-area { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; min-height: 120px; white-space: pre-wrap; line-height: 1.6; font-size: 0.9rem; position: relative; }
+        .output-area.empty { display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-style: italic; }
+        .output-actions { display: flex; gap: 0.4rem; margin-top: 0.75rem; justify-content: flex-end; flex-wrap: wrap; }
+        .image-output { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; min-height: 250px; display: flex; align-items: center; justify-content: center; overflow: hidden; }
+        .image-output.empty { color: var(--text-muted); font-style: italic; }
+        .image-output img { max-width: 100%; max-height: 450px; border-radius: 6px; }
+
+        /* ---- SPINNER ---- */
+        .spinner { display: none; width: 20px; height: 20px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+        .loading .spinner { display: inline-block; }
+        .loading .btn-text { display: none; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* ---- ETA ---- */
+        .eta { font-size: 0.75rem; color: var(--text-muted); text-align: center; margin-top: 0.5rem; display: none; }
+        .loading ~ .eta { display: block; }
+
+        /* ---- STATUS ---- */
+        .status-bar { padding: 0.6rem 1.25rem; border-top: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--text-muted); }
+        .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--success); display: inline-block; margin-right: 0.4rem; }
+        .model-badge { background: var(--surface2); padding: 0.2rem 0.5rem; border-radius: 5px; font-size: 0.7rem; }
+
+        /* ---- TEMPLATES ---- */
+        .templates-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 1rem; }
+        .template-card { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem; cursor: pointer; transition: 0.2s; }
+        .template-card:hover { border-color: var(--accent); transform: translateY(-1px); }
+        .template-card h4 { font-size: 0.8rem; margin-bottom: 0.15rem; }
+        .template-card p { font-size: 0.7rem; color: var(--text-muted); }
+
+        /* ---- HISTORY / FAVORITES ---- */
+        .tab-bar { display: flex; gap: 0; border-bottom: 1px solid var(--border); }
+        .tab-btn { padding: 0.6rem 1.25rem; background: none; border: none; border-bottom: 2px solid transparent; color: var(--text-muted); font-size: 0.85rem; font-weight: 500; cursor: pointer; font-family: inherit; }
+        .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .history-list, .favorites-list { max-height: 300px; overflow-y: auto; display: flex; flex-direction: column; gap: 0.4rem; }
+        .history-item, .fav-item { background: var(--surface2); border-radius: 6px; padding: 0.6rem; cursor: pointer; transition: 0.2s; position: relative; }
+        .history-item:hover, .fav-item:hover { background: var(--border); }
+        .history-item .type, .fav-item .type { font-size: 0.65rem; color: var(--accent); text-transform: uppercase; font-weight: 600; }
+        .history-item .preview, .fav-item .preview { font-size: 0.75rem; color: var(--text-muted); margin-top: 0.15rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .fav-item .remove-fav { position: absolute; top: 0.4rem; right: 0.5rem; background: none; border: none; color: var(--error); cursor: pointer; font-size: 0.8rem; }
+
+        /* ---- CALENDAR ---- */
+        .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 0.4rem; }
+        .cal-header { font-size: 0.7rem; font-weight: 600; text-align: center; color: var(--text-muted); padding: 0.3rem; }
+        .cal-day { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; padding: 0.4rem; min-height: 60px; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+        .cal-day:hover { border-color: var(--accent); }
+        .cal-day .day-num { font-weight: 600; margin-bottom: 0.2rem; }
+        .cal-day .day-content { font-size: 0.6rem; color: var(--accent); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .cal-day.has-content { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, var(--surface2)); }
+        .cal-day.today { border-color: var(--success); }
+        .cal-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+        .cal-nav button { background: var(--surface2); border: 1px solid var(--border); color: var(--text); padding: 0.3rem 0.6rem; border-radius: 6px; cursor: pointer; }
+        .cal-nav span { font-weight: 600; font-size: 0.9rem; }
+
+        /* ---- TRENDING SOUNDS ---- */
+        .sound-list { display: flex; flex-direction: column; gap: 0.4rem; }
+        .sound-item { background: var(--surface2); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 0.85rem; display: flex; justify-content: space-between; align-items: center; }
+        .sound-item .sound-name { font-size: 0.85rem; font-weight: 500; }
+        .sound-item .sound-meta { font-size: 0.7rem; color: var(--text-muted); }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 900px) {
+            .main { grid-template-columns: 1fr; }
+            header { padding: 0.75rem 1rem; }
+            .form-row, .form-row-3 { grid-template-columns: 1fr; }
+            .calendar-grid { grid-template-columns: repeat(7, 1fr); }
+            .cal-day { min-height: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <div class="header-left">
+        <h1>Content Studio</h1>
+        <span>Generate marketing content</span>
+    </div>
+    <div class="header-right">
+        <div class="app-switcher">
+            <button class="app-btn active" data-app="indira" onclick="switchApp('indira')">Indira</button>
+            <button class="app-btn" data-app="nightshift" onclick="switchApp('nightshift')">Night Shift</button>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" title="Toggle light/dark mode" id="themeBtn">&#9790;</button>
+        <button class="btn btn-sm btn-copy" onclick="exportAll()" title="Export all generated content">Export .txt</button>
+    </div>
+</header>
+
+<!-- ===== TEXT + IMAGE ROW ===== -->
+<div class="main">
+    <!-- TEXT GENERATION -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Description Generator</h2>
+            <span class="model-badge" id="textModelBadge">Ready</span>
+        </div>
+        <div class="panel-body">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="platform" onchange="updateCharLimit()">
+                        <option value="tiktok">TikTok</option>
+                        <option value="instagram">Instagram</option>
+                        <option value="youtube">YouTube</option>
+                        <option value="twitter">Twitter / X</option>
+                        <option value="playstore">Play Store</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Content Type</label>
+                    <select id="contentType">
+                        <option value="caption">Post Caption</option>
+                        <option value="hashtags">Hashtags Only</option>
+                        <option value="hook">Hook / Opening Line</option>
+                        <option value="story">Story Script</option>
+                        <option value="ad">Ad Copy</option>
+                        <option value="bio">Profile Bio</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Tone</label>
+                    <select id="tone">
+                        <option value="">Auto</option>
+                        <option value="funny and humorous">Funny</option>
+                        <option value="professional and polished">Professional</option>
+                        <option value="emotional and heartfelt">Emotional</option>
+                        <option value="edgy and bold">Edgy</option>
+                        <option value="gen-z slang, casual, relatable">Gen-Z</option>
+                        <option value="inspirational and uplifting">Inspirational</option>
+                        <option value="sarcastic and witty">Sarcastic</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Language</label>
+                    <select id="language">
+                        <option value="English">English</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Spanish">Spanish</option>
+                        <option value="Portuguese">Portuguese</option>
+                        <option value="French">French</option>
+                        <option value="Arabic">Arabic</option>
+                        <option value="Japanese">Japanese</option>
+                        <option value="Korean">Korean</option>
+                        <option value="German">German</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Telugu">Telugu</option>
+                        <option value="Urdu">Urdu</option>
+                    </select>
+                </div>
+            </div>
+
+            <label>Quick Templates</label>
+            <div class="templates-grid" id="templates"></div>
+
+            <div class="form-group">
+                <label>Custom Prompt (optional)</label>
+                <textarea id="textPrompt" placeholder="e.g., Write a fun TikTok caption about finding love through astrology..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>CTA (auto-appended)</label>
+                <select id="cta">
+                    <option value="">None</option>
+                    <option value="Link in bio!">Link in bio!</option>
+                    <option value="Download now - link in bio!">Download now - link in bio!</option>
+                    <option value="Follow for more!">Follow for more!</option>
+                    <option value="Save this for later!">Save this for later!</option>
+                    <option value="Share with someone who needs this!">Share with someone who needs this!</option>
+                    <option value="Comment your zodiac sign!">Comment your zodiac sign!</option>
+                    <option value="Tag someone who works nights!">Tag someone who works nights!</option>
+                </select>
+            </div>
+
+            <div class="form-row">
+                <button class="btn btn-generate" id="textBtn" onclick="generateText()">
+                    <span class="btn-text">Generate</span><div class="spinner"></div>
+                </button>
+                <button class="btn btn-purple" id="abBtn" onclick="generateAB()">
+                    <span class="btn-text">A/B Test (x2)</span><div class="spinner"></div>
+                </button>
+            </div>
+            <div class="eta" id="textEta">~8-12 seconds</div>
+        </div>
+
+        <div class="panel-body" style="border-top:1px solid var(--border);">
+            <label>Output <span class="char-counter" id="charCounter"></span></label>
+            <div class="output-area empty" id="textOutput">Your generated text will appear here</div>
+            <div class="output-actions" id="textActions" style="display:none;">
+                <button class="btn btn-sm btn-copy" onclick="copyText()">Copy</button>
+                <button class="btn btn-sm btn-fav" onclick="favText()" id="favTextBtn" title="Save to favorites">&#9734;</button>
+                <button class="btn btn-sm btn-copy" onclick="regenerateText()" id="regenBtn">Regenerate</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div><span class="status-dot"></span>Free models</div>
+            <span id="textStatus"></span>
+        </div>
+    </div>
+
+    <!-- IMAGE GENERATION -->
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Image Generator</h2>
+            <span class="model-badge">Gemini 3.1 Flash</span>
+        </div>
+        <div class="panel-body">
+            <label>Quick Prompts</label>
+            <div class="presets" id="imagePresets"></div>
+
+            <div class="form-group">
+                <label>Image Prompt</label>
+                <textarea id="imagePrompt" placeholder="e.g., A beautiful Indian couple looking at the stars together..."></textarea>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Style</label>
+                    <select id="imageStyle">
+                        <option value="">Auto</option>
+                        <option value="photorealistic">Photorealistic</option>
+                        <option value="illustrated">Illustrated</option>
+                        <option value="3d render">3D Render</option>
+                        <option value="watercolor">Watercolor</option>
+                        <option value="neon, vibrant colors">Neon / Vibrant</option>
+                        <option value="minimalist, clean">Minimalist</option>
+                        <option value="anime style">Anime</option>
+                        <option value="oil painting">Oil Painting</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Aspect Ratio</label>
+                    <select id="imageRatio">
+                        <option value="">Default</option>
+                        <option value="square 1:1 aspect ratio, 1080x1080">Square (Instagram)</option>
+                        <option value="vertical 9:16 aspect ratio, 1080x1920">9:16 (TikTok/Reels)</option>
+                        <option value="horizontal 16:9 aspect ratio, 1920x1080">16:9 (YouTube)</option>
+                        <option value="vertical 4:5 aspect ratio, 1080x1350">4:5 (Instagram Feed)</option>
+                    </select>
+                </div>
+            </div>
+
+            <button class="btn btn-generate" id="imageBtn" onclick="generateImage()">
+                <span class="btn-text">Generate Image</span><div class="spinner"></div>
+            </button>
+            <div class="eta" id="imageEta">~10-20 seconds</div>
+        </div>
+
+        <div class="panel-body" style="border-top:1px solid var(--border);">
+            <label>Output</label>
+            <div class="image-output empty" id="imageOutput">Your generated image will appear here</div>
+            <div class="output-actions" id="imageActions" style="display:none;">
+                <button class="btn btn-sm btn-download" onclick="downloadImage()">Download</button>
+                <button class="btn btn-sm btn-fav" onclick="favImage()" id="favImgBtn" title="Save to favorites">&#9734;</button>
+            </div>
+        </div>
+
+        <div class="status-bar">
+            <div><span class="status-dot"></span>~$0.004/image</div>
+            <span id="imageStatus"></span>
+        </div>
+    </div>
+</div>
+
+<!-- ===== HASHTAG + CTA + SOUNDS ROW ===== -->
+<div class="full-width">
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.5rem;">
+        <!-- HASHTAG GENERATOR -->
+        <div class="panel">
+            <div class="panel-header"><h2>Hashtag Generator</h2></div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label>Niche / Topic</label>
+                    <input type="text" id="hashtagTopic" placeholder="e.g., dating app, astrology, night shift life">
+                </div>
+                <button class="btn btn-generate btn-sm" onclick="generateHashtags()" id="hashBtn" style="width:100%;">
+                    <span class="btn-text">Generate 30 Hashtags</span><div class="spinner"></div>
+                </button>
+                <div class="eta">~5 seconds</div>
+                <div class="output-area empty" id="hashOutput" style="margin-top:0.75rem;min-height:80px;font-size:0.8rem;">Enter a topic above</div>
+                <div class="output-actions" id="hashActions" style="display:none;">
+                    <button class="btn btn-sm btn-copy" onclick="copyEl('hashOutput')">Copy All</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA GENERATOR -->
+        <div class="panel">
+            <div class="panel-header"><h2>CTA Generator</h2></div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label>Goal</label>
+                    <select id="ctaGoal">
+                        <option value="app download">App Download</option>
+                        <option value="follow">Follow / Subscribe</option>
+                        <option value="engagement">Engagement (like/comment/share)</option>
+                        <option value="website visit">Website Visit</option>
+                        <option value="sign up">Sign Up</option>
+                    </select>
+                </div>
+                <button class="btn btn-generate btn-sm" onclick="generateCTAs()" id="ctaBtn" style="width:100%;">
+                    <span class="btn-text">Generate 10 CTAs</span><div class="spinner"></div>
+                </button>
+                <div class="eta">~5 seconds</div>
+                <div class="output-area empty" id="ctaOutput" style="margin-top:0.75rem;min-height:80px;font-size:0.8rem;">Pick a goal above</div>
+                <div class="output-actions" id="ctaActions" style="display:none;">
+                    <button class="btn btn-sm btn-copy" onclick="copyEl('ctaOutput')">Copy All</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- TRENDING SOUNDS -->
+        <div class="panel">
+            <div class="panel-header"><h2>Trending Sounds</h2></div>
+            <div class="panel-body">
+                <div class="form-group">
+                    <label>Platform</label>
+                    <select id="soundPlatform">
+                        <option value="tiktok">TikTok</option>
+                        <option value="instagram reels">Instagram Reels</option>
+                        <option value="youtube shorts">YouTube Shorts</option>
+                    </select>
+                </div>
+                <button class="btn btn-generate btn-sm" onclick="generateSounds()" id="soundBtn" style="width:100%;">
+                    <span class="btn-text">Suggest Trending Sounds</span><div class="spinner"></div>
+                </button>
+                <div class="eta">~8 seconds</div>
+                <div class="output-area empty" id="soundOutput" style="margin-top:0.75rem;min-height:80px;font-size:0.8rem;">Pick a platform above</div>
+                <div class="output-actions" id="soundActions" style="display:none;">
+                    <button class="btn btn-sm btn-copy" onclick="copyEl('soundOutput')">Copy All</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== SORA 2 APP PROMPTS ===== -->
+<div class="full-width">
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Sora 2 — App Promo Videos (15s)</h2>
+            <span class="model-badge" id="soraModelBadge">Free Models</span>
+        </div>
+        <div class="panel-body">
+            <div style="display:flex;gap:0.4rem;flex-wrap:wrap;margin-bottom:1rem;">
+                <label style="width:100%;margin-bottom:0;">One-Click Styles</label>
+                <button class="preset" onclick="autoSoraPrompt('trending')">Trending</button>
+                <button class="preset" onclick="autoSoraPrompt('cinematic')">Cinematic</button>
+                <button class="preset" onclick="autoSoraPrompt('testimonial')">Testimonial</button>
+                <button class="preset" onclick="autoSoraPrompt('storytime')">Story Time</button>
+                <button class="preset" onclick="autoSoraPrompt('aesthetic')">Aesthetic</button>
+                <button class="preset" onclick="autoSoraPrompt('comedy')">Comedy</button>
+                <button class="preset" onclick="autoSoraPrompt('transformation')">Transformation</button>
+                <button class="preset" onclick="autoSoraPrompt('pov')">POV</button>
+                <button class="preset" onclick="autoSoraPrompt('asmr')">ASMR</button>
+                <button class="preset" onclick="autoSoraPrompt('drone')">Drone</button>
+                <button class="preset" onclick="autoSoraPrompt('slowmo')">Slow-Mo</button>
+                <button class="preset" onclick="autoSoraPrompt('timelapse')">Timelapse</button>
+                <button class="preset" onclick="autoSoraPrompt('splitscreen')">Split Screen</button>
+                <button class="preset" onclick="autoSoraPrompt('textoverlay')">Text Overlay</button>
+                <button class="preset" onclick="autoSoraPrompt('nightvibe')">Night Vibe</button>
+                <button class="preset" onclick="autoSoraPrompt('goldenhour')">Golden Hour</button>
+                <button class="preset" onclick="autoSoraPrompt('phonemockup')">Phone Mockup</button>
+                <button class="preset" onclick="autoSoraPrompt('duet')">Duet</button>
+                <button class="preset" onclick="autoSoraPrompt('motivational')">Motivational</button>
+                <button class="preset" onclick="autoSoraPrompt('unboxing')">Reveal</button>
+                <button class="preset" onclick="autoSoraPrompt('walkandtalk')">Walk & Talk</button>
+                <button class="preset" onclick="autoSoraPrompt('zoomout')">Zoom Out</button>
+                <button class="preset" onclick="autoSoraPrompt('dayinlife')">Day in Life</button>
+                <button class="preset" onclick="autoSoraPrompt('lofi')">Lo-Fi</button>
+                <button class="preset" onclick="autoSoraPrompt('closeup')">Close-Up</button>
+                <button class="preset" onclick="autoSoraPrompt('parallax')">Parallax</button>
+                <button class="preset" onclick="autoSoraPrompt('retro')">Retro</button>
+                <button class="preset" onclick="autoSoraPrompt('underwater')">Fantasy</button>
+            </div>
+            <div class="form-group">
+                <label>Custom topic</label>
+                <textarea id="soraCustomTopic" rows="2" placeholder="e.g., couple finding each other through astrology..."></textarea>
+            </div>
+            <div class="form-row">
+                <button class="btn btn-generate" id="soraBtn" onclick="generateSoraPrompt()"><span class="btn-text">1 Prompt</span><div class="spinner"></div></button>
+                <button class="btn btn-purple" id="soraBatchBtn" onclick="generateSoraBatch()"><span class="btn-text">5 Prompts</span><div class="spinner"></div></button>
+            </div>
+            <div class="eta">~10 seconds</div>
+        </div>
+        <div class="panel-body" style="border-top:1px solid var(--border);">
+            <label>Output — copy and paste into Sora</label>
+            <div id="soraOutputList"><div class="output-area empty">Click a style above</div></div>
+        </div>
+        <div class="status-bar"><div><span class="status-dot"></span>App promo prompts</div><span id="soraStatus"></span></div>
+    </div>
+</div>
+
+<!-- ===== SORA 2 VIRAL (ANY NICHE) ===== -->
+<div class="full-width">
+    <div class="panel" style="border:1px solid var(--purple);">
+        <div class="panel-header" style="background:linear-gradient(135deg,#1a1a3e,#2d1a4e);">
+            <h2 style="color:#fff;">Sora 2 — Viral Videos (Any Niche)</h2>
+            <span class="model-badge" id="viralModelBadge" style="background:var(--purple);color:#fff;">Free Models</span>
+        </div>
+        <div class="panel-body">
+            <div class="form-group">
+                <label>Category</label>
+                <select id="viralCategory" onchange="renderViralPresets()">
+                    <option value="satisfying">Satisfying</option><option value="nature">Nature</option><option value="food">Food</option>
+                    <option value="scifi">Sci-Fi</option><option value="horror">Horror</option><option value="fantasy">Fantasy</option>
+                    <option value="fashion">Fashion</option><option value="travel">Travel</option><option value="sports">Sports</option>
+                    <option value="motivational">Motivational</option><option value="comedy">Comedy</option><option value="art">Art</option>
+                    <option value="music">Music</option><option value="mystery">Mystery</option><option value="cute">Cute</option>
+                    <option value="luxury">Luxury</option><option value="space">Space</option><option value="underwater">Underwater</option>
+                    <option value="miniature">Miniature</option><option value="abstract">Abstract</option>
+                </select>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+                <label style="width:100%;margin-bottom:0;">Category Presets</label>
+                <div id="viralPresets"></div>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:0.4rem;margin-bottom:1rem;">
+                <label style="width:100%;margin-bottom:0;">Camera Techniques</label>
+                <button class="preset" onclick="viralAutoPrompt('cineloop')">Cine-Loop</button>
+                <button class="preset" onclick="viralAutoPrompt('hyperzoom')">Hyper Zoom</button>
+                <button class="preset" onclick="viralAutoPrompt('impossiblecam')">Impossible Cam</button>
+                <button class="preset" onclick="viralAutoPrompt('oneshot')">One Shot</button>
+                <button class="preset" onclick="viralAutoPrompt('reversereveal')">Reverse Reveal</button>
+                <button class="preset" onclick="viralAutoPrompt('matchcut')">Match Cut</button>
+                <button class="preset" onclick="viralAutoPrompt('freezetime')">Freeze Time</button>
+                <button class="preset" onclick="viralAutoPrompt('infinitezoom')">Infinite Zoom</button>
+                <button class="preset" onclick="viralAutoPrompt('dollyzoom')">Dolly Zoom</button>
+                <button class="preset" onclick="viralAutoPrompt('firstperson')">First Person</button>
+                <button class="preset" onclick="viralAutoPrompt('tinyvworld')">Tiny World</button>
+                <button class="preset" onclick="viralAutoPrompt('glitchart')">Glitch Art</button>
+                <button class="preset" onclick="viralAutoPrompt('splitreality')">Split Reality</button>
+                <button class="preset" onclick="viralAutoPrompt('seamlessloop')">Seamless Loop</button>
+                <button class="preset" onclick="viralAutoPrompt('dramaticlighting')">Dramatic Light</button>
+            </div>
+            <div class="form-group">
+                <label>Custom topic</label>
+                <textarea id="viralCustomTopic" rows="2" placeholder="e.g., cat knocking things off a table in slow motion..."></textarea>
+            </div>
+            <div class="form-row-3">
+                <button class="btn btn-purple" id="viralBtn1" onclick="generateViralPrompt(1)"><span class="btn-text">1 Prompt</span><div class="spinner"></div></button>
+                <button class="btn btn-purple" id="viralBtn5" onclick="generateViralPrompt(5)"><span class="btn-text">5 Prompts</span><div class="spinner"></div></button>
+                <button class="btn btn-purple" id="viralBtn10" onclick="generateViralPrompt(10)"><span class="btn-text">10 Prompts</span><div class="spinner"></div></button>
+            </div>
+            <div class="eta">~10-30 seconds</div>
+        </div>
+        <div class="panel-body" style="border-top:1px solid var(--border);">
+            <label>Output — copy and paste into Sora</label>
+            <div id="viralOutputList"><div class="output-area empty">Pick a category and style above</div></div>
+        </div>
+        <div class="status-bar"><div><span class="status-dot" style="background:var(--purple);"></span>Any niche viral videos</div><span id="viralStatus"></span></div>
+    </div>
+</div>
+
+<!-- ===== CONTENT CALENDAR ===== -->
+<div class="full-width">
+    <div class="panel">
+        <div class="panel-header">
+            <h2>Content Calendar</h2>
+            <button class="btn btn-sm btn-copy" onclick="exportCalendar()">Export Calendar</button>
+        </div>
+        <div class="panel-body">
+            <div class="cal-nav">
+                <button onclick="calNav(-1)">&larr;</button>
+                <span id="calTitle"></span>
+                <button onclick="calNav(1)">&rarr;</button>
+            </div>
+            <div class="calendar-grid" id="calGrid"></div>
+        </div>
+    </div>
+</div>
+
+<!-- ===== HISTORY + FAVORITES ===== -->
+<div class="full-width" style="padding-bottom:2rem;">
+    <div class="panel">
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('history',this)">History</button>
+            <button class="tab-btn" onclick="switchTab('favorites',this)">Favorites</button>
+        </div>
+        <div class="tab-content active" id="tab-history">
+            <div class="panel-body" style="display:flex;justify-content:space-between;align-items:center;">
+                <label style="margin:0;">Recent Generations</label>
+                <button class="btn btn-sm btn-copy" onclick="clearHistory()">Clear</button>
+            </div>
+            <div class="panel-body" style="padding-top:0;">
+                <div class="history-list" id="historyList">
+                    <div style="color:var(--text-muted);text-align:center;padding:1rem;font-style:italic;">No generations yet</div>
+                </div>
+            </div>
+        </div>
+        <div class="tab-content" id="tab-favorites">
+            <div class="panel-body" style="display:flex;justify-content:space-between;align-items:center;">
+                <label style="margin:0;">Saved Favorites</label>
+                <button class="btn btn-sm btn-copy" onclick="clearFavorites()">Clear All</button>
+            </div>
+            <div class="panel-body" style="padding-top:0;">
+                <div class="favorites-list" id="favList">
+                    <div style="color:var(--text-muted);text-align:center;padding:1rem;font-style:italic;">No favorites saved yet</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// =============== STATE ===============
+let currentApp = 'indira';
+let generatedImageData = null;
+let lastTextPrompt = '';
+let history = JSON.parse(localStorage.getItem('studio_history') || '[]');
+let favorites = JSON.parse(localStorage.getItem('studio_favorites') || '[]');
+let calendar = JSON.parse(localStorage.getItem('studio_calendar') || '{}');
+let calMonth = new Date().getMonth();
+let calYear = new Date().getFullYear();
+
+const CHAR_LIMITS = { tiktok: 2200, instagram: 2200, youtube: 5000, twitter: 280, playstore: 4000 };
+
+// =============== TEMPLATES ===============
+const TEMPLATES = {
+    indira: [
+        { title: 'Kundli Match Post', prompt: 'Write a captivating {platform} {type} about how Vedic Kundli matching helps find your perfect soulmate.' },
+        { title: 'Feature Highlight', prompt: 'Write a {platform} {type} highlighting Indira dating app features: video chat, Kundli matching, astrology compatibility.' },
+        { title: 'Success Story', prompt: 'Write a {platform} {type} telling a fictional success story of a couple who found each other through Indira.' },
+        { title: 'Zodiac Love Tip', prompt: 'Write a {platform} {type} with a fun love tip based on zodiac signs, promoting Indira dating app.' },
+    ],
+    nightshift: [
+        { title: 'Night Owl Love', prompt: 'Write a {platform} {type} about finding love when you work the night shift. Relatable, funny.' },
+        { title: 'Feature Highlight', prompt: 'Write a {platform} {type} highlighting Night Shift Dating features: schedule matching, late-night video calls.' },
+        { title: 'Shift Worker Relatable', prompt: 'Write a relatable {platform} {type} about dating struggles of nurses, security guards, bartenders.' },
+        { title: '3AM Date', prompt: 'Write a fun {platform} {type} about 3AM dates and how Night Shift Dating makes it possible.' },
+    ],
+};
+const IMAGE_PRESETS = {
+    indira: ['Indian couple under starry sky with zodiac','Vedic astrology chart glowing golden','Couple with henna designs, temple backdrop','Phone showing dating app with Kundli score','Indian wedding aesthetic modern dating'],
+    nightshift: ['Couple sharing coffee under city lights 3AM','Nurse and firefighter moonlit rooftop date','Two people texting beautiful night skyline','Cozy late night diner neon signs','Couple watching sunrise after night shift'],
+};
+
+// =============== SORA STYLES ===============
+const SORA_Q = 'CRITICAL: Anatomically correct humans, exactly 5 fingers per hand, no extra limbs, no distortion, no morphing faces, no artifacts. Stable camera, smooth motion, photorealistic. Clean professional output.';
+const SORA_STYLES = {
+    trending:'Viral trending style. Fast cuts, text overlays, hook in first 2 seconds.',cinematic:'Cinematic. Slow motion, dramatic lighting, shallow depth of field, film grain.',testimonial:'Testimonial. Person talking to camera, warm lighting, blurred background.',storytime:'Story arc. Beginning, middle, satisfying ending.',aesthetic:'Aesthetic mood. Soft transitions, dreamy, pastel or warm tones.',comedy:'Comedy skit. Funny situation, exaggerated reaction, punchline.',transformation:'Before/after transformation. Dramatic reveal, smooth transition.',pov:'POV first-person. Viewer IS the character.',asmr:'ASMR satisfying. Extreme close-ups, gentle movements, calming.',drone:'Drone shot. Sweeping aerial reveal, smooth continuous movement.',slowmo:'Slow motion 120fps. Hair flowing, expressions changing, dramatic.',timelapse:'Timelapse. Day to night, clouds moving, hours compressed.',splitscreen:'Split screen. Two people in different locations, synchronized.',textoverlay:'Text overlay ad. Bold animated text, punchy phrases, CTA at end.',nightvibe:'Night city. Neon, wet streets, bokeh, atmospheric fog.',goldenhour:'Golden hour. Sunset, lens flares, silhouettes, warm amber.',phonemockup:'Phone mockup. Hands holding phone, swiping, match notification.',duet:'Duet reaction. Two perspectives side by side.',motivational:'Motivational. Lonely to finding love, uplifting progression.',unboxing:'Reveal. Building anticipation, slow reveal.',walkandtalk:'Walk and talk. Person walking, camera tracking, authentic.',zoomout:'Zoom out reveal. Close-up detail pulling back to full scene.',dayinlife:'Day in life. Quick montage, daily moments, app highlight.',lofi:'Lo-fi chill. Rain on window, cozy lighting, peaceful.',closeup:'Extreme close-up. Macro eyes, smile, phone tap.',parallax:'Parallax 3D. Layers moving different speeds, depth.',retro:'Retro vintage. VHS, 90s color, film scratches.',underwater:'Fantasy ethereal. Dreamy floating, magical lighting.',
+};
+
+// =============== VIRAL CATEGORIES ===============
+const VIRAL_Q = 'CRITICAL: Anatomically correct humans, exactly 5 fingers, no extra limbs, no distortion, no morphing, no artifacts. Stable camera, smooth motion, photorealistic. No text/watermarks.';
+const VIRAL_CATS = {
+    satisfying:{desc:'oddly satisfying, ASMR, visually pleasing',p:['Slime Mixing','Soap Cutting','Cake Decorating','Sand Kinetic','Glass Blowing','Domino Chain','Pressure Washing','Paint Pouring']},
+    nature:{desc:'stunning nature, wildlife, landscapes',p:['Golden Eagle Dive','Bioluminescent Beach','Lightning Storm','Cherry Blossom Wind','Aurora Borealis','Wolf Pack','Waterfall Reveal','Butterfly Migration']},
+    food:{desc:'food porn, cooking, recipe reveals',p:['Cheese Pull','Chocolate Lava Cake','Sushi Making','Street Food Wok','Ice Cream Roll','Steak Sear','Pasta Making','Fruit Slicing']},
+    scifi:{desc:'sci-fi, cyberpunk, futuristic',p:['Cyberpunk City','Robot Awakening','Space Station','Neon Tokyo 2099','AI Consciousness','Warp Speed','Hologram Mall','Mech Suit Up']},
+    horror:{desc:'creepy, unsettling, horror',p:['Abandoned Hospital','Mirror Reflection Wrong','Shadow Figure','Doll Turns Head','Fog Forest','Elevator Opens','Empty Playground','TV Static Face']},
+    fantasy:{desc:'magical, mythical, enchanted',p:['Dragon Flight','Wizard Spell','Enchanted Forest','Floating Islands','Phoenix Rising','Crystal Cave','Fairy Ring','Sword in Stone']},
+    fashion:{desc:'high fashion, outfit reveals, runway',p:['Outfit Transition','Slow-Mo Runway','Street Style','Fabric Close-Up','Mirror GRWM','Jewelry Sparkle','Shoe Collection','Hair Transformation']},
+    travel:{desc:'breathtaking destinations, wanderlust',p:['Santorini Sunrise','Tokyo Night Walk','Northern Lights Cabin','Maldives Overwater','NYC Timelapse','Safari Sunset','Venice Canal','Machu Picchu Fog']},
+    sports:{desc:'extreme sports, athletic feats',p:['Skateboard Trick','Surfing Barrel','Basketball Dunk','Parkour Rooftop','Boxing Slow-Mo','Snowboard Jump','Soccer Goal','Rock Climbing']},
+    motivational:{desc:'hustle, grindset, success',p:['5AM Routine','Empty Gym','Suit Up Montage','Rags to Riches','Focus Mode','Rejection to Success','Silent Walk','Cold Plunge']},
+    comedy:{desc:'funny, meme-worthy, absurd',p:['Cat Dramatic Zoom','Office Chaos','Expectation vs Reality','NPC Behavior','Wrong Answer Only','Glitch in Matrix','Overthinking','Monday Morning']},
+    art:{desc:'creative process, visual art',p:['Speed Painting','Sculpture Reveal','Graffiti Timelapse','Digital Art','Pottery Wheel','Calligraphy','Mosaic Assembly','Neon Sign Making']},
+    music:{desc:'music vibes, dance, rhythm',p:['DJ Drop','Dance Battle','Piano Close-Up','Concert Crowd','Beatbox Visual','Vinyl Spin','Guitar Solo','Studio Session']},
+    mystery:{desc:'plot twist, suspense',p:['Door Opens Reveal','Package Unboxing','Map Leads To...','Old Photo Alive','Footsteps Following','Secret Room','Note Under Door','Camera Pans Reveal']},
+    cute:{desc:'adorable, wholesome',p:['Puppy First Steps','Baby Laughing','Kitten vs Ball','Otter Holding Hands','Duck Family Walk','Kid Surprise Gift','Dog Greeting Owner','Bunny Eating']},
+    luxury:{desc:'rich lifestyle, opulence',p:['Supercar Start','Penthouse View','Watch Collection','Private Jet','Yacht Sunset','Champagne Pour','Designer Unboxing','Mansion Tour']},
+    space:{desc:'cosmic, space exploration',p:['Planet Rise','Astronaut Float','Nebula Flythrough','Rocket Launch','Black Hole','Mars Landing','Space Walk','Comet Trail']},
+    underwater:{desc:'ocean depths, marine life',p:['Whale Passing','Coral Reef','Jellyfish Glow','Shipwreck','Manta Ray','Deep Sea Creature','Diver Cave','Octopus Camo']},
+    miniature:{desc:'tilt-shift, miniature world',p:['Tiny City Traffic','Model Train','Beach Tilt Shift','Airport Miniature','Construction Site','Festival Above','Harbor Boats','Stadium Crowd']},
+    abstract:{desc:'trippy, psychedelic, mind-bending',p:['Fractal Zoom','Liquid Metal','Color Explosion','Geometric Morph','Ink in Water','Kaleidoscope','Neon Particles','Reality Folding']},
+};
+const VIRAL_STYLES = {
+    cineloop:'Seamless looping cinematic clip, end connects to beginning.',hyperzoom:'Camera zooms from far to subject through layers of detail.',impossiblecam:'Camera passes through walls/objects in impossible continuous shot.',oneshot:'One continuous unbroken shot flowing through the scene.',reversereveal:'Scene plays in reverse, showing origin of the result.',matchcut:'One shape transforms into something visually similar but different.',freezetime:'Time freezes, camera orbits the frozen moment, time resumes.',infinitezoom:'Endlessly zooming into details revealing new scenes within scenes.',dollyzoom:'Background stretches while subject stays same size, vertigo effect.',firstperson:'Camera IS the eyes, hands visible, immersive POV.',tinyvworld:'Tilt-shift miniature model look, sped up movements.',glitchart:'Intentional glitches, data moshing blended with clean footage.',splitreality:'Frame divided showing two different realities simultaneously.',seamlessloop:'Last frame connects flawlessly to first, infinite loop.',dramaticlighting:'Single harsh light, deep shadows, chiaroscuro, theatrical.',
+};
+
+// =============== CORE FUNCTIONS ===============
+function switchApp(app) {
+    currentApp = app;
+    document.querySelectorAll('.app-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-app="${app}"]`).classList.add('active');
+    document.documentElement.style.setProperty('--accent', app === 'indira' ? '#D4A847' : '#6C63FF');
+    renderTemplates(); renderImagePresets();
+}
+
+function toggleTheme() {
+    const html = document.documentElement;
+    const next = html.dataset.theme === 'dark' ? 'light' : 'dark';
+    html.dataset.theme = next;
+    document.getElementById('themeBtn').textContent = next === 'dark' ? '\u263E' : '\u2600';
+    localStorage.setItem('studio_theme', next);
+}
+
+function switchTab(tab, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-' + tab).classList.add('active');
+}
+
+function renderTemplates() {
+    document.getElementById('templates').innerHTML = TEMPLATES[currentApp].map(t =>
+        `<div class="template-card" onclick="useTemplate('${t.prompt.replace(/'/g,"\\'")}')"><h4>${t.title}</h4><p>${t.prompt.substring(0,55)}...</p></div>`
+    ).join('');
+}
+function renderImagePresets() {
+    document.getElementById('imagePresets').innerHTML = IMAGE_PRESETS[currentApp].map(p =>
+        `<div class="preset" onclick="document.getElementById('imagePrompt').value='${p.replace(/'/g,"\\'")}'">${p.substring(0,35)}...</div>`
+    ).join('');
+}
+function useTemplate(prompt) {
+    const p = document.getElementById('platform').value, t = document.getElementById('contentType').value;
+    document.getElementById('textPrompt').value = prompt.replace('{platform}',p).replace('{type}',t);
+}
+function updateCharLimit() {
+    const c = document.getElementById('charCounter');
+    const text = document.getElementById('textOutput').textContent;
+    if (!text || document.getElementById('textOutput').classList.contains('empty')) { c.textContent = ''; return; }
+    const limit = CHAR_LIMITS[document.getElementById('platform').value] || 2200;
+    c.textContent = `${text.length} / ${limit}`;
+    c.className = text.length > limit ? 'char-counter over' : 'char-counter';
+}
+
+// =============== API HELPER ===============
+async function apiText(prompt, app) {
+    const res = await fetch('/api/generateText', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({prompt, app: app || currentApp}) });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    return data;
+}
+
+// =============== TEXT GENERATION ===============
+async function generateText() {
+    const btn = document.getElementById('textBtn'), output = document.getElementById('textOutput'), actions = document.getElementById('textActions');
+    const platform = document.getElementById('platform').value, contentType = document.getElementById('contentType').value;
+    const tone = document.getElementById('tone').value, lang = document.getElementById('language').value, cta = document.getElementById('cta').value;
+    let prompt = document.getElementById('textPrompt').value.trim();
+    if (!prompt) prompt = `Write a ${platform} ${contentType} for the ${currentApp === 'indira' ? 'Indira Vedic Kundli Dating' : 'Night Shift Dating'} app. Make it engaging and optimized for ${platform}. Include relevant hashtags.`;
+    if (tone) prompt += ` Tone: ${tone}.`;
+    if (lang !== 'English') prompt += ` Write entirely in ${lang}.`;
+    if (cta) prompt += ` End with this CTA: "${cta}"`;
+    lastTextPrompt = prompt;
+    btn.classList.add('loading'); btn.disabled = true;
+    output.className = 'output-area empty'; output.textContent = 'Generating...'; actions.style.display = 'none';
+    try {
+        const data = await apiText(prompt);
+        output.className = 'output-area'; output.textContent = data.text; actions.style.display = 'flex';
+        document.getElementById('textModelBadge').textContent = (data.model||'').split('/').pop();
+        document.getElementById('textStatus').textContent = 'Generated'; updateCharLimit();
+        addToHistory('text', data.text, currentApp);
+    } catch(e) { output.className = 'output-area'; output.textContent = 'Error: '+e.message; output.style.color = 'var(--error)'; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+async function generateAB() {
+    const btn = document.getElementById('abBtn'), output = document.getElementById('textOutput'), actions = document.getElementById('textActions');
+    const platform = document.getElementById('platform').value, contentType = document.getElementById('contentType').value;
+    const tone = document.getElementById('tone').value, lang = document.getElementById('language').value;
+    let base = document.getElementById('textPrompt').value.trim();
+    if (!base) base = `${platform} ${contentType} for ${currentApp === 'indira' ? 'Indira Vedic Kundli Dating' : 'Night Shift Dating'} app`;
+    let prompt = `Write TWO different versions (labeled VERSION A and VERSION B) of a ${base}. Each should take a different creative angle but both be engaging and optimized for ${platform}. Include hashtags.`;
+    if (tone) prompt += ` Tone: ${tone}.`;
+    if (lang !== 'English') prompt += ` Write entirely in ${lang}.`;
+    lastTextPrompt = prompt;
+    btn.classList.add('loading'); btn.disabled = true;
+    output.className = 'output-area empty'; output.textContent = 'Generating A/B...'; actions.style.display = 'none';
+    try {
+        const data = await apiText(prompt);
+        output.className = 'output-area'; output.textContent = data.text; actions.style.display = 'flex';
+        document.getElementById('textModelBadge').textContent = (data.model||'').split('/').pop();
+        document.getElementById('textStatus').textContent = 'A/B Generated'; updateCharLimit();
+        addToHistory('a/b-text', data.text, currentApp);
+    } catch(e) { output.className = 'output-area'; output.textContent = 'Error: '+e.message; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+function regenerateText() { if (lastTextPrompt) { document.getElementById('textPrompt').value = ''; generateText(); } }
+
+function copyText() {
+    const text = document.getElementById('textOutput').textContent;
+    navigator.clipboard.writeText(text).then(() => { flashCopy(document.querySelector('#textActions .btn-copy')); });
+}
+function flashCopy(btn) { const o = btn.textContent; btn.textContent = 'Copied!'; btn.classList.add('copied'); setTimeout(()=>{btn.textContent=o;btn.classList.remove('copied');},2000); }
+
+function copyEl(id) {
+    navigator.clipboard.writeText(document.getElementById(id).textContent.trim()).then(() => {
+        const actions = document.getElementById(id+'Actions') || document.getElementById(id).nextElementSibling;
+        if (actions) { const b = actions.querySelector('.btn-copy'); if(b) flashCopy(b); }
+    });
+}
+
+// =============== IMAGE GENERATION ===============
+async function generateImage() {
+    const btn = document.getElementById('imageBtn'), output = document.getElementById('imageOutput'), actions = document.getElementById('imageActions');
+    let prompt = document.getElementById('imagePrompt').value.trim();
+    const style = document.getElementById('imageStyle').value, ratio = document.getElementById('imageRatio').value;
+    if (!prompt) { alert('Enter an image prompt'); return; }
+    if (style) prompt += `, ${style} style`;
+    if (ratio) prompt += `, ${ratio}`;
+    prompt += '. High quality, social media marketing.';
+    btn.classList.add('loading'); btn.disabled = true; output.className = 'image-output empty'; output.innerHTML = 'Generating...'; actions.style.display = 'none'; generatedImageData = null;
+    try {
+        const res = await fetch('/api/generateImage', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({prompt})});
+        const data = await res.json(); if (data.error) throw new Error(data.error);
+        output.className = 'image-output';
+        if (data.image?.base64) {
+            output.innerHTML = `<img src="data:${data.image.mimeType};base64,${data.image.base64}">`;
+            generatedImageData = data.image; actions.style.display = 'flex';
+            document.getElementById('imageStatus').textContent = 'Generated';
+            addToHistory('image', prompt, currentApp);
+        } else if (data.content) {
+            const m = data.content.match(/!\[.*?\]\((.*?)\)/);
+            output.innerHTML = m ? `<img src="${m[1]}">` : `<div style="padding:1rem;color:var(--text-muted)">${data.content}</div>`;
+        } else { output.innerHTML = '<div style="padding:1rem;color:var(--text-muted)">No image returned. Try again.</div>'; }
+    } catch(e) { output.className = 'image-output empty'; output.textContent = 'Error: '+e.message; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+function downloadImage() {
+    if (!generatedImageData) return;
+    const a = document.createElement('a');
+    a.href = `data:${generatedImageData.mimeType};base64,${generatedImageData.base64}`;
+    a.download = `${currentApp}_${Date.now()}.${generatedImageData.mimeType.split('/')[1]||'png'}`;
+    a.click();
+}
+
+// =============== HASHTAG GENERATOR ===============
+async function generateHashtags() {
+    const btn = document.getElementById('hashBtn'), output = document.getElementById('hashOutput');
+    const topic = document.getElementById('hashtagTopic').value.trim();
+    if (!topic) { alert('Enter a topic'); return; }
+    btn.classList.add('loading'); btn.disabled = true; output.className = 'output-area empty'; output.textContent = 'Generating...';
+    try {
+        const data = await apiText(`Generate exactly 30 trending, relevant hashtags for the topic: "${topic}". Mix popular high-volume hashtags with niche ones. Output ONLY the hashtags, one per line, each starting with #. No other text.`);
+        output.className = 'output-area'; output.textContent = data.text;
+        document.getElementById('hashActions').style.display = 'flex';
+        addToHistory('hashtags', data.text.substring(0,200), topic);
+    } catch(e) { output.className = 'output-area'; output.textContent = 'Error: '+e.message; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+// =============== CTA GENERATOR ===============
+async function generateCTAs() {
+    const btn = document.getElementById('ctaBtn'), output = document.getElementById('ctaOutput');
+    const goal = document.getElementById('ctaGoal').value;
+    const appName = currentApp === 'indira' ? 'Indira (Vedic Kundli dating app)' : 'Night Shift Dating';
+    btn.classList.add('loading'); btn.disabled = true; output.className = 'output-area empty'; output.textContent = 'Generating...';
+    try {
+        const data = await apiText(`Generate 10 creative, punchy call-to-action lines for ${appName}. Goal: ${goal}. Each should be 1-2 sentences max. Number them 1-10. Mix emojis, urgency, and personality. Output ONLY the numbered CTAs.`);
+        output.className = 'output-area'; output.textContent = data.text;
+        document.getElementById('ctaActions').style.display = 'flex';
+        addToHistory('cta', data.text.substring(0,200), currentApp);
+    } catch(e) { output.className = 'output-area'; output.textContent = 'Error: '+e.message; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+// =============== TRENDING SOUNDS ===============
+async function generateSounds() {
+    const btn = document.getElementById('soundBtn'), output = document.getElementById('soundOutput');
+    const platform = document.getElementById('soundPlatform').value;
+    const appName = currentApp === 'indira' ? 'Indira (dating/astrology)' : 'Night Shift Dating';
+    btn.classList.add('loading'); btn.disabled = true; output.className = 'output-area empty'; output.textContent = 'Generating...';
+    try {
+        const data = await apiText(`Suggest 15 trending sounds/songs/audio clips that would work well for ${platform} videos promoting ${appName} in 2026. For each, include: the song/sound name, the artist (if applicable), and a brief note on what type of video it fits. Number them 1-15. Focus on currently viral and trending audio.`);
+        output.className = 'output-area'; output.textContent = data.text;
+        document.getElementById('soundActions').style.display = 'flex';
+        addToHistory('sounds', data.text.substring(0,200), platform);
+    } catch(e) { output.className = 'output-area'; output.textContent = 'Error: '+e.message; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+// =============== SORA 2 APP PROMPTS ===============
+function autoSoraPrompt(style) {
+    const s = SORA_STYLES[style]||SORA_STYLES.trending;
+    const app = currentApp==='indira'?'Indira (Vedic Kundli dating — Indian astrology matchmaking)':'Night Shift Dating (dating for night shift workers)';
+    soraCall(`You are a Sora 2 video prompt expert. Write a Sora 2 prompt for a 15-second video promoting ${app}.\nStyle: ${s}\n${SORA_Q}\nSingle paragraph, camera movements, scene, lighting, characters, actions, mood, pacing. No intro text. End with: "Anatomically correct humans, no extra limbs, no distortion, stable smooth video." Under 200 words.`,1);
+}
+function generateSoraPrompt() {
+    const topic = document.getElementById('soraCustomTopic').value.trim();
+    const app = currentApp==='indira'?'Indira (Vedic Kundli dating)':'Night Shift Dating';
+    const p = topic ? `for ${app}. Topic: "${topic}".` : `for ${app}. Pick an original concept.`;
+    soraCall(`You are a Sora 2 video prompt expert. Write a detailed Sora 2 prompt for a 15-second video promoting ${p}\n${SORA_Q}\nSingle paragraph. No intro. End with: "Anatomically correct humans, no extra limbs, no distortion, stable smooth video." Under 200 words.`,1);
+}
+function generateSoraBatch() {
+    const topic = document.getElementById('soraCustomTopic').value.trim();
+    const app = currentApp==='indira'?'Indira (Vedic Kundli dating)':'Night Shift Dating';
+    const t = topic ? ` Theme: "${topic}".` : '';
+    soraCall(`Write exactly 5 different Sora 2 prompts for 15-second videos promoting ${app}.${t} Different styles each. ${SORA_Q} Number 1-5. Each single paragraph. End each: "Anatomically correct humans, no extra limbs, no distortion, stable smooth video." Under 200 words each. ONLY numbered prompts.`,5);
+}
+async function soraCall(prompt, count) {
+    const btn = count===1 ? document.getElementById('soraBtn') : document.getElementById('soraBatchBtn');
+    const out = document.getElementById('soraOutputList');
+    btn.classList.add('loading'); btn.disabled = true; out.innerHTML = '<div class="output-area empty">Generating...</div>';
+    try {
+        const data = await apiText(prompt);
+        document.getElementById('soraModelBadge').textContent = (data.model||'').split('/').pop();
+        renderPromptCards(out, data.text, count, 'var(--accent)');
+        addToHistory('sora', data.text.substring(0,200), currentApp);
+    } catch(e) { out.innerHTML = `<div class="output-area" style="color:var(--error)">Error: ${e.message}</div>`; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+// =============== VIRAL SORA 2 ===============
+function renderViralPresets() {
+    const cat = document.getElementById('viralCategory').value;
+    document.getElementById('viralPresets').innerHTML = VIRAL_CATS[cat].p.map(p =>
+        `<button class="preset" onclick="viralPresetPrompt('${p.replace(/'/g,"\\'")}')}">${p}</button>`
+    ).join('');
+}
+function viralPresetPrompt(preset) {
+    const cat = VIRAL_CATS[document.getElementById('viralCategory').value];
+    viralGen(`Sora 2 prompt for 15-second viral video.\nCategory: ${cat.desc}\nConcept: ${preset}\n${VIRAL_Q}\nSingle paragraph. No intro. End: "Anatomically correct, no extra limbs, no distortion, stable smooth video." Under 200 words.`,1);
+}
+function viralAutoPrompt(style) {
+    const cat = VIRAL_CATS[document.getElementById('viralCategory').value];
+    const s = VIRAL_STYLES[style];
+    viralGen(`Sora 2 prompt for 15-second viral video.\nCategory: ${cat.desc}\nTechnique: ${s}\n${VIRAL_Q}\nCombine category + technique. Single paragraph. No intro. End: "Anatomically correct, no extra limbs, no distortion, stable smooth video." Under 200 words.`,1);
+}
+function generateViralPrompt(count) {
+    const cat = VIRAL_CATS[document.getElementById('viralCategory').value];
+    const topic = document.getElementById('viralCustomTopic').value.trim();
+    const t = topic ? `\nTopic: "${topic}".` : '';
+    const p = count===1
+        ? `Sora 2 prompt for 15-second viral video.\nCategory: ${cat.desc}${t}\n${VIRAL_Q}\nSingle paragraph. No intro. End: "Anatomically correct, no extra limbs, no distortion, stable smooth video." Under 200 words.`
+        : `Write exactly ${count} Sora 2 prompts for 15-second viral videos.\nCategory: ${cat.desc}${t}\n${VIRAL_Q}\nDifferent techniques each. Number 1-${count}. Each single paragraph. End each: "Anatomically correct, no extra limbs, no distortion, stable smooth video." Under 200 words. ONLY numbered prompts.`;
+    viralGen(p, count);
+}
+async function viralGen(prompt, count) {
+    const id = count<=1?'viralBtn1':count<=5?'viralBtn5':'viralBtn10';
+    const btn = document.getElementById(id), out = document.getElementById('viralOutputList');
+    btn.classList.add('loading'); btn.disabled = true; out.innerHTML = '<div class="output-area empty">Generating...</div>';
+    try {
+        const data = await apiText(prompt);
+        document.getElementById('viralModelBadge').textContent = (data.model||'').split('/').pop();
+        renderPromptCards(out, data.text, count, 'var(--purple)');
+        addToHistory('viral', data.text.substring(0,200), 'general');
+    } catch(e) { out.innerHTML = `<div class="output-area" style="color:var(--error)">Error: ${e.message}</div>`; }
+    finally { btn.classList.remove('loading'); btn.disabled = false; }
+}
+
+function renderPromptCards(container, text, count, color) {
+    text = text.trim();
+    if (count <= 1) {
+        container.innerHTML = `<div class="sora-prompt-card" style="background:var(--surface2);border:1px solid ${color};border-radius:8px;padding:1rem;">
+            <div class="sora-text" style="font-size:0.9rem;line-height:1.6;white-space:pre-wrap;">${text}</div>
+            <div style="display:flex;gap:0.4rem;justify-content:flex-end;margin-top:0.6rem;">
+                <button class="btn btn-sm btn-copy" onclick="copyCard(this)">Copy</button>
+                <button class="btn btn-sm btn-fav" onclick="favCard(this)">&#9734;</button>
+            </div></div>`;
+    } else {
+        const prompts = text.split(/\n\s*\d+[\.\)]\s*/).filter(p=>p.trim());
+        container.innerHTML = prompts.map((p,i) => `<div class="sora-prompt-card" style="background:var(--surface2);border:1px solid ${color};border-radius:8px;padding:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+                <span style="font-size:0.7rem;font-weight:600;color:${color};">PROMPT ${i+1}</span>
+                <div style="display:flex;gap:0.3rem;"><button class="btn btn-sm btn-copy" onclick="copyCard(this)">Copy</button><button class="btn btn-sm btn-fav" onclick="favCard(this)">&#9734;</button></div>
+            </div>
+            <div class="sora-text" style="font-size:0.85rem;line-height:1.5;white-space:pre-wrap;">${p.trim()}</div>
+        </div>`).join('');
+    }
+}
+function copyCard(btn) {
+    const text = btn.closest('.sora-prompt-card').querySelector('.sora-text').textContent.trim();
+    navigator.clipboard.writeText(text).then(()=>flashCopy(btn));
+}
+function favCard(btn) {
+    const text = btn.closest('.sora-prompt-card').querySelector('.sora-text').textContent.trim();
+    addFavorite('sora-prompt', text); btn.textContent = '\u2605'; btn.classList.add('active');
+}
+
+// =============== FAVORITES ===============
+function addFavorite(type, content) {
+    if (favorites.some(f => f.content === content)) return;
+    favorites.unshift({type, content: content.substring(0,500), time: new Date().toLocaleString()});
+    if (favorites.length > 50) favorites = favorites.slice(0,50);
+    localStorage.setItem('studio_favorites', JSON.stringify(favorites));
+    renderFavorites();
+}
+function removeFavorite(i) { favorites.splice(i,1); localStorage.setItem('studio_favorites',JSON.stringify(favorites)); renderFavorites(); }
+function clearFavorites() { favorites=[]; localStorage.removeItem('studio_favorites'); renderFavorites(); }
+function renderFavorites() {
+    const list = document.getElementById('favList');
+    if (!favorites.length) { list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:1rem;font-style:italic;">No favorites saved</div>'; return; }
+    list.innerHTML = favorites.map((f,i) => `<div class="fav-item" onclick="navigator.clipboard.writeText(this.dataset.content)" data-content="${f.content.replace(/"/g,'&quot;')}">
+        <button class="remove-fav" onclick="event.stopPropagation();removeFavorite(${i})">x</button>
+        <span class="type">${f.type} - ${f.time}</span><div class="preview">${f.content}</div></div>`).join('');
+}
+function favText() { const t=document.getElementById('textOutput').textContent; if(t&&!document.getElementById('textOutput').classList.contains('empty')){addFavorite('text',t);document.getElementById('favTextBtn').textContent='\u2605';document.getElementById('favTextBtn').classList.add('active');} }
+function favImage() { if(generatedImageData){addFavorite('image','[Image saved]');document.getElementById('favImgBtn').textContent='\u2605';document.getElementById('favImgBtn').classList.add('active');} }
+
+// =============== HISTORY ===============
+function addToHistory(type, content, app) {
+    history.unshift({type, content:content.substring(0,300), app, time:new Date().toLocaleString()});
+    if (history.length > 50) history = history.slice(0,50);
+    localStorage.setItem('studio_history', JSON.stringify(history)); renderHistory();
+}
+function clearHistory() { history=[]; localStorage.removeItem('studio_history'); renderHistory(); }
+function renderHistory() {
+    const list = document.getElementById('historyList');
+    if (!history.length) { list.innerHTML = '<div style="color:var(--text-muted);text-align:center;padding:1rem;font-style:italic;">No generations yet</div>'; return; }
+    list.innerHTML = history.map(h => `<div class="history-item" onclick="navigator.clipboard.writeText(this.dataset.content)" data-content="${h.content.replace(/"/g,'&quot;')}">
+        <span class="type">${h.type} - ${h.app} - ${h.time}</span><div class="preview">${h.content}</div></div>`).join('');
+}
+
+// =============== CALENDAR ===============
+function renderCalendar() {
+    const grid = document.getElementById('calGrid');
+    const title = document.getElementById('calTitle');
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    title.textContent = `${months[calMonth]} ${calYear}`;
+    const days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+    let html = days.map(d => `<div class="cal-header">${d}</div>`).join('');
+    const first = new Date(calYear, calMonth, 1).getDay();
+    const total = new Date(calYear, calMonth+1, 0).getDate();
+    const today = new Date();
+    for (let i=0;i<first;i++) html += '<div></div>';
+    for (let d=1;d<=total;d++) {
+        const key = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const content = calendar[key] || '';
+        const isToday = today.getFullYear()===calYear && today.getMonth()===calMonth && today.getDate()===d;
+        html += `<div class="cal-day ${content?'has-content':''} ${isToday?'today':''}" onclick="calDayClick('${key}')">
+            <div class="day-num">${d}</div><div class="day-content">${content}</div></div>`;
+    }
+    grid.innerHTML = html;
+}
+function calNav(dir) { calMonth+=dir; if(calMonth>11){calMonth=0;calYear++;}if(calMonth<0){calMonth=11;calYear--;} renderCalendar(); }
+function calDayClick(key) {
+    const existing = calendar[key] || '';
+    const input = prompt(`Content plan for ${key}:`, existing);
+    if (input !== null) {
+        if (input) calendar[key] = input; else delete calendar[key];
+        localStorage.setItem('studio_calendar', JSON.stringify(calendar));
+        renderCalendar();
+    }
+}
+function exportCalendar() {
+    const lines = Object.entries(calendar).sort().map(([k,v]) => `${k}: ${v}`);
+    if (!lines.length) { alert('Calendar is empty'); return; }
+    downloadTxt('content-calendar.txt', lines.join('\n'));
+}
+
+// =============== EXPORT ===============
+function exportAll() {
+    let content = '=== CONTENT STUDIO EXPORT ===\n\n';
+    content += '--- HISTORY ---\n';
+    history.forEach(h => { content += `[${h.type}] [${h.app}] ${h.time}\n${h.content}\n\n`; });
+    content += '\n--- FAVORITES ---\n';
+    favorites.forEach(f => { content += `[${f.type}] ${f.time}\n${f.content}\n\n`; });
+    content += '\n--- CALENDAR ---\n';
+    Object.entries(calendar).sort().forEach(([k,v]) => { content += `${k}: ${v}\n`; });
+    downloadTxt(`content-studio-export-${new Date().toISOString().split('T')[0]}.txt`, content);
+}
+function downloadTxt(name, content) {
+    const a = document.createElement('a');
+    a.href = 'data:text/plain;charset=utf-8,' + encodeURIComponent(content);
+    a.download = name; a.click();
+}
+
+// =============== INIT ===============
+const savedTheme = localStorage.getItem('studio_theme');
+if (savedTheme) { document.documentElement.dataset.theme = savedTheme; document.getElementById('themeBtn').textContent = savedTheme==='dark'?'\u263E':'\u2600'; }
+renderTemplates(); renderImagePresets(); renderViralPresets(); renderHistory(); renderFavorites(); renderCalendar(); updateCharLimit();
+</script>
+</body>
+</html>

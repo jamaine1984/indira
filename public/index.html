@@ -1,0 +1,1286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indira - Vedic Kundli Dating | Where Destiny Meets Love</title>
+    <meta name="description" content="Find your perfect match through Vedic astrology. Indira combines ancient Kundli matching wisdom with modern dating — video chat, astrology compatibility, and meaningful connections.">
+    <meta name="keywords" content="vedic dating, kundli matching, astrology compatibility, indian dating app, vedic astrology dating">
+    <meta property="og:title" content="Indira - Vedic Kundli Dating">
+    <meta property="og:description" content="Where Destiny Meets Love. Find your perfect match through Vedic astrology and Kundli compatibility.">
+    <meta property="og:image" content="/images/logo.png">
+    <meta property="og:type" content="website">
+    <link rel="icon" type="image/png" href="/images/icon_512.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gold: #D4A847;
+            --gold-light: #F0D78C;
+            --burgundy: #6B1D2A;
+            --burgundy-dark: #3D0F18;
+            --cream: #FFF8F0;
+            --white: #FFFFFF;
+            --text-dark: #1A0A0E;
+            --text-muted: #7A5A60;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: var(--text-dark);
+            background: var(--cream);
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: 'Playfair Display', serif;
+        }
+
+        /* ---- NAV ---- */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            transition: background 0.3s, box-shadow 0.3s;
+        }
+
+        nav.scrolled {
+            background: rgba(61, 15, 24, 0.95);
+            backdrop-filter: blur(12px);
+            box-shadow: 0 2px 20px rgba(0,0,0,0.3);
+        }
+
+        .nav-logo {
+            height: 40px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            list-style: none;
+        }
+
+        .nav-links a {
+            color: var(--white);
+            text-decoration: none;
+            font-size: 0.95rem;
+            font-weight: 500;
+            opacity: 0.85;
+            transition: opacity 0.2s;
+        }
+
+        .nav-links a:hover {
+            opacity: 1;
+        }
+
+        .nav-cta {
+            background: var(--gold);
+            color: var(--burgundy-dark) !important;
+            padding: 0.6rem 1.5rem;
+            border-radius: 50px;
+            font-weight: 600 !important;
+            opacity: 1 !important;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .nav-cta:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 15px rgba(212, 168, 71, 0.4);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .mobile-menu-btn span {
+            display: block;
+            width: 24px;
+            height: 2px;
+            background: var(--white);
+            margin: 5px 0;
+            transition: 0.3s;
+        }
+
+        /* ---- ANIMATED BG ---- */
+        .animated-bg {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .animated-bg .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0;
+            animation: orbFloat 12s ease-in-out infinite;
+        }
+
+        .animated-bg .orb:nth-child(1) {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(212, 168, 71, 0.45), transparent 70%);
+            top: 5%; left: 5%;
+            animation-duration: 10s;
+            animation-delay: 0s;
+        }
+        .animated-bg .orb:nth-child(2) {
+            width: 450px; height: 450px;
+            background: radial-gradient(circle, rgba(200, 50, 80, 0.5), transparent 70%);
+            top: 50%; right: 0%;
+            animation-duration: 13s;
+            animation-delay: 2s;
+        }
+        .animated-bg .orb:nth-child(3) {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(212, 168, 71, 0.3), transparent 70%);
+            bottom: -10%; left: 35%;
+            animation-duration: 15s;
+            animation-delay: 4s;
+        }
+
+        @keyframes orbFloat {
+            0%, 100% { opacity: 0.5; transform: translate(0, 0) scale(1); }
+            25% { opacity: 0.9; transform: translate(60px, -50px) scale(1.15); }
+            50% { opacity: 0.6; transform: translate(-40px, 30px) scale(0.9); }
+            75% { opacity: 1; transform: translate(50px, 60px) scale(1.1); }
+        }
+
+        /* Floating particles */
+        .particles {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .particle {
+            position: absolute;
+            background: rgba(212, 168, 71, 0.9);
+            border-radius: 50%;
+            box-shadow: 0 0 6px 2px rgba(212, 168, 71, 0.4);
+            animation: particleRise linear infinite;
+        }
+
+        @keyframes particleRise {
+            0% { opacity: 0; transform: translateY(0) translateX(0) scale(0); }
+            10% { opacity: 1; transform: scale(1); }
+            50% { transform: translateY(-50vh) translateX(20px) scale(1.2); }
+            90% { opacity: 0.8; }
+            100% { opacity: 0; transform: translateY(-100vh) translateX(-10px) scale(0.5); }
+        }
+
+        /* Rotating mandala */
+        .mandala {
+            position: absolute;
+            border-radius: 50%;
+            border: 2px solid rgba(212, 168, 71, 0.2);
+            pointer-events: none;
+        }
+
+        .mandala::before, .mandala::after {
+            content: '';
+            position: absolute;
+            inset: 12%;
+            border-radius: 50%;
+            border: 1.5px solid rgba(212, 168, 71, 0.15);
+        }
+
+        .mandala::after {
+            inset: 28%;
+            border: 1.5px dashed rgba(212, 168, 71, 0.12);
+        }
+
+        .mandala-1 {
+            width: 600px; height: 600px;
+            top: -120px; right: -120px;
+            animation: mandalaSpin 40s linear infinite;
+        }
+
+        .mandala-2 {
+            width: 500px; height: 500px;
+            bottom: -100px; left: -100px;
+            animation: mandalaSpin 30s linear infinite reverse;
+        }
+
+        @keyframes mandalaSpin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Shooting stars */
+        .shooting-star {
+            position: absolute;
+            width: 120px;
+            height: 2px;
+            background: linear-gradient(90deg, rgba(212, 168, 71, 0.9), rgba(240, 215, 140, 0.5), transparent);
+            animation: shoot 3s ease-in infinite;
+            opacity: 0;
+            border-radius: 2px;
+            box-shadow: 0 0 8px rgba(212, 168, 71, 0.5);
+        }
+
+        .shooting-star:nth-child(1) { top: 15%; left: 60%; animation-delay: 0.5s; }
+        .shooting-star:nth-child(2) { top: 35%; left: 30%; animation-delay: 3s; animation-duration: 2.5s; }
+        .shooting-star:nth-child(3) { top: 55%; left: 70%; animation-delay: 6s; animation-duration: 2s; }
+
+        @keyframes shoot {
+            0% { opacity: 0; transform: translateX(0) translateY(0) rotate(-35deg); }
+            3% { opacity: 1; }
+            25% { opacity: 0; transform: translateX(-300px) translateY(150px) rotate(-35deg); }
+            100% { opacity: 0; }
+        }
+
+        /* ---- HERO ---- */
+        .hero {
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 50%, #8B2035 100%);
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(212, 168, 71, 0.15) 0%, transparent 70%);
+            top: 50%;
+            left: 30%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            animation: glowPulse 6s ease-in-out infinite;
+        }
+
+        @keyframes glowPulse {
+            0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+        }
+
+        /* ---- CURSOR SHOOTING STAR ---- */
+        * { cursor: none !important; }
+
+        .cursor-star {
+            position: fixed;
+            width: 18px;
+            height: 18px;
+            background: radial-gradient(circle, #FFFFFF 0%, #FFE4A0 20%, #D4A847 50%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            box-shadow: 0 0 20px 8px rgba(212, 168, 71, 0.8), 0 0 50px 20px rgba(212, 168, 71, 0.4), 0 0 80px 30px rgba(212, 168, 71, 0.15);
+            transform: translate(-50%, -50%);
+            transition: width 0.05s, height 0.05s, box-shadow 0.1s;
+        }
+
+        .cursor-trail {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 228, 160, 0.9), rgba(212, 168, 71, 0.5), transparent);
+            transform: translate(-50%, -50%);
+            animation: trailFade 0.8s ease-out forwards;
+        }
+
+        @keyframes trailFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            50% { opacity: 0.6; }
+            100% { opacity: 0; transform: translate(-50%, -50%) scale(0.05); }
+        }
+
+        .cursor-sparkle {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9998;
+            width: 5px;
+            height: 5px;
+            background: #FFF;
+            border-radius: 50%;
+            box-shadow: 0 0 10px 4px rgba(255, 228, 160, 0.9), 0 0 20px 6px rgba(212, 168, 71, 0.5);
+            transform: translate(-50%, -50%);
+            animation: sparkleFade 1s ease-out forwards;
+        }
+
+        @keyframes sparkleFade {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+            100% { opacity: 0; transform: translate(var(--sx), var(--sy)) scale(0); }
+        }
+
+        .cursor-ember {
+            position: fixed;
+            pointer-events: none;
+            z-index: 9997;
+            border-radius: 50%;
+            animation: emberDrift 1.5s ease-out forwards;
+        }
+
+        @keyframes emberDrift {
+            0% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+            100% { opacity: 0; transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) - 60px)) scale(0); }
+        }
+
+        @media (max-width: 900px) {
+            * { cursor: auto !important; }
+            .cursor-star { display: none; }
+        }
+
+        .hero-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 8rem 2rem 4rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+
+        .hero-text {
+            color: var(--white);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(212, 168, 71, 0.15);
+            border: 1px solid rgba(212, 168, 71, 0.3);
+            color: var(--gold-light);
+            padding: 0.4rem 1rem;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 1.5rem;
+            letter-spacing: 0.5px;
+        }
+
+        .hero-text h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 1.5rem;
+        }
+
+        .hero-text h1 span {
+            background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-text p {
+            font-size: 1.15rem;
+            line-height: 1.7;
+            opacity: 0.85;
+            margin-bottom: 2.5rem;
+            max-width: 480px;
+        }
+
+        .hero-buttons {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            background: var(--gold);
+            color: var(--burgundy-dark);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.05rem;
+            text-decoration: none;
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(212, 168, 71, 0.35);
+        }
+
+        .btn-primary svg {
+            width: 24px;
+            height: 24px;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--white);
+            padding: 1rem 1.5rem;
+            text-decoration: none;
+            font-weight: 500;
+            opacity: 0.85;
+            transition: opacity 0.2s;
+        }
+
+        .btn-secondary:hover {
+            opacity: 1;
+        }
+
+        .hero-image {
+            display: flex;
+            justify-content: center;
+            position: relative;
+        }
+
+        .hero-image img {
+            max-height: 600px;
+            width: auto;
+            border-radius: 24px;
+            filter: drop-shadow(0 20px 60px rgba(0, 0, 0, 0.4));
+            animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-12px); }
+        }
+
+        /* ---- FEATURES ---- */
+        .features {
+            padding: 7rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .section-header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .section-header h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--burgundy-dark);
+            margin-bottom: 1rem;
+        }
+
+        .section-header p {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 2.5rem 2rem;
+            text-align: center;
+            border: 1px solid rgba(107, 29, 42, 0.08);
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(107, 29, 42, 0.1);
+        }
+
+        .feature-icon {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 1.5rem;
+            font-size: 1.8rem;
+        }
+
+        .feature-icon.gold { background: linear-gradient(135deg, rgba(212,168,71,0.15), rgba(212,168,71,0.05)); }
+        .feature-icon.rose { background: linear-gradient(135deg, rgba(220,80,100,0.15), rgba(220,80,100,0.05)); }
+        .feature-icon.purple { background: linear-gradient(135deg, rgba(120,60,140,0.15), rgba(120,60,140,0.05)); }
+
+        .feature-card h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.75rem;
+            color: var(--burgundy-dark);
+        }
+
+        .feature-card p {
+            color: var(--text-muted);
+            line-height: 1.6;
+            font-size: 0.95rem;
+        }
+
+        /* ---- SHOWCASE ---- */
+        .showcase {
+            background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 100%);
+            padding: 7rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .showcase-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .showcase .section-header h2,
+        .showcase .section-header p {
+            color: var(--white);
+        }
+
+        .showcase .section-header p {
+            opacity: 0.75;
+        }
+
+        .showcase-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .showcase-image {
+            display: flex;
+            justify-content: center;
+        }
+
+        .showcase-image img {
+            max-height: 500px;
+            width: auto;
+            border-radius: 20px;
+            filter: drop-shadow(0 16px 50px rgba(0, 0, 0, 0.35));
+        }
+
+        .showcase-content {
+            color: var(--white);
+        }
+
+        .showcase-content h3 {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+        }
+
+        .showcase-content h3 span {
+            color: var(--gold-light);
+        }
+
+        .showcase-content p {
+            opacity: 0.8;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
+        }
+
+        .showcase-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .showcase-list li {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .showcase-list li .check {
+            width: 24px;
+            height: 24px;
+            background: rgba(212, 168, 71, 0.2);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--gold-light);
+            font-size: 0.8rem;
+            flex-shrink: 0;
+        }
+
+        /* ---- KUNDLI SECTION ---- */
+        .kundli {
+            padding: 7rem 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .kundli-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 4rem;
+            align-items: center;
+        }
+
+        .kundli-content h3 {
+            font-size: 2rem;
+            color: var(--burgundy-dark);
+            margin-bottom: 1rem;
+        }
+
+        .kundli-content h3 span {
+            color: var(--gold);
+        }
+
+        .kundli-content p {
+            color: var(--text-muted);
+            line-height: 1.7;
+            margin-bottom: 2rem;
+            font-size: 1.05rem;
+        }
+
+        .kundli-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+        }
+
+        .stat-box {
+            background: var(--white);
+            border: 1px solid rgba(107, 29, 42, 0.1);
+            border-radius: 16px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+
+        .stat-box .number {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--burgundy);
+        }
+
+        .stat-box .label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-top: 0.25rem;
+        }
+
+        .kundli-image {
+            display: flex;
+            justify-content: center;
+        }
+
+        .kundli-image img {
+            max-height: 500px;
+            width: auto;
+            border-radius: 20px;
+            filter: drop-shadow(0 12px 40px rgba(107, 29, 42, 0.15));
+        }
+
+        /* ---- CTA ---- */
+        .cta {
+            background: linear-gradient(135deg, var(--burgundy-dark) 0%, var(--burgundy) 50%, #8B2035 100%);
+            padding: 6rem 2rem;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cta::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4A847' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .cta h2 {
+            font-size: 2.8rem;
+            color: var(--white);
+            margin-bottom: 1rem;
+        }
+
+        .cta h2 span {
+            background: linear-gradient(135deg, var(--gold), var(--gold-light));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .cta p {
+            color: var(--white);
+            opacity: 0.8;
+            font-size: 1.15rem;
+            margin-bottom: 2.5rem;
+            max-width: 500px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .google-play-badge {
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .google-play-badge:hover {
+            transform: scale(1.05);
+        }
+
+        .google-play-badge img {
+            height: 64px;
+        }
+
+        /* ---- FOOTER ---- */
+        footer {
+            background: var(--burgundy-dark);
+            color: var(--white);
+            padding: 3rem 2rem 1.5rem;
+        }
+
+        .footer-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .footer-brand img {
+            height: 36px;
+            margin-bottom: 0.75rem;
+        }
+
+        .footer-brand p {
+            opacity: 0.6;
+            font-size: 0.9rem;
+            max-width: 280px;
+            line-height: 1.5;
+        }
+
+        .footer-links {
+            display: flex;
+            gap: 3rem;
+        }
+
+        .footer-links h4 {
+            font-family: 'Playfair Display', serif;
+            font-size: 1rem;
+            margin-bottom: 0.75rem;
+            color: var(--gold-light);
+        }
+
+        .footer-links ul {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .footer-links a {
+            color: var(--white);
+            text-decoration: none;
+            opacity: 0.6;
+            font-size: 0.9rem;
+            transition: opacity 0.2s;
+        }
+
+        .footer-links a:hover {
+            opacity: 1;
+        }
+
+        .footer-bottom {
+            max-width: 1200px;
+            margin: 2rem auto 0;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            text-align: center;
+            opacity: 0.5;
+            font-size: 0.85rem;
+        }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 900px) {
+            .hero-container {
+                grid-template-columns: 1fr;
+                text-align: center;
+                padding-top: 7rem;
+            }
+
+            .hero-text p {
+                margin-left: auto;
+                margin-right: auto;
+            }
+
+            .hero-buttons {
+                justify-content: center;
+            }
+
+            .hero-image img {
+                max-height: 450px;
+            }
+
+            .features-grid {
+                grid-template-columns: 1fr;
+                max-width: 420px;
+                margin: 0 auto;
+            }
+
+            .showcase-grid,
+            .kundli-grid {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .showcase-image,
+            .kundli-image {
+                order: -1;
+            }
+
+            .showcase-image img,
+            .kundli-image img {
+                max-height: 400px;
+            }
+
+            .showcase-list {
+                align-items: center;
+            }
+
+            .kundli-stats {
+                max-width: 320px;
+                margin: 0 auto;
+            }
+
+            .hero-text h1 {
+                font-size: 2.5rem;
+            }
+
+            .section-header h2,
+            .showcase-content h3,
+            .kundli-content h3 {
+                font-size: 1.75rem;
+            }
+
+            .cta h2 {
+                font-size: 2rem;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .nav-links.open {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                top: 100%;
+                left: 0;
+                right: 0;
+                background: rgba(61, 15, 24, 0.97);
+                padding: 1.5rem 2rem;
+                gap: 1rem;
+            }
+
+            .footer-container {
+                flex-direction: column;
+                align-items: center;
+                text-align: center;
+            }
+
+            .footer-links {
+                flex-direction: column;
+                gap: 1.5rem;
+            }
+        }
+
+        /* ---- ANIMATIONS ---- */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav id="navbar">
+    <img src="/images/logo.png" alt="Indira" class="nav-logo">
+    <ul class="nav-links" id="navLinks">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#video-chat">Video Chat</a></li>
+        <li><a href="#kundli">Kundli Matching</a></li>
+        <li><a href="https://play.google.com/store/apps/details?id=com.indiralove.dating" target="_blank" rel="noopener" class="nav-cta">Get the App</a></li>
+    </ul>
+    <button class="mobile-menu-btn" id="menuBtn" aria-label="Toggle menu">
+        <span></span><span></span><span></span>
+    </button>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="animated-bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+    <div class="particles" id="heroParticles"></div>
+    <div class="mandala mandala-1"></div>
+    <div class="mandala mandala-2"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="shooting-star"></div>
+    <div class="hero-glow"></div>
+    <div class="hero-container">
+        <div class="hero-text fade-in">
+            <div class="hero-badge">Vedic Kundli Dating</div>
+            <h1>Where <span>Destiny</span> Meets Love</h1>
+            <p>Experience the world's first dating app powered by Vedic astrology. Find deeply compatible matches through ancient Kundli wisdom, video chat, and meaningful connections.</p>
+            <div class="hero-buttons">
+                <a href="https://play.google.com/store/apps/details?id=com.indiralove.dating" target="_blank" rel="noopener" class="btn-primary">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.609 1.814L13.792 12 3.61 22.186a.996.996 0 0 1-.61-.92V2.734a1 1 0 0 1 .609-.92zm10.89 10.893l2.302 2.302-10.937 6.333 8.635-8.635zm3.199-3.199l2.302 2.302a1 1 0 0 1 0 1.38l-2.302 2.302L15.396 12l2.302-2.492zM5.864 2.658L16.8 9.49l-2.302 2.302L5.864 2.658z"/></svg>
+                    Download on Google Play
+                </a>
+                <a href="#features" class="btn-secondary">Learn more &#8595;</a>
+            </div>
+        </div>
+        <div class="hero-image fade-in">
+            <img src="/images/hero-phone.png" alt="Indira App - Where Destiny Meets Love">
+        </div>
+    </div>
+</section>
+
+<!-- FEATURES -->
+<section class="features" id="features">
+    <div class="section-header fade-in">
+        <h2>Why Choose Indira?</h2>
+        <p>Ancient wisdom meets modern technology to help you find the love written in your stars.</p>
+    </div>
+    <div class="features-grid">
+        <div class="feature-card fade-in">
+            <div class="feature-icon gold">&#9734;</div>
+            <h3>Vedic Kundli Matching</h3>
+            <p>Our algorithm uses authentic Vedic astrology principles to calculate compatibility scores based on your birth chart.</p>
+        </div>
+        <div class="feature-card fade-in">
+            <div class="feature-icon rose">&#9829;</div>
+            <h3>Video Chat & Calls</h3>
+            <p>Connect face-to-face with your matches through HD video calls. Build real connections before meeting in person.</p>
+        </div>
+        <div class="feature-card fade-in">
+            <div class="feature-icon purple">&#10024;</div>
+            <h3>Speed Dating Events</h3>
+            <p>Join live speed dating rooms with timed 1-on-1 video sessions. Meet multiple compatible matches in one evening.</p>
+        </div>
+        <div class="feature-card fade-in">
+            <div class="feature-icon gold">&#128141;</div>
+            <h3>Astrology Compatibility</h3>
+            <p>Get detailed compatibility reports covering emotional, intellectual, and spiritual alignment with your matches.</p>
+        </div>
+        <div class="feature-card fade-in">
+            <div class="feature-icon rose">&#127873;</div>
+            <h3>Virtual Gifts</h3>
+            <p>Express your feelings with our curated collection of meaningful virtual gifts — from flowers to luxury items.</p>
+        </div>
+        <div class="feature-card fade-in">
+            <div class="feature-icon purple">&#128274;</div>
+            <h3>Safe & Verified</h3>
+            <p>Every profile is verified for authenticity. Your privacy and safety are our highest priority.</p>
+        </div>
+    </div>
+</section>
+
+<!-- VIDEO CHAT SHOWCASE -->
+<section class="showcase" id="video-chat">
+    <div class="animated-bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+    <div class="particles" id="showcaseParticles"></div>
+    <div class="mandala mandala-2" style="right:-80px;left:auto;bottom:auto;top:-60px;"></div>
+    <div class="shooting-star" style="top:25%;left:50%;animation-delay:2s;"></div>
+    <div class="shooting-star" style="top:65%;left:20%;animation-delay:6s;"></div>
+    <div class="showcase-container">
+        <div class="showcase-grid">
+            <div class="showcase-image fade-in">
+                <img src="/images/video-chat.png" alt="Video Chat & Calls on Indira">
+            </div>
+            <div class="showcase-content fade-in">
+                <h3>Live <span>Video Chat</span> & Calls</h3>
+                <p>Go beyond text. See the sparkle in their eyes and hear the warmth in their voice before you ever meet in person.</p>
+                <ul class="showcase-list">
+                    <li><span class="check">&#10003;</span> Crystal-clear HD video calls</li>
+                    <li><span class="check">&#10003;</span> In-call heart reactions & gifts</li>
+                    <li><span class="check">&#10003;</span> Speed dating with timed sessions</li>
+                    <li><span class="check">&#10003;</span> Voice notes for shy moments</li>
+                    <li><span class="check">&#10003;</span> End-to-end encrypted for safety</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- KUNDLI MATCHING -->
+<section class="kundli" id="kundli">
+    <div class="kundli-grid">
+        <div class="kundli-content fade-in">
+            <h3>Vedic <span>Kundli Matching</span> & Astrology</h3>
+            <p>Our matching engine is built on centuries of Vedic astrological wisdom. We analyze planetary positions, Nakshatras, and Doshas to find your most compatible life partner.</p>
+            <div class="kundli-stats">
+                <div class="stat-box">
+                    <div class="number">36</div>
+                    <div class="label">Guna Points Analyzed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">12</div>
+                    <div class="label">Zodiac Houses</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">27</div>
+                    <div class="label">Nakshatras</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number">9</div>
+                    <div class="label">Planetary Bodies</div>
+                </div>
+            </div>
+        </div>
+        <div class="kundli-image fade-in">
+            <img src="/images/kundli-matching.png" alt="Vedic Kundli Matching & Astrology Compatibility">
+        </div>
+    </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+    <div class="animated-bg">
+        <div class="orb"></div>
+        <div class="orb"></div>
+        <div class="orb"></div>
+    </div>
+    <div class="particles" id="ctaParticles"></div>
+    <div class="mandala mandala-1" style="top:auto;bottom:-120px;right:auto;left:50%;transform:translateX(-50%);opacity:0.5;"></div>
+    <div class="shooting-star" style="top:20%;left:40%;animation-delay:0s;"></div>
+    <div class="shooting-star" style="top:60%;left:60%;animation-delay:4s;"></div>
+    <div class="cta-content fade-in">
+        <h2>Your <span>Destined Match</span> Awaits</h2>
+        <p>Download Indira today and let the stars guide you to the love you deserve.</p>
+        <a href="https://play.google.com/store/apps/details?id=com.indiralove.dating" target="_blank" rel="noopener" class="google-play-badge">
+            <img src="https://play.google.com/intl/en_us/badges/static/images/badges/en_badge_web_generic.png" alt="Get it on Google Play">
+        </a>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-container">
+        <div class="footer-brand">
+            <img src="/images/logo.png" alt="Indira">
+            <p>Where Destiny Meets Love. The world's first Vedic Kundli-powered dating app.</p>
+        </div>
+        <div class="footer-links">
+            <div>
+                <h4>Legal</h4>
+                <ul>
+                    <li><a href="/privacy-policy.html">Privacy Policy</a></li>
+                    <li><a href="/terms-of-service.html">Terms of Service</a></li>
+                    <li><a href="/delete-account.html">Delete Account</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4>App</h4>
+                <ul>
+                    <li><a href="https://play.google.com/store/apps/details?id=com.indiralove.dating" target="_blank" rel="noopener">Google Play</a></li>
+                    <li><a href="#features">Features</a></li>
+                    <li><a href="#kundli">Kundli Matching</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        &copy; 2026 Indira. All rights reserved.
+    </div>
+</footer>
+
+<script>
+    // Navbar scroll effect
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+        navbar.classList.toggle('scrolled', window.scrollY > 50);
+    });
+
+    // Mobile menu toggle
+    const menuBtn = document.getElementById('menuBtn');
+    const navLinks = document.getElementById('navLinks');
+    menuBtn.addEventListener('click', () => {
+        navLinks.classList.toggle('open');
+    });
+
+    // Close mobile menu on link click
+    navLinks.querySelectorAll('a').forEach(link => {
+        link.addEventListener('click', () => navLinks.classList.remove('open'));
+    });
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach(entry => {
+            if (entry.isIntersecting) {
+                entry.target.classList.add('visible');
+            }
+        });
+    }, { threshold: 0.1 });
+
+    document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+
+    // Generate floating particles
+    function createParticles(containerId, count) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        for (let i = 0; i < count; i++) {
+            const p = document.createElement('div');
+            p.className = 'particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.bottom = '-5px';
+            p.style.animationDuration = (8 + Math.random() * 12) + 's';
+            p.style.animationDelay = (Math.random() * 15) + 's';
+            p.style.width = (3 + Math.random() * 5) + 'px';
+            p.style.height = p.style.width;
+            p.style.opacity = 0.5 + Math.random() * 0.5;
+            container.appendChild(p);
+        }
+    }
+
+    createParticles('heroParticles', 50);
+    createParticles('showcaseParticles', 35);
+    createParticles('ctaParticles', 35);
+
+    // ---- CURSOR SHOOTING STAR ----
+    const cursorStar = document.createElement('div');
+    cursorStar.className = 'cursor-star';
+    document.body.appendChild(cursorStar);
+
+    let mouseX = -100, mouseY = -100, lastX = -100, lastY = -100;
+    let trailCount = 0;
+    const MAX_TRAILS = 120;
+    let frame = 0;
+
+    document.addEventListener('mousemove', (e) => {
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+        cursorStar.style.left = mouseX + 'px';
+        cursorStar.style.top = mouseY + 'px';
+
+        const dx = mouseX - lastX;
+        const dy = mouseY - lastY;
+        const speed = Math.sqrt(dx * dx + dy * dy);
+        frame++;
+
+        // Aggressive scaling — cursor becomes a fireball at high speed
+        const scale = Math.min(1 + speed * 0.06, 4);
+        cursorStar.style.width = (18 * scale) + 'px';
+        cursorStar.style.height = (18 * scale) + 'px';
+        if (speed > 20) {
+            cursorStar.style.boxShadow = `0 0 30px 12px rgba(255,200,50,0.9), 0 0 60px 25px rgba(212,168,71,0.5), 0 0 100px 40px rgba(212,168,71,0.2)`;
+        } else {
+            cursorStar.style.boxShadow = `0 0 20px 8px rgba(212,168,71,0.8), 0 0 50px 20px rgba(212,168,71,0.4), 0 0 80px 30px rgba(212,168,71,0.15)`;
+        }
+
+        // Dense trail — every frame when moving
+        if (speed > 2 && trailCount < MAX_TRAILS) {
+            const trail = document.createElement('div');
+            trail.className = 'cursor-trail';
+            const size = 6 + speed * 0.5;
+            trail.style.width = size + 'px';
+            trail.style.height = size + 'px';
+            trail.style.left = mouseX + 'px';
+            trail.style.top = mouseY + 'px';
+            document.body.appendChild(trail);
+            trailCount++;
+            trail.addEventListener('animationend', () => { trail.remove(); trailCount--; });
+        }
+
+        // Sparkles — way more frequent
+        if (speed > 8) {
+            const numSparkles = Math.min(Math.floor(speed / 8), 5);
+            for (let i = 0; i < numSparkles; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.className = 'cursor-sparkle';
+                sparkle.style.left = (mouseX + (Math.random() - 0.5) * 30) + 'px';
+                sparkle.style.top = (mouseY + (Math.random() - 0.5) * 30) + 'px';
+                sparkle.style.setProperty('--sx', (Math.random() - 0.5) * 80 + 'px');
+                sparkle.style.setProperty('--sy', (Math.random() - 0.5) * 80 + 'px');
+                sparkle.style.width = (3 + Math.random() * 5) + 'px';
+                sparkle.style.height = sparkle.style.width;
+                document.body.appendChild(sparkle);
+                sparkle.addEventListener('animationend', () => sparkle.remove());
+            }
+        }
+
+        // Embers — fiery particles that drift upward
+        if (speed > 5 && frame % 2 === 0) {
+            const ember = document.createElement('div');
+            ember.className = 'cursor-ember';
+            const eSize = 2 + Math.random() * 4;
+            ember.style.width = eSize + 'px';
+            ember.style.height = eSize + 'px';
+            ember.style.left = (mouseX + (Math.random() - 0.5) * 16) + 'px';
+            ember.style.top = (mouseY + (Math.random() - 0.5) * 16) + 'px';
+            ember.style.background = Math.random() > 0.5
+                ? 'radial-gradient(circle, rgba(255,200,50,0.9), rgba(212,168,71,0.5), transparent)'
+                : 'radial-gradient(circle, rgba(255,100,50,0.8), rgba(200,60,30,0.4), transparent)';
+            ember.style.boxShadow = `0 0 ${4+Math.random()*6}px rgba(255,180,50,0.6)`;
+            ember.style.setProperty('--dx', (Math.random() - 0.5) * 40 + 'px');
+            ember.style.setProperty('--dy', (Math.random() - 0.5) * 20 + 'px');
+            document.body.appendChild(ember);
+            ember.addEventListener('animationend', () => ember.remove());
+        }
+
+        lastX = mouseX;
+        lastY = mouseY;
+    });
+
+    document.addEventListener('mouseleave', () => {
+        cursorStar.style.left = '-100px';
+        cursorStar.style.top = '-100px';
+    });
+</script>
+
+</body>
+</html>

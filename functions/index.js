@@ -6,6 +6,11 @@ const admin = require('firebase-admin');
 
 admin.initializeApp();
 
+// ========== CONTENT GENERATOR (imported) ==========
+const contentGenerator = require('./contentGenerator');
+exports.generateText = contentGenerator.generateText;
+exports.generateImage = contentGenerator.generateImage;
+
 // ========== NOTIFICATION BATCHING (imported) ==========
 const notificationBatching = require('./notificationBatching');
 exports.queueNotification = notificationBatching.queueNotification;
