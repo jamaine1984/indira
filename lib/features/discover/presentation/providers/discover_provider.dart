@@ -228,7 +228,15 @@ class DiscoverNotifier extends StateNotifier<DiscoverState> {
           .where((profile) {
             // Client-side filtering for blocked users
             final userId = profile['uid'] as String?;
-            return userId != null && !blockedUserIds.contains(userId);
+            if (userId == null || blockedUserIds.contains(userId)) return false;
+
+            // Filter out users without profile photos
+            final photos = profile['photos'];
+            if (photos == null || photos is! List || photos.isEmpty) return false;
+            final firstPhoto = photos[0]?.toString() ?? '';
+            if (firstPhoto.isEmpty) return false;
+
+            return true;
           })
           .toList();
 
